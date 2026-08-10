@@ -1,47 +1,40 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth/auth";
 
 /**
  * Middleware global:
- * 1. Atualiza a sessão do Supabase (cookies).
- * 2. Protege rotas autenticadas (NextAuth) — redireciona para /login.
+ * 1. Protege rotas autenticadas usando a MESMA instância `auth` do Auth.js v5
+ *    (reconhece o cookie de sessão JWT da mesma forma que auth() no servidor —
+ *    corrige o redirect loop de /dashboard -> /login atrás de proxy).
+ * 2. Atualiza a sessão do Supabase (cookies).
  */
 
 const PUBLIC_PATHS = ["/", "/login", "/cadastro", "/recuperar-senha"];
 
-async function isAuthenticated(request: NextRequest): Promise<boolean> {
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-  });
-  return !!token;
-}
-
-export async function middleware(request: NextRequest) {
-  // Atualiza sessão do Supabase
-  const supabaseResponse = await updateSession(request);
-
-  const { pathname } = request.nextUrl;
-
-  const isPublic =
+function isPublic(pathname: string): boolean {
+  return (
     PUBLIC_PATHS.some((p) => pathname === p) ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
-    pathname.includes(".");
+    pathname.includes(".")
+  );
+}
 
-  if (!isPublic) {
-    const authed = await isAuthenticated(request);
-    if (!authed) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+
+  // Rotas protegidas exigem sessão (mesma detecção do auth() no servidor).
+  if (!isPublic(pathname) && !req.auth) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  return supabaseResponse;
-}
+  // Atualiza a sessão do Supabase (cookies) e segue o fluxo.
+  return updateSession(req as unknown as NextRequest);
+});
 
 export const config = {
   matcher: [
