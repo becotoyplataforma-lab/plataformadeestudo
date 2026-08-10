@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Saída standalone — necessária para o deploy em Docker (infra/Dockerfile)
+  output: "standalone",
+
   reactStrictMode: true,
   images: {
     remotePatterns: [

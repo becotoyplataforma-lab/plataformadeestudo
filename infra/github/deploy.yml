@@ -1,0 +1,94 @@
+# ============================================================
+# ConcursoAI — Deploy automático na VPS (Sprint 18.1)
+# Triggers: push na main (código/infra) ou manual (workflow_dispatch)
+#
+# Secrets necessários no GitHub (Settings → Secrets → Actions):
+#   VPS_HOST     → IP ou hostname da VPS (ex.: 137.131.179.48)
+#   VPS_USER     → usuário SSH (ex.: ubuntu)
+#   VPS_SSH_KEY  → conteúdo da chave privada SSH (---BEGIN...---)
+#   VPS_PORT     → porta SSH (opcional, padrão 22)
+# ============================================================
+name: Deploy VPS (Docker)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "infra/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.ts"
+      - "tsconfig.json"
+      - "prompts/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Testes (vitest)
+        run: npm test
+
+      - name: Build (next build)
+        run: npm run build
+
+  deploy:
+    name: Deploy na VPS
+    runs-on: ubuntu-latest
+    needs: ci
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Envia o código para a VPS (sem segredos: .env.production fica só no servidor)
+      - name: Sincronizar código via rsync
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          source: "src,infra,prompts,package.json,package-lock.json,next.config.ts,tsconfig.json,tailwind.config.ts,postcss.config.mjs,components.json,eslint.config.mjs"
+          target: /tmp/concursoai-deploy
+
+      - name: Aplicar e fazer deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          script: |
+            set -e
+            APP_DIR=/opt/apps/plataformadeestudo
+            # --exclude protege .env/.env.production (não sobem nem são apagados no servidor)
+            rsync -a --delete --exclude='.env' --exclude='.env.production' /tmp/concursoai-deploy/ "$APP_DIR"/
+            cd "$APP_DIR/infra"
+            chmod +x deploy.sh healthcheck.sh backup.sh
+            ./deploy.sh

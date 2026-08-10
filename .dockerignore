@@ -1,0 +1,43 @@
+# ============================================================
+# ConcursoAI — .dockerignore EFETIVO (raiz do contexto de build)
+# O Docker lê o .dockerignore da RAIZ do build context (= projeto).
+# Sincronizar com infra/.dockerignore (cópia documental).
+# Sprint 18.1
+# ============================================================
+
+# Dependências e build local
+node_modules
+.next
+out
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Controle de versão e IDE
+.git
+.gitignore
+.vscode
+.idea
+.ai
+
+# Segredos — NUNCA entram na imagem
+.env
+.env.*
+!.env.example
+
+# Infra (não vai para a imagem; usada só pelo compose/CI local)
+infra
+
+# Documentação e testes (não necessários em runtime)
+# NOTA: `drizzle` NÃO está excluído — o estágio migrator precisa das migrações.
+docs
+database
+specs
+sql
+tests
+test-db.mjs
+playwright.config.ts
+
+# Diversos
+*.log
+.DS_Store
+npm-debug.log*

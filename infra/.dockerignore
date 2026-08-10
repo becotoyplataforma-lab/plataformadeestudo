@@ -1,0 +1,40 @@
+# ============================================================
+# ConcursoAI — .dockerignore (lido do diretório do Dockerfile,
+# contexto de build = raiz do projeto). Sprint 18.1
+# ============================================================
+
+# Dependências e build local
+node_modules
+.next
+out
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Controle de versão e IDE
+.git
+.gitignore
+.vscode
+.idea
+.ai
+
+# Segredos — NUNCA entram na imagem
+.env
+.env.*
+!.env.example
+infra/.env.production
+infra/.env.production.example
+
+# Documentação e testes (não são necessários em runtime)
+# NOTA: `drizzle` NÃO está excluído — o estágio migrator precisa das migrações.
+docs
+database
+specs
+sql
+tests
+test-db.mjs
+playwright.config.ts
+
+# Diversos
+*.log
+.DS_Store
+npm-debug.log*

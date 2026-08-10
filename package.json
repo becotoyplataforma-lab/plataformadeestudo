@@ -1,6 +1,6 @@
 {
   "name": "concursoai-platform",
-  "version": "0.1.0",
+  "version": "1.0.0-alpha",
   "private": true,
   "description": "ConcursoAI Platform — Plataforma de estudos com IA para concursos públicos brasileiros",
   "scripts": {

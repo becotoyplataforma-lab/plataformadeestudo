@@ -1,0 +1,19 @@
+# ============================================================
+# ConcursoAI — Migrações Drizzle (mesmo ambiente da aplicação)
+# Usa a MESMA base (node:24-alpine) + MESMO lockfile/deps da app
+# (estágio `migrator` do mesmo Dockerfile) — zero drift de versão.
+# Não sobe com `docker compose up` — é um job one-off.
+# Uso:  cd infra && ./migrate.sh
+# ============================================================
+
+services:
+  migrate:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: migrator
+    image: concursoai-migrator:latest
+    env_file:
+      - ../.env.production
+    command: ["npx", "drizzle-kit", "migrate"]
+    restart: "no"

@@ -1,0 +1,37 @@
+# ============================================================
+# ConcursoAI Platform — docker-compose de produção (Sprint 18.2B)
+# Arquitetura: Cloudflare → Nginx (sistema) → app (Docker) → Supabase
+# Sem nginx/redis no Docker — a VPS é multi-tenant e o nginx do
+# sistema é o único reverse proxy nas portas 80/443.
+# Uso:  cd infra && docker compose up -d
+# Pré:  infra/.env.production preenchido (ver .env.production.example)
+# ============================================================
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      # Estágio de runtime (servidor Next.js standalone). O estágio `migrator`
+      # é usado apenas pelo docker-compose.migrate.yml (job one-off).
+      target: runner
+      args:
+        # Embutidos no bundle em build-time (client-side)
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://app.becotoy.com}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-ConcursoAI}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    image: concursoai-app:latest
+    # .env.production fica na RAIZ do projeto (padrão Docker/CI)
+    env_file:
+      - ../.env.production
+    restart: unless-stopped
+    # O nginx do sistema (app.becotoy.com) já encaminha para 127.0.0.1:3001
+    ports:
+      - "127.0.0.1:3001:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3

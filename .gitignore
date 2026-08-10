@@ -30,10 +30,16 @@ yarn-error.log*
 
 # env files (nunca commitar segredos!)
 .env
+.env.production
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# infra — produção (nunca commitar segredos/backups/certificados)
+/infra/.env.production
+/infra/certs/
+/infra/backups/
 
 # vercel
 .vercel
