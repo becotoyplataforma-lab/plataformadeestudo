@@ -18,7 +18,7 @@ export default async function QuestoesPage() {
   const [initial, bancas, subjects] = await Promise.all([
     listQuestions(db, { page: 1, pageSize: 15 }),
     listBancas(db),
-    db.from("content_subjects").select("id, name, color").order("name"),
+    db.from("knowledge_subjects").select("id, name, color").order("name"),
   ]);
 
   return (

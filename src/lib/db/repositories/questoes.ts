@@ -15,13 +15,13 @@ export async function listQuestions(
 
   let query = db
     .from("questions")
-    .select("*, subject:content_subjects(*)", { count: "exact" })
+    .select("*, subject:knowledge_subjects(*)", { count: "exact" })
     .eq("is_public", true)
     .eq("status", "publicada")
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
-  if (subject_id) query = query.eq("subject_id", subject_id);
+  if (subject_id) query = query.eq("knowledge_subject_id", subject_id);
   if (banca) query = query.eq("banca", banca);
   if (nivel) query = query.eq("nivel", nivel);
 
@@ -36,7 +36,7 @@ export async function getQuestionWithOptions(
 ): Promise<Question | null> {
   const { data, error } = await db
     .from("questions")
-    .select("*, subject:content_subjects(*), options:question_options(*)")
+    .select("*, subject:knowledge_subjects(*), options:question_options(*)")
     .eq("id", questionId)
     .single();
 

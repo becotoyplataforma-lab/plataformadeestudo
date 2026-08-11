@@ -21,7 +21,7 @@ export default async function ProfessorPage() {
     listSessions(db, session.user.id),
     getProfile(db, session.user.id),
     getAiUsage(session.user.id),
-    db.from("content_subjects").select("id, name").order("name"),
+    db.from("knowledge_subjects").select("id, name").order("name"),
   ]);
 
   return (

@@ -96,13 +96,13 @@ export async function getPerformanceBySubject(
 ): Promise<SubjectPerformance[]> {
   const { data, error } = await db
     .from("question_attempts")
-    .select("is_correct, question:questions(subject:content_subjects(id, name, color))")
+    .select("is_correct, question:questions(subject:knowledge_subjects(id, name, color))")
     .eq("user_id", userId)
     .limit(5000);
 
   if (error) throw new Error(error.message);
 
-  // Shape real do runtime: question_attempts.question → questions → content_subjects (FK 1:1).
+  // Shape real do runtime: question_attempts.question → questions → knowledge_subjects (FK 1:1).
   // O tipo gerado do Supabase tipa o nested select como array; aqui refletimos o runtime.
   type SubjectRef = { id: string; name: string; color: string | null };
   type AttemptRow = {
