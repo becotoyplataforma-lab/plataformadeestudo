@@ -4,6 +4,15 @@ import type { ChatMessage, ChatSession } from "@/types";
 type DB = SupabaseClient;
 
 /** Lista sessões de conversa do usuário */
+function normalizeChatSession(row: Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null }): ChatSession {
+  const knowledgeSubjectId = row.knowledge_subject_id ?? row.subject_id ?? null;
+  return {
+    ...row,
+    knowledge_subject_id: knowledgeSubjectId,
+    subject_id: knowledgeSubjectId,
+  } as ChatSession;
+}
+
 export async function listSessions(db: DB, userId: string): Promise<ChatSession[]> {
   const { data, error } = await db
     .from("chat_sessions")
@@ -11,7 +20,7 @@ export async function listSessions(db: DB, userId: string): Promise<ChatSession[
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data as ChatSession[]) ?? [];
+  return ((data as Array<Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null }>) ?? []).map(normalizeChatSession);
 }
 
 export async function getSession(
@@ -26,26 +35,32 @@ export async function getSession(
     .eq("user_id", userId)
     .single();
   if (error) return null;
-  return data as ChatSession;
+  return normalizeChatSession(data as Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null });
 }
 
 export async function createSession(
   db: DB,
   userId: string,
-  input: { title?: string; subject_id?: string | null; model?: "flash" | "pro" }
+  input: {
+    title?: string;
+    subject_id?: string | null;
+    knowledge_subject_id?: string | null;
+    model?: "flash" | "pro";
+  }
 ): Promise<ChatSession> {
+  const knowledgeSubjectId = input.knowledge_subject_id ?? input.subject_id ?? null;
   const { data, error } = await db
     .from("chat_sessions")
     .insert({
       user_id: userId,
       title: input.title ?? "Nova conversa",
-      subject_id: input.subject_id ?? null,
+      knowledge_subject_id: knowledgeSubjectId,
       model: input.model ?? "flash",
     })
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return data as ChatSession;
+  return normalizeChatSession(data as Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null });
 }
 
 export async function updateSessionTitle(

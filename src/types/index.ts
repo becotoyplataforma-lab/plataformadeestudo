@@ -121,7 +121,8 @@ export interface ChatSession {
   id: string;
   user_id: string;
   title: string;
-  subject_id: string | null;
+  knowledge_subject_id: string | null;
+  subject_id?: string | null;
   model: AIModel;
   created_at: string;
   updated_at: string;
