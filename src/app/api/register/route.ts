@@ -21,9 +21,23 @@ export async function POST(req: Request) {
 
     const supabase = createAdminClient();
 
-    // Verifica se já existe
-    const { data: existing } = await supabase.auth.admin.listUsers();
-    const already = existing?.users.some(
+    // Verifica se já existe — tratando erro da consulta para não lançar 500
+    // (listUsers pode retornar data nulo; antes, existing?.users.some() estourava TypeError).
+    const { data: existing, error: listError } =
+      await supabase.auth.admin.listUsers();
+
+    if (listError || !existing) {
+      console.error(
+        "[register] Falha ao consultar usuários existentes:",
+        listError?.message
+      );
+      return apiError(
+        503,
+        "Serviço temporariamente indisponível. Tente novamente em instantes."
+      );
+    }
+
+    const already = existing.users.some(
       (u: { email?: string | null }) =>
         u.email?.toLowerCase() === email.toLowerCase()
     );
@@ -52,7 +66,8 @@ export async function POST(req: Request) {
       },
       201
     );
-  } catch {
+  } catch (error) {
+    console.error("[register] Erro ao criar conta:", error);
     return apiError(500, "Erro interno ao criar a conta.");
   }
 }
