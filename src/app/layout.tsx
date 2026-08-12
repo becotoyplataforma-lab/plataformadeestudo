@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { publicEnv } from "@/lib/env";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const manrope = Manrope({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
@@ -35,8 +35,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: light)", color: "#03050a" },
+    { media: "(prefers-color-scheme: dark)", color: "#03050a" },
   ],
 };
 
@@ -45,8 +45,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={inter.className}>
-        {children}
+      <body className={`${manrope.className} bg-[#03050a] text-slate-50`}>
+        <div className="fixed inset-0 -z-10 bg-matrix-gradient" aria-hidden="true" />
+        <div className="relative z-10">
+          {children}
+        </div>
         <Toaster position="top-right" richColors />
       </body>
     </html>

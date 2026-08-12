@@ -21,42 +21,42 @@ const features = [
     title: "Professor IA",
     description:
       "Tire dúvidas com um tutor especializado em concursos, alimentado pela DeepSeek. Respostas didáticas, com fundamento legal e dicas de prova.",
-    gradient: "from-blue-500 to-indigo-500",
+    gradient: "from-cyan-400 to-blue-600",
   },
   {
     icon: CalendarCheck2,
     title: "Cronograma inteligente",
     description:
       "Monte seu plano de estudos com disciplinas e tarefas diárias, priorizadas pelo peso de cada matéria no edital.",
-    gradient: "from-emerald-500 to-teal-500",
+    gradient: "from-emerald-400 to-teal-600",
   },
   {
     icon: FileQuestion,
     title: "Banco de questões",
     description:
       "Resolva questões das principais bancas (CEBRASPE, FGV, VUNESP, FCC) com gabarito comentado e explicações da IA.",
-    gradient: "from-orange-500 to-amber-500",
+    gradient: "from-amber-400 to-orange-600",
   },
   {
     icon: Layers,
     title: "Flashcards",
     description:
       "Revisão por repetição espaçada para fixar o conteúdo e não esquecer perto da prova. Simples e eficaz.",
-    gradient: "from-violet-500 to-purple-500",
+    gradient: "from-violet-400 to-purple-600",
   },
   {
     icon: LineChart,
     title: "Analíticas de desempenho",
     description:
       "Acompanhe sua evolução: taxa de acerto por matéria, tempo de estudo e sequência de dias ativos.",
-    gradient: "from-rose-500 to-pink-500",
+    gradient: "from-rose-400 to-pink-600",
   },
   {
     icon: Target,
     title: "Foco no edital",
     description:
       "Informe o concurso e a banca alvo e direcione todo o estudo para o que realmente cai na prova.",
-    gradient: "from-cyan-500 to-sky-500",
+    gradient: "from-sky-400 to-cyan-600",
   },
 ];
 
@@ -84,41 +84,40 @@ const steps = [
 ];
 
 const stats = [
-  { value: "10+", label: "disciplinas com conteúdo" },
-  { value: "5", label: "bancas principais" },
-  { value: "2", label: "modelos de IA (Flash e Pro)" },
-  { value: "100%", label: "foco em concursos BR" },
+  { value: "+5.000", label: "USUÁRIOS ATIVOS" },
+  { value: "100%", label: "BANCAS HACKEADAS" },
+  { value: "+40 mil", label: "QUESTÕES" },
 ];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-background">
+    <div className="min-h-screen bg-transparent">
       {/* ============ NAVBAR ============ */}
-      <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md dark:bg-background/80">
+      <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-black/60 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white">
+          <Link href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 text-white">
               <BrainCircuit className="h-5 w-5" />
             </span>
             <span>
-              Concurso<span className="text-blue-600">AI</span>
+              Concurso<span className="text-cyan-400">AI</span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
-            <a href="#recursos" className="hover:text-foreground">Recursos</a>
-            <a href="#como-funciona" className="hover:text-foreground">Como funciona</a>
-            <a href="#planos" className="hover:text-foreground">Planos</a>
+          <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-300 md:flex">
+            <a href="#recursos" className="hover:text-white transition-colors">FUNCIONALIDADES</a>
+            <a href="#como-funciona" className="hover:text-white transition-colors">COMO FUNCIONA</a>
+            <a href="#planos" className="hover:text-white transition-colors">INVESTIMENTO</a>
           </nav>
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Entrar</Link>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white" asChild>
+              <Link href="/login">LOGIN</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-orange-500/20" asChild>
               <Link href="/cadastro">
-                Começar grátis
-                <ArrowRight className="ml-1 h-4 w-4" />
+                COMEÇAR AGORA!
+                <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -126,101 +125,90 @@ export default function LandingPage() {
       </header>
 
       {/* ============ HERO ============ */}
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-blue-50 via-white to-white dark:from-blue-950/30 dark:via-background dark:to-background"
-          aria-hidden
-        />
-        <div className="container grid items-center gap-10 py-20 md:grid-cols-2 md:py-28">
-          <div className="space-y-6">
-            <Badge variant="secondary" className="gap-1.5 px-3 py-1">
-              <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-              Plataforma de estudos com IA
-            </Badge>
-            <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              Passe no concurso{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                estudando do jeito certo
-              </span>
+      <section className="relative overflow-hidden pt-6 pb-4">
+        <div className="container grid items-center gap-10 py-16 md:grid-cols-2 md:py-24">
+          <div className="space-y-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5">
+              <span className="text-xs font-extrabold tracking-[0.22em] text-emerald-300">STATUS:</span>
+              <span className="text-xs font-bold tracking-wider text-emerald-200">MELHOR IA PARA CONCURSO PÚBLICO</span>
+            </div>
+            <h1 className="text-4xl font-extrabold leading-[1.08] tracking-[-0.04em] sm:text-5xl lg:text-6xl">
+              Passe no{" "}
+              <span className="text-gradient-cyan">próximo concurso</span>
+              {" "}que fizer, utilizando essa{" "}
+              <span className="text-gradient-cyan">IA</span>
+              {" "}feita para{" "}
+              <span className="text-gradient-cyan">concurseiros!</span>
             </h1>
-            <p className="max-w-xl text-lg text-muted-foreground">
-              Cronograma inteligente, banco de questões, flashcards e um
-              <strong> Professor IA</strong> que responde suas dúvidas na hora.
-              Tudo focado no seu edital e na sua banca.
+            <p className="text-base font-semibold text-slate-300 sm:text-lg">
+              Funciona para{" "}
+              <strong className="text-white">Qualquer Banca</strong>
+              {" "}• Funciona para{" "}
+              <strong className="text-white">Qualquer Concurso</strong>
+              {" "}•{" "}
+              <strong className="text-cyan-400">100x mais potente</strong>
+              {" "}que o ChatGPT
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <Button size="lg" asChild>
+              <Button size="lg" className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-extrabold tracking-wide hover:from-amber-400 hover:to-orange-500 shadow-xl shadow-orange-500/25 text-base px-8 py-6 rounded-xl" asChild>
                 <Link href="/cadastro">
-                  Começar a estudar grátis
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  COMEÇAR AGORA!
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                <a href="#recursos">Conhecer recursos</a>
-              </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              ✓ Grátis para começar &nbsp;·&nbsp; ✓ Sem cartão de crédito
-            </p>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+              {stats.map((s) => (
+                <div key={s.label} className="flex items-center gap-2">
+                  <span className="text-2xl font-extrabold text-cyan-400">{s.value}</span>
+                  <span className="text-xs font-bold tracking-wider text-slate-400">{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Mock de painel */}
           <div className="relative">
-            <div className="rounded-2xl border bg-white p-6 shadow-2xl shadow-blue-100 dark:bg-card dark:shadow-none">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold">Bom dia, Maria! 👋</p>
-                  <p className="text-xs text-muted-foreground">TCE-SP · Banca CEBRASPE</p>
+            <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900/90 to-slate-950/95 p-6 shadow-[0_0_0_1px_rgba(6,182,212,0.12),0_25px_60px_rgba(0,0,0,0.6)]">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  <span className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">AI</span>
+                  <span className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">🔍</span>
                 </div>
-                <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                  🔥 12 dias seguidos
-                </span>
+                <div className="flex-1 rounded-full bg-slate-800/80 border border-white/5 px-4 py-2 text-sm text-slate-400">
+                  Quando sai o próximo concurso da P...
+                </div>
+                <span className="rounded-full bg-cyan-500/20 border border-cyan-500/30 px-3 py-1 text-xs font-bold text-cyan-300">Modo IA</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-slate-50 p-4 dark:bg-muted/40">
-                  <p className="text-xs text-muted-foreground">Questões hoje</p>
-                  <p className="text-2xl font-bold">42</p>
-                  <div className="mt-2 h-1.5 rounded-full bg-slate-200 dark:bg-muted">
-                    <div className="h-full w-3/4 rounded-full bg-blue-600" />
-                  </div>
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400">EM ALTA:</span>
+                <span className="rounded-full bg-slate-800 border border-white/5 px-2.5 py-0.5 text-xs font-semibold text-slate-200">PRF 2026</span>
+                <span className="rounded-full bg-slate-800 border border-white/5 px-2.5 py-0.5 text-xs font-semibold text-slate-200">INSS</span>
+                <span className="rounded-full bg-slate-800 border border-white/5 px-2.5 py-0.5 text-xs font-semibold text-slate-200">Petrobrás</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="rounded-2xl bg-slate-800/60 border border-white/5 p-4">
+                  <p className="text-xs text-slate-400 mb-1">Questões hoje</p>
+                  <p className="text-2xl font-extrabold text-white">42</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-4 dark:bg-muted/40">
-                  <p className="text-xs text-muted-foreground">Taxa de acerto</p>
-                  <p className="text-2xl font-bold text-emerald-600">78,5%</p>
-                  <p className="mt-1 text-xs text-muted-foreground">↑ 4,2% esta semana</p>
+                <div className="rounded-2xl bg-slate-800/60 border border-white/5 p-4">
+                  <p className="text-xs text-slate-400 mb-1">Taxa de acerto</p>
+                  <p className="text-2xl font-extrabold text-emerald-400">78,5%</p>
+                  <p className="text-xs text-emerald-400/70 mt-1">↑ 4,2% esta semana</p>
                 </div>
               </div>
-              <div className="mt-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white">
+              <div className="rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-700 p-4 text-white">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-blue-100">Professor IA</p>
-                    <p className="text-sm font-semibold">
-                      O que é responsabilidade civil do Estado?
-                    </p>
+                    <p className="text-xs font-medium text-cyan-100">Professor IA</p>
+                    <p className="text-sm font-semibold">O que é responsabilidade civil do Estado?</p>
                   </div>
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
                     <Bot className="h-5 w-5" />
                   </span>
                 </div>
-                <div className="mt-3 space-y-1.5">
-                  <div className="h-1.5 w-11/12 rounded-full bg-white/40" />
-                  <div className="h-1.5 w-8/12 rounded-full bg-white/40" />
-                  <div className="h-1.5 w-10/12 rounded-full bg-white/40" />
-                </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="container border-t py-8">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-3xl font-extrabold text-blue-600">{s.value}</p>
-                <p className="text-sm text-muted-foreground">{s.label}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -228,26 +216,28 @@ export default function LandingPage() {
       {/* ============ RECURSOS ============ */}
       <section id="recursos" className="container py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Tudo o que você precisa para se preparar
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-4 py-1.5 mb-6">
+            <span className="text-xs font-extrabold tracking-[0.2em] text-cyan-300">FUNCIONALIDADES!</span>
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl lg:text-5xl">
+            Essas são todas as funcionalidades<br />
+            que você vai receber na{" "}
+            <span className="text-gradient-cyan">Concursa AI</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            Uma única plataforma para planejar, estudar, revisar e medir sua evolução.
-          </p>
         </div>
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
             <div
               key={f.title}
-              className="group rounded-2xl border bg-white p-6 transition-shadow hover:shadow-lg dark:bg-card"
+              className="group rounded-2xl border border-white/8 bg-gradient-to-b from-slate-900/80 to-slate-950/90 p-6 transition-all hover:border-cyan-500/30 hover:shadow-[0_0_30px_rgba(6,182,212,0.1)]"
             >
               <div
-                className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${f.gradient} text-white shadow-sm`}
+                className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${f.gradient} text-white shadow-lg`}
               >
-                <f.icon className="h-5 w-5" />
+                <f.icon className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold">{f.title}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <h3 className="mb-2 text-lg font-extrabold tracking-tight">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-slate-400">
                 {f.description}
               </p>
             </div>
@@ -256,24 +246,20 @@ export default function LandingPage() {
       </section>
 
       {/* ============ COMO FUNCIONA ============ */}
-      <section id="como-funciona" className="border-y bg-slate-50 py-20 dark:bg-muted/20">
+      <section id="como-funciona" className="border-y border-white/5 bg-slate-950/40 py-20">
         <div className="container">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Comece em 4 passos
+            <h2 className="text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">
+              Esses são os 3 passos para<br />
+              <span className="text-gradient-cyan">conquistar sua aprovação!</span>
             </h2>
-            <p className="mt-4 text-muted-foreground">
-              Da inscrição ao dia da prova, a ConcursoAI acompanha sua jornada.
-            </p>
           </div>
           <div className="mt-12 grid gap-8 md:grid-cols-4">
             {steps.map((s) => (
               <div key={s.number} className="relative">
-                <p className="text-5xl font-extrabold text-blue-100 dark:text-blue-900">
-                  {s.number}
-                </p>
-                <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{s.description}</p>
+                <p className="text-5xl font-extrabold text-cyan-400/20">{s.number}</p>
+                <h3 className="mt-2 text-lg font-extrabold">{s.title}</h3>
+                <p className="mt-1 text-sm text-slate-400">{s.description}</p>
               </div>
             ))}
           </div>
@@ -283,14 +269,15 @@ export default function LandingPage() {
       {/* ============ PLANOS ============ */}
       <section id="planos" className="container py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Planos simples
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-4 py-1.5 mb-6">
+            <span className="text-xs font-extrabold tracking-[0.2em] text-amber-300">INVESTIMENTO</span>
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">
+            Escolha o plano ideal para{" "}
+            <span className="text-gradient-cyan">sua aprovação</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            Comece grátis e evolua quando precisar. Cancele quando quiser.
-          </p>
         </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
           <PlanCard
             name="Gratuito"
             price="R$ 0"
@@ -338,51 +325,45 @@ export default function LandingPage() {
 
       {/* ============ CTA FINAL ============ */}
       <section className="container pb-20">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 px-6 py-16 text-center text-white">
-          <div className="mx-auto max-w-2xl">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Sua aprovação começa com um plano
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800 px-6 py-20 text-center text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)]" />
+          <div className="relative mx-auto max-w-2xl">
+            <h2 className="text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl lg:text-5xl">
+              Sua aprovação começa com<br />
+              <span className="text-cyan-300">inteligência artificial</span>
             </h2>
-            <p className="mt-4 text-blue-100">
-              Junte-se a quem estuda com método, dados e um professor que nunca
-              se cansa de explicar.
+            <p className="mt-4 text-blue-100 text-lg">
+              Pare de estudar no escuro. Deixe a IA mostrar o caminho mais rápido para o seu cargo público.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Button size="lg" className="bg-white text-blue-700 hover:bg-blue-50" asChild>
+            <div className="mt-8">
+              <Button size="lg" className="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-extrabold tracking-wide hover:from-amber-400 hover:to-orange-500 shadow-xl shadow-orange-500/30 text-base px-10 py-7 rounded-xl" asChild>
                 <Link href="/cadastro">
-                  Criar conta grátis
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  COMEÇAR AGORA!
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-            </div>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-blue-100">
-              {["Sem cartão", "Cancele quando quiser", "Suporte pt-BR"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> {t}
-                </span>
-              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="border-t py-10">
+      <footer className="border-t border-white/5 py-10">
         <div className="container flex flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2 font-bold">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white">
+          <div className="flex items-center gap-2 font-extrabold">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 text-white">
               <BrainCircuit className="h-4 w-4" />
             </span>
             <span>
-              Concurso<span className="text-blue-600">AI</span>
+              Concurso<span className="text-cyan-400">AI</span>
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ConcursoAI. Feito com foco na sua aprovação. 🇧🇷
+          <p className="text-sm text-slate-400">
+            © {new Date().getFullYear()} ConcursoAI — A primeira IA do Brasil desenvolvida exclusivamente para concurso público. 🇧🇷
           </p>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <Link href="/login" className="hover:text-foreground">Entrar</Link>
-            <Link href="/cadastro" className="hover:text-foreground">Criar conta</Link>
+          <div className="flex items-center gap-4 text-sm font-semibold text-slate-400">
+            <Link href="/login" className="hover:text-white transition-colors">LOGIN</Link>
+            <Link href="/cadastro" className="hover:text-white transition-colors">CRIAR CONTA</Link>
           </div>
         </div>
       </footer>
@@ -411,31 +392,34 @@ function PlanCard({
     <div
       className={`relative flex flex-col rounded-2xl border p-6 ${
         highlight
-          ? "border-blue-600 bg-gradient-to-b from-blue-50 to-white shadow-xl shadow-blue-100 dark:from-blue-950/30 dark:to-card"
-          : "bg-white dark:bg-card"
+          ? "border-cyan-500/40 bg-gradient-to-b from-cyan-950/30 to-slate-950 shadow-[0_0_40px_rgba(6,182,212,0.12)]"
+          : "border-white/8 bg-gradient-to-b from-slate-900/70 to-slate-950/90"
       }`}
     >
       {highlight && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600">
-          Mais popular
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-blue-600 font-extrabold tracking-wider text-xs">
+          MAIS ESCOLHIDO
         </Badge>
       )}
-      <h3 className="text-lg font-semibold">{name}</h3>
+      <h3 className="text-lg font-extrabold tracking-tight">{name}</h3>
       <p className="mt-3 flex items-baseline gap-1">
-        <span className="text-3xl font-extrabold">{price}</span>
-        <span className="text-sm text-muted-foreground">{period}</span>
+        <span className="text-3xl font-extrabold text-white">{price}</span>
+        <span className="text-sm text-slate-400">{period}</span>
       </p>
-      <ul className="mt-6 flex-1 space-y-2.5">
+      <ul className="mt-6 flex-1 space-y-3">
         {features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+          <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
             {f}
           </li>
         ))}
       </ul>
       <Button
-        className="mt-6 w-full"
-        variant={highlight ? "default" : "outline"}
+        className={`mt-6 w-full font-extrabold tracking-wider ${
+          highlight
+            ? "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white shadow-lg shadow-orange-500/20"
+            : "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700"
+        }`}
         asChild
       >
         <Link href={href}>{cta}</Link>

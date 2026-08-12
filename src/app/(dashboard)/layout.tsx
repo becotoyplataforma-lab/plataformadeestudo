@@ -55,9 +55,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar desktop */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-card md:flex">
+    <div className="flex min-h-screen bg-transparent">
+      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-white/10 bg-slate-950/75 shadow-[12px_0_40px_rgba(15,23,42,0.45)] backdrop-blur-xl md:flex">
         <SidebarBrand />
         <SidebarStreak days={streakDays} />
         <SidebarNav />

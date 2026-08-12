@@ -75,75 +75,83 @@ export function QuestionBrowser({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Banco de Questões</h1>
-        <p className="text-sm text-muted-foreground">
-          {total} questões disponíveis — resolva e veja o gabarito comentado.
+      <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),transparent_28%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(15,23,42,0.85))] p-5 shadow-[0_18px_60px_rgba(15,23,42,0.5)]">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="mb-2 inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">
+              Banco de questões
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Questões</h1>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
+            <span className="font-semibold text-white">{total}</span> disponíveis
+          </div>
+        </div>
+        <p className="mt-3 text-sm text-slate-300">
+          Resolva simulados e veja o gabarito comentado em seguida.
         </p>
       </div>
 
-      {/* Filtros */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <Input
-            className="pl-8"
+            className="border-white/10 bg-slate-900/70 pl-9 text-white placeholder:text-slate-400"
             placeholder="Buscar por palavra-chave..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={subjectId} onValueChange={setSubjectId}>
-          <SelectTrigger>
+          <SelectTrigger className="border-white/10 bg-slate-900/70 text-white">
             <SelectValue placeholder="Matéria" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as matérias</SelectItem>
+          <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
+            <SelectItem value="all" className="focus:bg-white/5">Todas as matérias</SelectItem>
             {subjects.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
+              <SelectItem key={s.id} value={s.id} className="focus:bg-white/5">
                 {s.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={banca} onValueChange={setBanca}>
-          <SelectTrigger>
+          <SelectTrigger className="border-white/10 bg-slate-900/70 text-white">
             <SelectValue placeholder="Banca" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as bancas</SelectItem>
+          <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
+            <SelectItem value="all" className="focus:bg-white/5">Todas as bancas</SelectItem>
             {bancas.map((b) => (
-              <SelectItem key={b} value={b}>
+              <SelectItem key={b} value={b} className="focus:bg-white/5">
                 {b}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={nivel} onValueChange={setNivel}>
-          <SelectTrigger>
+          <SelectTrigger className="border-white/10 bg-slate-900/70 text-white">
             <SelectValue placeholder="Dificuldade" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as dificuldades</SelectItem>
-            <SelectItem value="facil">Fácil</SelectItem>
-            <SelectItem value="medio">Médio</SelectItem>
-            <SelectItem value="dificil">Difícil</SelectItem>
+          <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
+            <SelectItem value="all" className="focus:bg-white/5">Todas as dificuldades</SelectItem>
+            <SelectItem value="facil" className="focus:bg-white/5">Fácil</SelectItem>
+            <SelectItem value="medio" className="focus:bg-white/5">Médio</SelectItem>
+            <SelectItem value="dificil" className="focus:bg-white/5">Difícil</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Lista */}
       <div className="space-y-4">
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-xl" />
+              <Skeleton key={i} className="h-40 w-full rounded-[24px] border border-white/10 bg-slate-900/70" />
             ))}
           </div>
         ) : questions.length === 0 ? (
-          <div className="rounded-xl border border-dashed py-16 text-center">
-            <p className="text-lg font-medium">Nenhuma questão encontrada</p>
-            <p className="text-sm text-muted-foreground">
+          <div className="rounded-[24px] border border-dashed border-white/10 bg-slate-900/40 py-16 text-center">
+            <p className="text-lg font-medium text-white">Nenhuma questão encontrada</p>
+            <p className="text-sm text-slate-400">
               Tente ajustar os filtros ou buscar outros termos.
             </p>
           </div>
@@ -154,18 +162,18 @@ export function QuestionBrowser({
         )}
       </div>
 
-      {/* Paginação */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2 pb-2">
           <Button
             variant="outline"
             size="sm"
             disabled={page <= 1 || loading}
             onClick={() => load(page - 1)}
+            className="border-white/10 bg-slate-900/70 text-slate-100 hover:bg-white/5"
           >
             Anterior
           </Button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-slate-300">
             Página {page} de {totalPages}
           </span>
           <Button
@@ -173,6 +181,7 @@ export function QuestionBrowser({
             size="sm"
             disabled={page >= totalPages || loading}
             onClick={() => load(page + 1)}
+            className="border-white/10 bg-slate-900/70 text-slate-100 hover:bg-white/5"
           >
             Próxima
           </Button>

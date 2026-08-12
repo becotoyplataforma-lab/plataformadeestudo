@@ -28,64 +28,62 @@ export function DashboardStats({ summary }: { summary: DashboardSummary }) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <Card>
+      <Card className="border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.85))] shadow-[0_10px_30px_rgba(15,23,42,0.3)]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Taxa de acerto</CardTitle>
-          <Target className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium text-slate-200">Taxa de acerto</CardTitle>
+          <Target className="h-4 w-4 text-cyan-300" />
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold">
+          <p className="text-2xl font-bold text-white">
             {formatPercent(summary.taxa_acerto)}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-400">
             {summary.acertos} de {summary.total_questoes} questões
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.85))] shadow-[0_10px_30px_rgba(15,23,42,0.3)]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sequência de estudo</CardTitle>
-          <Flame className="h-4 w-4 text-orange-500" />
+          <CardTitle className="text-sm font-medium text-slate-200">Sequência de estudo</CardTitle>
+          <Flame className="h-4 w-4 text-orange-400" />
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold">
+          <p className="text-2xl font-bold text-white">
             {summary.streak_dias}{" "}
-            <span className="text-sm font-normal text-muted-foreground">
+            <span className="text-sm font-normal text-slate-400">
               {summary.streak_dias === 1 ? "dia" : "dias"}
             </span>
           </p>
-          <p className="text-xs text-muted-foreground">Mantenha o ritmo! 🔥</p>
+          <p className="text-xs text-slate-400">Mantenha o ritmo! 🔥</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.85))] shadow-[0_10px_30px_rgba(15,23,42,0.3)]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Meta do dia</CardTitle>
-          <Target className="h-4 w-4 text-blue-600" />
+          <CardTitle className="text-sm font-medium text-slate-200">Meta do dia</CardTitle>
+          <Target className="h-4 w-4 text-cyan-300" />
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold">
+          <p className="text-2xl font-bold text-white">
             {formatMinutes(summary.estudado_hoje_min)}
-            <span className="text-sm font-normal text-muted-foreground">
+            <span className="text-sm font-normal text-slate-400">
               {" "}
               / {formatMinutes(summary.meta_hoje_min)}
             </span>
           </p>
-          <Progress value={metaProgress} className="mt-2" />
+          <Progress value={metaProgress} className="mt-3 h-2 bg-slate-800" />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.85))] shadow-[0_10px_30px_rgba(15,23,42,0.3)]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Revisões pendentes</CardTitle>
-          <Layers className="h-4 w-4 text-violet-500" />
+          <CardTitle className="text-sm font-medium text-slate-200">Revisões pendentes</CardTitle>
+          <Layers className="h-4 w-4 text-violet-300" />
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-bold">{summary.revisoes_pendentes}</p>
-          <p className="text-xs text-muted-foreground">
-            Flashcards para revisar hoje
-          </p>
+          <p className="text-2xl font-bold text-white">{summary.revisoes_pendentes}</p>
+          <p className="text-xs text-slate-400">Flashcards para revisar hoje</p>
         </CardContent>
       </Card>
     </div>
@@ -102,21 +100,21 @@ export function QuickActions() {
 
   return (
     <div>
-      <h2 className="mb-3 text-lg font-semibold">Ações rápidas</h2>
+      <h2 className="mb-3 text-lg font-semibold text-white">Ações rápidas</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {actions.map((a) => (
-          <Card key={a.href} className="transition-shadow hover:shadow-md">
+          <Card key={a.href} className="border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.85))] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(14,165,233,0.12)]">
             <CardHeader>
               <CardDescription className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-300 ring-1 ring-inset ring-sky-400/20">
                   <a.icon className="h-4 w-4" />
                 </span>
-                <span className="font-medium text-foreground">{a.label}</span>
+                <span className="font-medium text-white">{a.label}</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">{a.desc}</p>
-              <Button variant="outline" size="sm" className="w-full" asChild>
+              <p className="text-sm text-slate-400">{a.desc}</p>
+              <Button variant="outline" size="sm" className="w-full border-white/10 bg-white/5 text-slate-100 hover:bg-sky-500/10 hover:text-white" asChild>
                 <Link href={a.href}>Abrir</Link>
               </Button>
             </CardContent>

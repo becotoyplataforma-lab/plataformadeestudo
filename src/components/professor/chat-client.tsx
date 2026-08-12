@@ -252,18 +252,20 @@ export function ChatClient({
   }
 
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] min-h-[480px] overflow-hidden rounded-xl border bg-card">
-      {/* Sidebar de conversas */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r md:flex">
-        <div className="border-b p-3">
-          <Button className="w-full" onClick={newConversation}>
+    <div className="flex h-[calc(100vh-8.5rem)] min-h-[520px] overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.9))] shadow-[0_20px_60px_rgba(15,23,42,0.5)]">
+      <aside className="hidden w-72 shrink-0 flex-col border-r border-white/10 bg-slate-950/70 md:flex">
+        <div className="border-b border-white/10 p-3">
+          <Button
+            className="w-full border border-cyan-400/30 bg-gradient-to-r from-cyan-500/10 to-blue-600/10 text-white hover:bg-cyan-500/15"
+            onClick={newConversation}
+          >
             <MessageSquarePlus className="h-4 w-4" /> Nova conversa
           </Button>
         </div>
         <ScrollArea className="flex-1">
           <div className="space-y-1 p-2">
             {sessions.length === 0 && (
-              <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+              <p className="px-3 py-6 text-center text-sm text-slate-400">
                 Sem conversas ainda.
               </p>
             )}
@@ -271,21 +273,21 @@ export function ChatClient({
               <div
                 key={s.id}
                 className={cn(
-                  "group flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm",
+                  "group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
                   activeSessionId === s.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent"
+                    ? "bg-cyan-500/10 text-white ring-1 ring-inset ring-cyan-400/20"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <button
-                  className="min-w-0 flex-1 truncate"
+                  className="min-w-0 flex-1 truncate text-left"
                   onClick={() => selectSession(s.id)}
                 >
                   {s.title}
                 </button>
                 <button
                   onClick={() => deleteConversation(s.id)}
-                  className="ml-1 hidden text-muted-foreground hover:text-red-600 group-hover:block"
+                  className="ml-1 hidden text-slate-400 hover:text-red-400 group-hover:block"
                   aria-label="Excluir"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -296,50 +298,45 @@ export function ChatClient({
         </ScrollArea>
       </aside>
 
-      {/* Área do chat */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-slate-950/40 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-500/30">
               <Bot className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-sm font-semibold leading-none">Professor IA</p>
-              <p className="text-xs text-muted-foreground">
-                Especialista em concursos · pt-BR
-              </p>
+              <p className="text-sm font-semibold leading-none text-white">Professor IA</p>
+              <p className="text-xs text-slate-400">Especialista em concursos · pt-BR</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
+            <Badge className="border border-cyan-400/20 bg-cyan-500/10 text-cyan-200 text-xs">
               {usageLeft} de {usage.max} msgs hoje
             </Badge>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-white/10 bg-white/5 text-slate-100 hover:bg-white/10">
                   {model === "flash" ? (
-                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    <Zap className="h-3.5 w-3.5 text-amber-400" />
                   ) : (
-                    <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                    <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                   )}
                   {model === "flash" ? "V4 Flash" : "V4 Pro"}
                   <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setModel("flash")}>
-                  <Zap className="h-4 w-4 text-amber-500" /> V4 Flash — rápido
+              <DropdownMenuContent align="end" className="border-white/10 bg-slate-950 text-slate-100">
+                <DropdownMenuItem onClick={() => setModel("flash")} className="text-slate-100 focus:bg-white/5">
+                  <Zap className="h-4 w-4 text-amber-400" /> V4 Flash — rápido
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setModel("pro")}>
-                  <Sparkles className="h-4 w-4 text-violet-500" /> V4 Pro — raciocínio profundo
+                <DropdownMenuItem onClick={() => setModel("pro")} className="text-slate-100 focus:bg-white/5">
+                  <Sparkles className="h-4 w-4 text-violet-400" /> V4 Pro — raciocínio profundo
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
-        {/* Mensagens */}
         <ScrollArea className="flex-1">
           <div className="space-y-4 p-4">
             {messages.length === 0 && (
@@ -360,20 +357,20 @@ export function ChatClient({
                 )}
               >
                 {m.role === "assistant" && (
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white">
-                    <Bot className="h-3.5 w-3.5" />
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-500/20">
+                    <Bot className="h-4 w-4" />
                   </span>
                 )}
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                    "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-lg",
                     m.role === "user"
-                      ? "rounded-br-sm bg-primary text-primary-foreground"
-                      : "rounded-bl-sm bg-muted"
+                      ? "rounded-br-sm bg-gradient-to-r from-cyan-400 to-blue-600 text-white"
+                      : "rounded-bl-sm border border-white/10 bg-slate-900/80 text-slate-100"
                   )}
                 >
                   {m.role === "assistant" && m.reasoning && m.content.length === 0 && (
-                    <p className="mb-1 flex items-center gap-1.5 text-xs italic text-muted-foreground">
+                    <p className="mb-1 flex items-center gap-1.5 text-xs italic text-cyan-200">
                       <Sparkles className="h-3 w-3 animate-pulse" />
                       Raciocinando...
                     </p>
@@ -381,7 +378,7 @@ export function ChatClient({
                   {m.role === "assistant" && m.content.length === 0 && !m.reasoning ? (
                     <TypingDots />
                   ) : m.role === "assistant" ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose prose-invert max-w-none prose-p:my-1.5 prose-li:my-1">
                       {m.content + (m.streaming ? "▍" : "")}
                     </ReactMarkdown>
                   ) : (
@@ -389,7 +386,7 @@ export function ChatClient({
                   )}
                 </div>
                 {m.role === "user" && (
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-muted">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-800">
                     <User className="h-3.5 w-3.5" />
                   </span>
                 )}
@@ -399,23 +396,22 @@ export function ChatClient({
           </div>
         </ScrollArea>
 
-        {/* Input */}
-        <div className="border-t p-3">
+        <div className="border-t border-white/10 bg-slate-950/40 p-3">
           <div className="mb-2 flex items-center gap-2">
             <Select value={subjectId} onValueChange={setSubjectId}>
-              <SelectTrigger className="h-8 w-auto min-w-40 text-xs">
+              <SelectTrigger className="h-8 w-auto min-w-40 border-white/10 bg-white/5 text-xs text-slate-100">
                 <SelectValue placeholder="Disciplina em foco" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Disciplina geral</SelectItem>
+              <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
+                <SelectItem value="none" className="focus:bg-white/5">Disciplina geral</SelectItem>
                 {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
+                  <SelectItem key={s.id} value={s.id} className="focus:bg-white/5">
                     {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-400">
               O Professor IA adapta a resposta ao contexto selecionado.
             </p>
           </div>
@@ -430,19 +426,19 @@ export function ChatClient({
                 }
               }}
               placeholder="Pergunte sobre qualquer conteúdo do edital..."
-              className="max-h-32 min-h-10 flex-1 resize-none"
+              className="max-h-32 min-h-10 flex-1 resize-none border-white/10 bg-slate-900/80 text-white placeholder:text-slate-400"
               rows={1}
             />
             <Button
               onClick={send}
               disabled={sending || !input.trim() || usageLeft <= 0}
-              className="h-10 px-4"
+              className="h-10 px-4 bg-gradient-to-r from-cyan-400 to-blue-600 text-white hover:from-cyan-300 hover:to-blue-500"
               aria-label="Enviar"
             >
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+          <p className="mt-1.5 text-center text-[11px] text-slate-400">
             A IA pode cometer erros. Confira informações importantes em fontes oficiais.
           </p>
         </div>
@@ -482,14 +478,14 @@ function EmptyState({
   ];
 
   return (
-    <div className="mx-auto max-w-lg py-10 text-center">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-200 dark:shadow-none">
+    <div className="mx-auto max-w-xl py-10 text-center">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-600 text-white shadow-[0_16px_40px_rgba(59,130,246,0.35)]">
         <Bot className="h-7 w-7" />
       </div>
-      <h3 className="text-lg font-semibold">
+      <h3 className="text-2xl font-semibold text-white">
         Olá{name ? `, ${name.split(" ")[0]}` : ""}! Sou seu Professor IA 👋
       </h3>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-2 text-sm text-slate-300">
         Estudei para concursos de todas as bancas. Pergunte o que quiser!
         {banca && ` Foco especial na banca ${banca}.`}
         {concurso && ` Preparação para ${concurso}.`}
@@ -499,7 +495,7 @@ function EmptyState({
           <button
             key={s}
             onClick={() => onSuggestion(s)}
-            className="w-full rounded-xl border p-3 text-left text-sm transition-colors hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
+            className="w-full rounded-xl border border-white/10 bg-slate-900/60 p-3 text-left text-sm text-slate-200 transition-all duration-200 hover:border-sky-400/50 hover:bg-sky-500/10 hover:text-white"
           >
             {s}
           </button>
