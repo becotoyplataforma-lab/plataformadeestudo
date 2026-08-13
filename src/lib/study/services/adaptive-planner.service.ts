@@ -46,6 +46,16 @@ export interface PriorityFactors {
   volumeScore: number;
   trendScore: number;
   idleScore: number;
+  /** Contexto de banca (Grupo C) — null/0 quando não há banca alvo (equivale ao Grupo B). */
+  bancaTarget: string | null;
+  bancaRelevance: number | null;
+  bancaScore: number;
+}
+
+/** Contexto de banca para o cálculo de prioridade (Grupo C). */
+export interface BancaContext {
+  target: string | null;
+  relevance: number | null;
 }
 
 export interface WeekPlanResult {
@@ -95,7 +105,11 @@ const DEFAULT_PERFORMANCE: SubjectPerformance = {
   accuracyPct: 0,
 };
 
-function calculatePriority(perf: SubjectPerformance | null, daysSinceLastTask: number): { priority: number; factors: PriorityFactors } {
+function calculatePriority(
+  perf: SubjectPerformance | null,
+  daysSinceLastTask: number,
+  banca: BancaContext = { target: null, relevance: null }
+): { priority: number; factors: PriorityFactors } {
   const p = perf ?? { ...DEFAULT_PERFORMANCE };
 
   // 1. Taxa de acerto: quanto menor, maior a prioridade (peso 50%)
@@ -114,11 +128,18 @@ function calculatePriority(perf: SubjectPerformance | null, daysSinceLastTask: n
   //    (trend real será calculada no recalculatePriorities com dados de evolução)
   const trendScore = 0.5; // neutro — será sobrescrito no recalculatePriorities
 
-  // Peso composto
+  // Peso composto — MESMOS pesos do Grupo B (não rebalanceados)
   const raw = accuracyScore * 0.50 + volumeScore * 0.30 + idleScore * 0.15 + trendScore * 0.05;
 
+  // 5. Fator banca (Grupo C) — ADITIVO, não altera os pesos acima.
+  //    Sem banca alvo (ou sem dados) → 0 → resultado idêntico ao Grupo B.
+  const bancaScore =
+    banca.target && banca.relevance !== null
+      ? (banca.relevance - 0.5) * 2 // relevância 0..1 → ajuste -1..+1
+      : 0;
+
   // Arredonda para 1-5
-  const priority = Math.max(1, Math.min(5, Math.round(raw)));
+  const priority = Math.max(1, Math.min(5, Math.round(raw + bancaScore)));
 
   return {
     priority,
@@ -131,8 +152,40 @@ function calculatePriority(perf: SubjectPerformance | null, daysSinceLastTask: n
       volumeScore: Math.round(volumeScore * 10) / 10,
       trendScore: Math.round(trendScore * 10) / 10,
       idleScore: Math.round(idleScore * 10) / 10,
+      bancaTarget: banca.target ?? null,
+      bancaRelevance:
+        banca.relevance !== null ? Math.round(banca.relevance * 100) / 100 : null,
+      bancaScore: Math.round(bancaScore * 100) / 100,
     },
   };
+}
+
+/**
+ * Relevância da matéria para a banca alvo (0..1):
+ * share no catálogo (provas anteriores, 60%) + share nas tentativas do usuário (40%).
+ * Retorna null quando não há banca alvo ou quando não há dados (neutro).
+ */
+function computeBancaRelevance(
+  target: string | null,
+  perf: SubjectPerformance | null,
+  catalog: { total: number; byBanca: Record<string, number> } | null
+): number | null {
+  if (!target) return null;
+
+  let attemptShare: number | null = null;
+  if (perf && perf.total > 0) {
+    attemptShare = (perf.byBanca?.[target]?.total ?? 0) / perf.total;
+  }
+
+  let catalogShare: number | null = null;
+  if (catalog && catalog.total > 0) {
+    catalogShare = (catalog.byBanca[target] ?? 0) / catalog.total;
+  }
+
+  if (attemptShare === null && catalogShare === null) return null;
+  if (attemptShare === null) return catalogShare;
+  if (catalogShare === null) return attemptShare;
+  return 0.6 * catalogShare + 0.4 * attemptShare;
 }
 
 /** Calcula tendência comparando accuracy dos últimos 7 dias vs 7-14 dias atrás. */
@@ -216,7 +269,22 @@ export const AdaptivePlannerService = {
       performance.map((p) => [p.subjectId, p])
     );
 
-    // 4. Calcular prioridade para cada disciplina
+    // 4. Contexto de banca (Grupo C): banca alvo + volume do catálogo por matéria/banca
+    const profile = await AggregationRepository.getProfileMeta(userId);
+    const bancaTarget = profile?.bancaPreferida ?? null;
+    const catalogRows = await AggregationRepository.countCatalogBySubjectBanca();
+    const catalogBySubject = new Map<
+      string,
+      { total: number; byBanca: Record<string, number> }
+    >();
+    for (const c of catalogRows) {
+      const entry = catalogBySubject.get(c.subjectId) ?? { total: 0, byBanca: {} };
+      entry.total += c.total;
+      if (c.banca) entry.byBanca[c.banca] = (entry.byBanca[c.banca] ?? 0) + c.total;
+      catalogBySubject.set(c.subjectId, entry);
+    }
+
+    // 5. Calcular prioridade para cada disciplina
     const results: SubjectPriority[] = [];
 
     for (const subject of subjects) {
@@ -231,20 +299,28 @@ export const AdaptivePlannerService = {
         : null;
 
       const idle = await daysSinceLastStudyTask(userId, subject.id);
-      const { priority, factors } = calculatePriority(perf, idle);
+      const bancaRelevance = link.knowledgeSubject
+        ? computeBancaRelevance(
+            bancaTarget,
+            perf,
+            catalogBySubject.get(link.knowledgeSubject.id) ?? null
+          )
+        : null;
+      const banca = { target: bancaTarget, relevance: bancaRelevance };
+      const { priority, factors } = calculatePriority(perf, idle, banca);
 
       // Tendência real
       const trend = await calculateTrend(userId, link);
       factors.trend = trend;
 
       // Recalcular com tendência real
-      const { priority: finalPriority } = calculatePriority(perf, idle);
+      const { priority: finalPriority } = calculatePriority(perf, idle, banca);
       // Ajusta para incorporar tendência
       let adjustedPriority = finalPriority;
       if (trend === "down") adjustedPriority = Math.min(5, adjustedPriority + 1);
       if (trend === "up" && adjustedPriority > 1) adjustedPriority = Math.max(1, adjustedPriority - 1);
 
-      // 5. Atualizar prioridade no banco
+      // 6. Atualizar prioridade no banco
       await StudySubjectRepository.update(subject.id, userId, {
         priority: adjustedPriority,
       });

@@ -93,6 +93,13 @@ function priorityReason(p: PlannerPriority): string {
   else if (p.factors.days_since_last_task < 999) {
     parts.push(`${p.factors.days_since_last_task} dias sem estudar`);
   }
+  // Banca (Grupo C) — só aparece quando há banca alvo configurada
+  if (p.factors.banca_target) {
+    const s = p.factors.banca_score;
+    if (s > 0.05) parts.push(`banca ${p.factors.banca_target} — alta incidência`);
+    else if (s < -0.05) parts.push(`banca ${p.factors.banca_target} — baixa incidência`);
+    else parts.push(`banca ${p.factors.banca_target} — incidência média`);
+  }
   return parts.join(" · ");
 }
 

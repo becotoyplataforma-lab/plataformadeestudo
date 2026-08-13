@@ -139,6 +139,26 @@ describe("AggregationService.getPerformanceBySubject", () => {
     const rows = await AggregationService.getPerformanceBySubject("u1");
     expect(rows[0].accuracyPct).toBe(0);
   });
+
+  it("propaga o breakdown por banca (byBanca) para o planner", async () => {
+    mockListAttemptsBySubject.mockResolvedValue([
+      {
+        subjectId: UUID_A,
+        subjectName: "Direito",
+        total: 10,
+        correct: 8,
+        byBanca: {
+          CESPE: { total: 6, correct: 5 },
+          FGV: { total: 4, correct: 3 },
+        },
+      },
+    ]);
+    const rows = await AggregationService.getPerformanceBySubject("u1");
+    expect(rows[0].byBanca).toEqual({
+      CESPE: { total: 6, correct: 5 },
+      FGV: { total: 4, correct: 3 },
+    });
+  });
 });
 
 describe("AggregationService.getEvolution", () => {

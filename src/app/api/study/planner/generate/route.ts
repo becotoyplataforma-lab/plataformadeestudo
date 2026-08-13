@@ -55,6 +55,9 @@ export async function POST(request: NextRequest) {
           volume_score: p.factors.volumeScore,
           trend_score: p.factors.trendScore,
           idle_score: p.factors.idleScore,
+          banca_target: p.factors.bancaTarget,
+          banca_relevance: p.factors.bancaRelevance,
+          banca_score: p.factors.bancaScore,
         },
       })),
     });

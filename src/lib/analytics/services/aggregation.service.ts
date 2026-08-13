@@ -35,6 +35,8 @@ export interface SubjectPerformance {
   total: number;
   correct: number;
   accuracyPct: number;
+  /** Total/certo por banca da matéria (para o planner orientado à banca). */
+  byBanca?: Record<string, { total: number; correct: number }>;
 }
 
 export interface EvolutionPoint {
@@ -137,6 +139,7 @@ export const AggregationService = {
         total: r.total,
         correct: r.correct,
         accuracyPct: accuracy(r.correct, r.total),
+        byBanca: r.byBanca,
       }))
       .sort((a, b) => a.accuracyPct - b.accuracyPct);
   },

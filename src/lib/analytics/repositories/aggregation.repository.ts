@@ -7,7 +7,7 @@
  *
  * Não escreve nas tabelas de origem — apenas agrega para o dashboard.
  */
-import { and, desc, eq, gte, isNull, lt, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNull, lt, lte } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import {
   questionAttempts,
@@ -33,6 +33,8 @@ export interface SubjectPerfRow {
   subjectName: string;
   total: number;
   correct: number;
+  /** Total/certo por banca (chave = banca da questão; questões sem banca ficam de fora). */
+  byBanca: Record<string, { total: number; correct: number }>;
 }
 
 export interface TaskRow {
@@ -71,13 +73,14 @@ export const AggregationRepository = {
     return rows;
   },
 
-  /** Desempenho por matéria (JOIN questions → knowledge_subjects). */
+  /** Desempenho por matéria (JOIN questions → knowledge_subjects), com breakdown por banca. */
   async listAttemptsBySubject(userId: string, limit = 5000): Promise<SubjectPerfRow[]> {
     const rows = await db
       .select({
         isCorrect: questionAttempts.isCorrect,
         subjectId: questions.knowledgeSubjectId,
         subjectName: knowledgeSubjects.name,
+        banca: questions.banca,
       })
       .from(questionAttempts)
       .innerJoin(questions, eq(questionAttempts.questionId, questions.id))
@@ -88,15 +91,30 @@ export const AggregationRepository = {
       .where(eq(questionAttempts.userId, userId))
       .limit(limit);
 
-    const map = new Map<string, { name: string; total: number; correct: number }>();
+    const map = new Map<
+      string,
+      {
+        name: string;
+        total: number;
+        correct: number;
+        byBanca: Record<string, { total: number; correct: number }>;
+      }
+    >();
     for (const r of rows) {
       const entry = map.get(r.subjectId) ?? {
         name: r.subjectName,
         total: 0,
         correct: 0,
+        byBanca: {},
       };
       entry.total++;
       if (r.isCorrect) entry.correct++;
+      if (r.banca) {
+        const b = entry.byBanca[r.banca] ?? { total: 0, correct: 0 };
+        b.total++;
+        if (r.isCorrect) b.correct++;
+        entry.byBanca[r.banca] = b;
+      }
       map.set(r.subjectId, entry);
     }
 
@@ -105,7 +123,33 @@ export const AggregationRepository = {
       subjectName: e.name,
       total: e.total,
       correct: e.correct,
+      byBanca: e.byBanca,
     }));
+  },
+
+  /**
+   * Volume do catálogo por matéria × banca (provas anteriores).
+   * Questões públicas e publicadas — base para o peso de matérias por banca.
+   */
+  async countCatalogBySubjectBanca(
+    limit = 10_000
+  ): Promise<Array<{ subjectId: string; banca: string | null; total: number }>> {
+    return db
+      .select({
+        subjectId: questions.knowledgeSubjectId,
+        banca: questions.banca,
+        total: count(questions.id),
+      })
+      .from(questions)
+      .where(
+        and(
+          eq(questions.isPublic, true),
+          eq(questions.status, "publicada"),
+          isNull(questions.deletedAt)
+        )
+      )
+      .groupBy(questions.knowledgeSubjectId, questions.banca)
+      .limit(limit);
   },
 
   /** Tarefas do usuário (opcionalmente em intervalo). */
@@ -218,10 +262,14 @@ export const AggregationRepository = {
     return { total, correct };
   },
 
-  /** Meta diária do usuário (profiles.meta_diaria_min). */
+  /** Meta diária do usuário + contexto de concurso (banca, concurso alvo). */
   async getProfileMeta(userId: string) {
     const [row] = await db
-      .select({ metaDiariaMin: profiles.metaDiariaMin })
+      .select({
+        metaDiariaMin: profiles.metaDiariaMin,
+        bancaPreferida: profiles.bancaPreferida,
+        concursoAlvo: profiles.concursoAlvo,
+      })
       .from(profiles)
       .where(eq(profiles.id, userId))
       .limit(1);

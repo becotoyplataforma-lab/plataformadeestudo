@@ -183,6 +183,10 @@ export interface PlannerPriorityFactor {
   volume_score: number;
   trend_score: number;
   idle_score: number;
+  /** Contexto de banca (Grupo C) — null/0 quando não há banca alvo (equivale ao Grupo B). */
+  banca_target: string | null;
+  banca_relevance: number | null;
+  banca_score: number;
 }
 
 export interface PlannerPriority {

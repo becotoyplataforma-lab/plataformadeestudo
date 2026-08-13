@@ -5,6 +5,8 @@
  * - recalculatePriorities: prioridade alta/baixa, ajuste por tendência,
  *   disciplina sem vínculo com o catálogo.
  * - generateWeekPlan: distribuição por prioridade, dias ativos, persistência.
+ * - Fator banca (Grupo C): alta relevância, banca diferente, sem banca
+ *   (regressão do Grupo B), catálogo sem a banca, combinação desempenho+banca.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -17,6 +19,7 @@ const mockListAttemptsBySubjectWindow = vi.fn();
 const mockGetProfileMeta = vi.fn();
 const mockGetPerformanceBySubject = vi.fn();
 const mockResolveBatch = vi.fn();
+const mockCountCatalogBySubjectBanca = vi.fn().mockResolvedValue([]);
 
 vi.mock("../../repositories/study-subject.repository", () => ({
   StudySubjectRepository: {
@@ -43,6 +46,8 @@ vi.mock("@/lib/analytics/repositories/aggregation.repository", () => ({
     listAttemptsBySubjectWindow: (...a: unknown[]) =>
       mockListAttemptsBySubjectWindow(...a),
     getProfileMeta: (...a: unknown[]) => mockGetProfileMeta(...a),
+    countCatalogBySubjectBanca: (...a: unknown[]) =>
+      mockCountCatalogBySubjectBanca(...a),
   },
 }));
 
@@ -84,7 +89,14 @@ const exactLink = { knowledgeSubject: KS, method: "exact" as const };
 const noneLink = { knowledgeSubject: null, method: "none" as const };
 
 function perf(
-  over: Partial<{ subjectId: string; subjectName: string; total: number; correct: number; accuracyPct: number }> = {}
+  over: Partial<{
+    subjectId: string;
+    subjectName: string;
+    total: number;
+    correct: number;
+    accuracyPct: number;
+    byBanca?: Record<string, { total: number; correct: number }>;
+  }> = {}
 ) {
   return {
     subjectId: "ks1",
@@ -173,6 +185,131 @@ describe("AdaptivePlannerService", () => {
       expect(result[0]!.knowledgeSubjectName).toBeNull();
       expect(result[0]!.performance).toBeNull();
       expect(result[0]!.factors.accuracyPct).toBeNull();
+    });
+  });
+
+  describe("fator banca (Grupo C)", () => {
+    function setup({
+      banca,
+      perfRows,
+      catalogRows,
+    }: {
+      banca: string | null;
+      perfRows: unknown[];
+      catalogRows: unknown[];
+    }) {
+      mockListByUser.mockResolvedValue([SUBJECT]);
+      mockResolveBatch.mockResolvedValue(new Map([["Português", exactLink]]));
+      mockListTasks.mockResolvedValue([]); // idle 999
+      mockListAttemptsBySubjectWindow.mockResolvedValue({ total: 5, correct: 4 }); // estável
+      mockGetProfileMeta.mockResolvedValue(
+        banca ? { metaDiariaMin: 120, bancaPreferida: banca } : { metaDiariaMin: 120 }
+      );
+      mockGetPerformanceBySubject.mockResolvedValue(perfRows);
+      mockCountCatalogBySubjectBanca.mockResolvedValue(catalogRows);
+    }
+
+    it("banca alvo com alta relevância eleva a prioridade (bancaScore > 0)", async () => {
+      setup({
+        banca: "CESPE",
+        perfRows: [perf({ byBanca: { CESPE: { total: 10, correct: 9 } } })],
+        catalogRows: [{ subjectId: "ks1", banca: "CESPE", total: 20 }],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      // Sem banca seria prioridade 1 (90% de acerto); relevância 1.0 → +1 → 2
+      expect(r!.factors.bancaTarget).toBe("CESPE");
+      expect(r!.factors.bancaRelevance).toBe(1);
+      expect(r!.factors.bancaScore).toBe(1);
+      expect(r!.priority).toBe(2);
+    });
+
+    it("banca diferente (sem incidência da banca alvo) reduz a prioridade", async () => {
+      setup({
+        banca: "FGV",
+        perfRows: [
+          perf({
+            total: 5,
+            correct: 0,
+            accuracyPct: 0,
+            byBanca: { CESPE: { total: 5, correct: 0 } },
+          }),
+        ],
+        catalogRows: [{ subjectId: "ks1", banca: "CESPE", total: 20 }],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      // Base 4 (0% de acerto); relevância 0 para FGV → bancaScore -1 → 3
+      expect(r!.factors.bancaRelevance).toBe(0);
+      expect(r!.factors.bancaScore).toBe(-1);
+      expect(r!.priority).toBe(3);
+    });
+
+    it("sem banca_preferida mantém o comportamento do Grupo B (regressão)", async () => {
+      setup({
+        banca: null,
+        perfRows: [perf()], // 90% → prioridade 1 no Grupo B
+        catalogRows: [{ subjectId: "ks1", banca: "CESPE", total: 20 }],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      expect(r!.factors.bancaTarget).toBeNull();
+      expect(r!.factors.bancaRelevance).toBeNull();
+      expect(r!.factors.bancaScore).toBe(0);
+      expect(r!.priority).toBe(1); // idêntico ao Grupo B
+    });
+
+    it("catálogo sem questões da banca alvo → relevância 0 (bancaScore -1)", async () => {
+      setup({
+        banca: "CESPE",
+        perfRows: [perf({ byBanca: {} })],
+        catalogRows: [{ subjectId: "ks1", banca: "VUNESP", total: 20 }],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      expect(r!.factors.bancaRelevance).toBe(0);
+      expect(r!.factors.bancaScore).toBe(-1);
+    });
+
+    it("combina desempenho + banca: relevância alta da banca eleva a prioridade", async () => {
+      const matematica = { ...SUBJECT, id: "s2", name: "Matemática", color: "#14b8a6" };
+      const ksMatematica = { ...KS, id: "ks2", name: "Matemática", slug: "matematica" };
+
+      mockListByUser.mockResolvedValue([SUBJECT, matematica]);
+      mockResolveBatch.mockResolvedValue(
+        new Map([
+          ["Português", exactLink],
+          ["Matemática", { knowledgeSubject: ksMatematica, method: "exact" as const }],
+        ])
+      );
+      mockListTasks.mockResolvedValue([]);
+      mockListAttemptsBySubjectWindow.mockResolvedValue({ total: 5, correct: 4 });
+      mockGetProfileMeta.mockResolvedValue({ metaDiariaMin: 120, bancaPreferida: "CESPE" });
+      mockGetPerformanceBySubject.mockResolvedValue([
+        perf(), // Português 90%, sem incidência CESPE
+        perf({
+          subjectId: "ks2",
+          subjectName: "Matemática",
+          total: 10,
+          correct: 2,
+          accuracyPct: 20,
+          byBanca: { CESPE: { total: 10, correct: 2 } },
+        }),
+      ]);
+      mockCountCatalogBySubjectBanca.mockResolvedValue([
+        { subjectId: "ks1", banca: "FGV", total: 20 }, // Português: CESPE 0%
+        { subjectId: "ks2", banca: "CESPE", total: 20 }, // Matemática: CESPE 100%
+      ]);
+
+      const result = await AdaptivePlannerService.recalculatePriorities("u1");
+      const pt = result.find((r) => r.subjectId === "s1")!;
+      const mt = result.find((r) => r.subjectId === "s2")!;
+
+      // Matemática: baixo acerto + alta relevância da banca → prioridade alta
+      expect(mt.factors.bancaScore).toBe(1);
+      expect(mt.priority).toBeGreaterThan(pt.priority);
+      // Português: boa performance mas a banca não incide → não é puxado para cima
+      expect(pt.factors.bancaScore).toBe(-1);
     });
   });
 
