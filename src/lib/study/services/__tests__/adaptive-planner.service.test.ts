@@ -20,6 +20,7 @@ const mockGetProfileMeta = vi.fn();
 const mockGetPerformanceBySubject = vi.fn();
 const mockResolveBatch = vi.fn();
 const mockCountCatalogBySubjectBanca = vi.fn().mockResolvedValue([]);
+const mockGetEditalContext = vi.fn().mockResolvedValue(null);
 
 vi.mock("../../repositories/study-subject.repository", () => ({
   StudySubjectRepository: {
@@ -48,6 +49,7 @@ vi.mock("@/lib/analytics/repositories/aggregation.repository", () => ({
     getProfileMeta: (...a: unknown[]) => mockGetProfileMeta(...a),
     countCatalogBySubjectBanca: (...a: unknown[]) =>
       mockCountCatalogBySubjectBanca(...a),
+    getEditalContext: (...a: unknown[]) => mockGetEditalContext(...a),
   },
 }));
 
@@ -310,6 +312,113 @@ describe("AdaptivePlannerService", () => {
       expect(mt.priority).toBeGreaterThan(pt.priority);
       // Português: boa performance mas a banca não incide → não é puxado para cima
       expect(pt.factors.bancaScore).toBe(-1);
+    });
+  });
+
+  describe("fator edital (Grupo D)", () => {
+    function setup({
+      edital,
+      perfRows,
+    }: {
+      edital: unknown;
+      perfRows: unknown[];
+    }) {
+      mockListByUser.mockResolvedValue([SUBJECT]);
+      mockResolveBatch.mockResolvedValue(new Map([["Português", exactLink]]));
+      mockListTasks.mockResolvedValue([]); // idle 999
+      mockListAttemptsBySubjectWindow.mockResolvedValue({ total: 5, correct: 4 });
+      mockGetProfileMeta.mockResolvedValue({ metaDiariaMin: 120 });
+      mockGetPerformanceBySubject.mockResolvedValue(perfRows);
+      mockCountCatalogBySubjectBanca.mockResolvedValue([]);
+      mockGetEditalContext.mockResolvedValue(edital);
+    }
+
+    it("sem contexto de edital → editalScore 0 e prioridade igual ao Grupo C", async () => {
+      setup({
+        edital: null,
+        perfRows: [perf({ total: 40, correct: 19, accuracyPct: 47.5 })],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      expect(r!.factors.editalContestId).toBeNull();
+      expect(r!.factors.editalWeight).toBeNull();
+      expect(r!.factors.editalShare).toBeNull();
+      expect(r!.factors.editalScore).toBe(0);
+      expect(r!.priority).toBe(2); // idêntico ao Grupo C (banca neutra)
+    });
+
+    it("matéria sem notice_subject no edital → neutro", async () => {
+      setup({
+        edital: {
+          contestId: "c1",
+          positionId: null,
+          rows: [{ knowledgeSubjectId: "ks2", weight: 80 }], // ks1 não listada
+        },
+        perfRows: [perf({ total: 40, correct: 19, accuracyPct: 47.5 })],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      expect(r!.factors.editalWeight).toBeNull();
+      expect(r!.factors.editalScore).toBe(0);
+      expect(r!.priority).toBe(2);
+    });
+
+    it("weight = 0 → neutro (NÃO penaliza)", async () => {
+      setup({
+        edital: {
+          contestId: "c1",
+          positionId: null,
+          rows: [{ knowledgeSubjectId: "ks1", weight: 0 }],
+        },
+        perfRows: [perf({ total: 40, correct: 19, accuracyPct: 47.5 })],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      expect(r!.factors.editalWeight).toBe(0);
+      expect(r!.factors.editalShare).toBe(0);
+      expect(r!.factors.editalScore).toBe(0);
+      expect(r!.priority).toBe(2);
+    });
+
+    it("weight > 0 → share normalizado e score aditivo aplicado", async () => {
+      // ks1 = 20 de 100 → share 0.2 → editalScore (0.2-0.5)*2 = -0.6
+      setup({
+        edital: {
+          contestId: "c1",
+          positionId: "p1",
+          rows: [
+            { knowledgeSubjectId: "ks1", weight: 20 },
+            { knowledgeSubjectId: "ks2", weight: 80 },
+          ],
+        },
+        perfRows: [perf({ total: 40, correct: 19, accuracyPct: 47.5 })],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      expect(r!.factors.editalContestId).toBe("c1");
+      expect(r!.factors.editalWeight).toBe(20);
+      expect(r!.factors.editalShare).toBe(0.2);
+      expect(r!.factors.editalScore).toBe(-0.6);
+      // base 2 (47.5%) + 0 (banca) - 0.6 (edital) = 1.4 → 1
+      expect(r!.priority).toBe(1);
+    });
+
+    it("position específica → peso do cargo utilizado (via contexto)", async () => {
+      setup({
+        edital: {
+          contestId: "c1",
+          positionId: "p1",
+          rows: [{ knowledgeSubjectId: "ks1", weight: 60 }],
+        },
+        perfRows: [perf({ total: 40, correct: 19, accuracyPct: 47.5 })],
+      });
+
+      const [r] = await AdaptivePlannerService.recalculatePriorities("u1");
+      // cargo específico: ks1 = 60/60 → share 1.0 → score +1 → 2+1=3
+      expect(r!.factors.editalWeight).toBe(60);
+      expect(r!.factors.editalShare).toBe(1);
+      expect(r!.factors.editalScore).toBe(1);
+      expect(r!.priority).toBe(3);
     });
   });
 

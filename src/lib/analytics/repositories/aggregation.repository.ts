@@ -18,6 +18,8 @@ import {
 import { aiUsage } from "@/db/schema/ai";
 import { knowledgeSubjects } from "@/db/schema/knowledge";
 import { profiles } from "@/db/schema/identity";
+import { editais, noticeSubjects } from "@/db/schema/contest";
+import type { SQL } from "drizzle-orm";
 
 // ============================================================
 // Tipos de retorno (formas agregadas do domínio)
@@ -274,5 +276,93 @@ export const AggregationRepository = {
       .where(eq(profiles.id, userId))
       .limit(1);
     return row ?? null;
+  },
+
+  /**
+   * Contexto de edital do usuário (Grupo D): edital vigente+publicado do
+   * concurso vinculado + pesos de matéria do escopo correto.
+   * - Sem contest_id no perfil → null (neutro).
+   * - Sem edital publicado + is_current → null (neutro).
+   * - position_id preenchido → pesos do cargo; sem pesos do cargo → fallback geral.
+   * - position_id NULL → pesos gerais (position_id NULL).
+   * - Sem notice_subjects no escopo → null (neutro).
+   */
+  async getEditalContext(
+    userId: string
+  ): Promise<
+    | {
+        contestId: string;
+        positionId: string | null;
+        rows: Array<{ knowledgeSubjectId: string; weight: number }>;
+      }
+    | null
+  > {
+    const [profile] = await db
+      .select({
+        contestId: profiles.contestId,
+        positionId: profiles.positionId,
+      })
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
+    if (!profile?.contestId) return null;
+
+    const [edital] = await db
+      .select({ id: editais.id })
+      .from(editais)
+      .where(
+        and(
+          eq(editais.contestId, profile.contestId),
+          eq(editais.isCurrent, true),
+          eq(editais.status, "publicado"),
+          isNull(editais.deletedAt)
+        )
+      )
+      .limit(1);
+    if (!edital) return null;
+
+    const selectNoticeRows = async (conditions: SQL[]) =>
+      db
+        .select({
+          knowledgeSubjectId: noticeSubjects.knowledgeSubjectId,
+          weight: noticeSubjects.weight,
+        })
+        .from(noticeSubjects)
+        .where(and(...conditions))
+        .limit(5000);
+
+    const baseConditions: SQL[] = [
+      eq(noticeSubjects.editalId, edital.id),
+      eq(noticeSubjects.status, "active"),
+      isNull(noticeSubjects.deletedAt),
+    ];
+
+    // Escopo correto (DD-020): cargo específico se houver; senão geral.
+    let rows: Array<{ knowledgeSubjectId: string; weight: number }> = [];
+    if (profile.positionId) {
+      rows = await selectNoticeRows([
+        ...baseConditions,
+        eq(noticeSubjects.positionId, profile.positionId),
+      ]);
+      if (rows.length === 0) {
+        // Fallback: sem pesos do cargo → pesos gerais (position_id NULL).
+        rows = await selectNoticeRows([
+          ...baseConditions,
+          isNull(noticeSubjects.positionId),
+        ]);
+      }
+    } else {
+      rows = await selectNoticeRows([
+        ...baseConditions,
+        isNull(noticeSubjects.positionId),
+      ]);
+    }
+
+    if (rows.length === 0) return null;
+    return {
+      contestId: profile.contestId,
+      positionId: profile.positionId ?? null,
+      rows,
+    };
   },
 };

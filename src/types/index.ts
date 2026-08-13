@@ -187,6 +187,11 @@ export interface PlannerPriorityFactor {
   banca_target: string | null;
   banca_relevance: number | null;
   banca_score: number;
+  /** Contexto de edital (Grupo D) — null/0 quando não há edital vigente (equivale ao Grupo C). */
+  edital_contest_id: string | null;
+  edital_weight: number | null;
+  edital_share: number | null;
+  edital_score: number;
 }
 
 export interface PlannerPriority {

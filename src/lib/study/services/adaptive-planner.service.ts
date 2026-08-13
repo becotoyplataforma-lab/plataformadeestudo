@@ -50,12 +50,38 @@ export interface PriorityFactors {
   bancaTarget: string | null;
   bancaRelevance: number | null;
   bancaScore: number;
+  /** Contexto de edital (Grupo D) — null/0 quando não há edital vigente (equivale ao Grupo C). */
+  editalContestId: string | null;
+  /** Peso bruto da matéria no edital vigente (null = matéria sem notice_subject). */
+  editalWeight: number | null;
+  /** Share normalizado no escopo (weight/soma) — null quando neutro. */
+  editalShare: number | null;
+  /** Fator aditivo -1..+1 (0 = neutro). */
+  editalScore: number;
 }
 
 /** Contexto de banca para o cálculo de prioridade (Grupo C). */
 export interface BancaContext {
   target: string | null;
   relevance: number | null;
+}
+
+/** Contexto de edital para o cálculo de prioridade (Grupo D). */
+export interface EditalContext {
+  contestId: string;
+  positionId: string | null;
+  /** Peso bruto por knowledge_subject_id do escopo vigente. */
+  weights: Map<string, number>;
+  /** Soma dos pesos do escopo (normalização do share). */
+  totalWeight: number;
+}
+
+/** Fator de edital resolvido por matéria (neutro quando score = 0). */
+export interface EditalFactor {
+  contestId: string | null;
+  weight: number | null;
+  share: number | null;
+  score: number;
 }
 
 export interface WeekPlanResult {
@@ -108,7 +134,8 @@ const DEFAULT_PERFORMANCE: SubjectPerformance = {
 function calculatePriority(
   perf: SubjectPerformance | null,
   daysSinceLastTask: number,
-  banca: BancaContext = { target: null, relevance: null }
+  banca: BancaContext = { target: null, relevance: null },
+  edital: EditalFactor | null = null
 ): { priority: number; factors: PriorityFactors } {
   const p = perf ?? { ...DEFAULT_PERFORMANCE };
 
@@ -138,8 +165,15 @@ function calculatePriority(
       ? (banca.relevance - 0.5) * 2 // relevância 0..1 → ajuste -1..+1
       : 0;
 
+  // 6. Fator edital (Grupo D) — ADITIVO. Neutro (0) quando não há edital
+  //    vigente, matéria sem notice_subject ou weight = 0 → Grupo C idêntico.
+  const editalScore = edital?.score ?? 0;
+
   // Arredonda para 1-5
-  const priority = Math.max(1, Math.min(5, Math.round(raw + bancaScore)));
+  const priority = Math.max(
+    1,
+    Math.min(5, Math.round(raw + bancaScore + editalScore))
+  );
 
   return {
     priority,
@@ -156,6 +190,10 @@ function calculatePriority(
       bancaRelevance:
         banca.relevance !== null ? Math.round(banca.relevance * 100) / 100 : null,
       bancaScore: Math.round(bancaScore * 100) / 100,
+      editalContestId: edital?.contestId ?? null,
+      editalWeight: edital?.weight ?? null,
+      editalShare: edital?.share ?? null,
+      editalScore: Math.round(editalScore * 100) / 100,
     },
   };
 }
@@ -186,6 +224,46 @@ function computeBancaRelevance(
   if (attemptShare === null) return catalogShare;
   if (catalogShare === null) return attemptShare;
   return 0.6 * catalogShare + 0.4 * attemptShare;
+}
+
+/**
+ * Resolve o fator de edital por matéria (Grupo D).
+ * Regras:
+ *  - sem edital vigente/contest → neutro (score 0);
+ *  - matéria sem notice_subject no escopo → neutro;
+ *  - weight = 0 → neutro (NÃO penaliza — NUNCA (0-0.5)*2);
+ *  - weight > 0 → share = weight/soma(escopo); score = clamp((share-0.5)*2, -1, 1).
+ */
+function computeEditalFactor(
+  context: EditalContext | null,
+  knowledgeSubjectId: string | null
+): EditalFactor {
+  const base: EditalFactor = {
+    contestId: context?.contestId ?? null,
+    weight: null,
+    share: null,
+    score: 0,
+  };
+  if (!context || !knowledgeSubjectId) return base;
+
+  const weight = context.weights.get(knowledgeSubjectId);
+  if (weight === undefined || weight === 0) {
+    return {
+      ...base,
+      weight: weight ?? null,
+      share: weight === 0 ? 0 : null,
+      score: 0,
+    };
+  }
+
+  const share = weight / context.totalWeight;
+  const score = Math.max(-1, Math.min(1, (share - 0.5) * 2));
+  return {
+    ...base,
+    weight,
+    share: Math.round(share * 100) / 100,
+    score: Math.round(score * 100) / 100,
+  };
 }
 
 /** Calcula tendência comparando accuracy dos últimos 7 dias vs 7-14 dias atrás. */
@@ -284,6 +362,19 @@ export const AdaptivePlannerService = {
       catalogBySubject.set(c.subjectId, entry);
     }
 
+    // 4b. Contexto de edital (Grupo D): edital vigente + pesos por matéria.
+    const editalCtx = await AggregationRepository.getEditalContext(userId);
+    const editalContext: EditalContext | null = editalCtx
+      ? {
+          contestId: editalCtx.contestId,
+          positionId: editalCtx.positionId,
+          weights: new Map(
+            editalCtx.rows.map((r) => [r.knowledgeSubjectId, r.weight])
+          ),
+          totalWeight: editalCtx.rows.reduce((acc, r) => acc + r.weight, 0),
+        }
+      : null;
+
     // 5. Calcular prioridade para cada disciplina
     const results: SubjectPriority[] = [];
 
@@ -307,14 +398,23 @@ export const AdaptivePlannerService = {
           )
         : null;
       const banca = { target: bancaTarget, relevance: bancaRelevance };
-      const { priority, factors } = calculatePriority(perf, idle, banca);
+      const editalFactor = computeEditalFactor(
+        editalContext,
+        link.knowledgeSubject?.id ?? null
+      );
+      const { priority, factors } = calculatePriority(perf, idle, banca, editalFactor);
 
       // Tendência real
       const trend = await calculateTrend(userId, link);
       factors.trend = trend;
 
       // Recalcular com tendência real
-      const { priority: finalPriority } = calculatePriority(perf, idle, banca);
+      const { priority: finalPriority } = calculatePriority(
+        perf,
+        idle,
+        banca,
+        editalFactor
+      );
       // Ajusta para incorporar tendência
       let adjustedPriority = finalPriority;
       if (trend === "down") adjustedPriority = Math.min(5, adjustedPriority + 1);

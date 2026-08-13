@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
           banca_target: p.factors.bancaTarget,
           banca_relevance: p.factors.bancaRelevance,
           banca_score: p.factors.bancaScore,
+          edital_contest_id: p.factors.editalContestId,
+          edital_weight: p.factors.editalWeight,
+          edital_share: p.factors.editalShare,
+          edital_score: p.factors.editalScore,
         },
       })),
     });
