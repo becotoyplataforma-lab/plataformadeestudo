@@ -100,6 +100,17 @@ function priorityReason(p: PlannerPriority): string {
     else if (s < -0.05) parts.push(`banca ${p.factors.banca_target} — baixa incidência`);
     else parts.push(`banca ${p.factors.banca_target} — incidência média`);
   }
+  // Edital (Grupo D) — só aparece quando há concurso vinculado e peso no edital
+  if (
+    p.factors.edital_contest_id &&
+    p.factors.edital_weight !== null &&
+    p.factors.edital_weight > 0
+  ) {
+    const s = p.factors.edital_score;
+    if (s > 0.05) parts.push("edital — peso alto");
+    else if (s < -0.05) parts.push("edital — peso baixo");
+    else parts.push("edital — peso médio");
+  }
   return parts.join(" · ");
 }
 

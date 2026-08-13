@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   }
 
   // --- Perfil + contexto ---
-  const profile = await getProfile(db, userId);
+  const profile = await getProfile(userId);
   const history = await getRecentContext(db, userId, activeSessionId, 10);
 
   const systemTemplate = await prompts.professorSystem();

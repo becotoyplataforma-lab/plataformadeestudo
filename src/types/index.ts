@@ -19,11 +19,26 @@ export interface Profile {
   nivel: UserLevel;
   concurso_alvo: string | null;
   banca_preferida: string | null;
+  contest_id: string | null;
+  position_id: string | null;
   meta_diaria_min: number;
   modelo_ia_padrao: AIModel;
   is_admin: boolean;
   created_at: string;
   updated_at: string;
+}
+
+/** Opção de concurso publicado (catálogo Contest). */
+export interface ContestOption {
+  id: string;
+  title: string;
+}
+
+/** Cargo/posição de um concurso (catálogo Contest). */
+export interface PositionOption {
+  id: string;
+  contest_id: string;
+  name: string;
 }
 
 export interface Subject {

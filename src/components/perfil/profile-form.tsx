@@ -15,9 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { actionUpdateProfile } from "@/app/(dashboard)/perfil/actions";
-import type { Profile } from "@/types";
+import type { ContestOption, PositionOption, Profile } from "@/types";
 
-export function ProfileForm({ profile }: { profile: Profile }) {
+export function ProfileForm({
+  profile,
+  contests,
+  positions,
+}: {
+  profile: Profile;
+  contests: ContestOption[];
+  positions: PositionOption[];
+}) {
   const [fullName, setFullName] = React.useState(profile.full_name ?? "");
   const [nivel, setNivel] = React.useState<Profile["nivel"]>(profile.nivel);
   const [concurso, setConcurso] = React.useState(profile.concurso_alvo ?? "");
@@ -27,6 +35,16 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     profile.modelo_ia_padrao
   );
   const [loading, setLoading] = React.useState(false);
+  const [contestId, setContestId] = React.useState(profile.contest_id ?? "");
+  const [positionId, setPositionId] = React.useState(profile.position_id ?? "");
+
+  function onContestChange(v: string) {
+    setContestId(v);
+    // Se o cargo atual não pertence ao novo concurso, limpa (evita combinação inválida).
+    if (positionId && !positions.some((p) => p.id === positionId && p.contest_id === v)) {
+      setPositionId("");
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,6 +54,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       nivel,
       concurso_alvo: concurso || null,
       banca_preferida: banca || null,
+      contest_id: contestId || null,
+      position_id: positionId || null,
       meta_diaria_min: meta,
       modelo_ia_padrao: modelo,
     });
@@ -145,6 +165,56 @@ export function ProfileForm({ profile }: { profile: Profile }) {
                 <SelectItem value="pro">V4 Pro — raciocínio profundo</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Concurso e Cargo</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="concurso-id">Concurso</Label>
+            <Select value={contestId} onValueChange={onContestChange}>
+              <SelectTrigger id="concurso-id">
+                <SelectValue placeholder="Nenhum concurso selecionado" />
+              </SelectTrigger>
+              <SelectContent>
+                {contests.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Vincular um concurso faz o planejamento considerar o peso do edital.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cargo-id">Cargo / Posição</Label>
+            <Select
+              value={positionId}
+              onValueChange={setPositionId}
+              disabled={!contestId}
+            >
+              <SelectTrigger id="cargo-id">
+                <SelectValue placeholder="Cargo (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {positions
+                  .filter((p) => p.contest_id === contestId)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Opcional — sem cargo, vale o peso geral do edital.
+            </p>
           </div>
         </CardContent>
       </Card>

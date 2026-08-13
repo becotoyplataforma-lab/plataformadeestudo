@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/db/repositories/perfil";
+import { listPublishedContests, listPositions } from "@/lib/db/repositories/contest";
 import { ProfileForm } from "@/components/perfil/profile-form";
 
 export const metadata: Metadata = {
@@ -13,8 +13,11 @@ export default async function PerfilPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const db = await createClient();
-  const profile = await getProfile(db, session.user.id);
+  const [profile, contests, positions] = await Promise.all([
+    getProfile(session.user.id),
+    listPublishedContests(),
+    listPositions(),
+  ]);
   if (!profile) redirect("/login");
 
   return (
@@ -25,7 +28,7 @@ export default async function PerfilPage() {
           Gerencie seus dados e preferências de estudo.
         </p>
       </div>
-      <ProfileForm profile={profile} />
+      <ProfileForm profile={profile} contests={contests} positions={positions} />
     </div>
   );
 }

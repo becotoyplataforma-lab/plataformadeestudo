@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   if (!session?.user?.id) redirect("/login");
 
   const db = await createClient();
-  const profile = await getProfile(db, session.user.id);
+  const profile = await getProfile(session.user.id);
 
   // Calcula streak a partir das atividades do usuário
   let streakDays = 0;

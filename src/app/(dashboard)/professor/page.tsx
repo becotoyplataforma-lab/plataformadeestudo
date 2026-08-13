@@ -19,7 +19,7 @@ export default async function ProfessorPage() {
   const db = await createClient();
   const [sessions, profile, usage, subjects] = await Promise.all([
     listSessions(db, session.user.id),
-    getProfile(db, session.user.id),
+    getProfile(session.user.id),
     getAiUsage(session.user.id),
     db.from("knowledge_subjects").select("id, name").order("name"),
   ]);
