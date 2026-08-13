@@ -16,6 +16,7 @@ import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
   check,
+  foreignKey,
   index,
   integer,
   pgEnum,
@@ -26,17 +27,18 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { contests, positions } from "./contest";
+
+// Enum compartilhado de ciclo de vida — definido em ./enums.ts e reexportado
+// aqui para manter compatibilidade (evita import circular identity ⇄ contest).
+export { lifecycleStatus } from "./enums";
 
 // ============================================================
 // ENUMS
 // ============================================================
 
-/** Estado genérico de ciclo de vida (lifecycle_status). */
-export const lifecycleStatus = pgEnum("lifecycle_status", [
-  "active",
-  "inactive",
-  "archived",
-]);
+// lifecycleStatus (lifecycle_status) agora vive em ./enums.ts e é
+// reexportado no topo deste arquivo (evita import circular com Contest).
 
 /** Nível de conhecimento do aluno (user_level). */
 export const userLevel = pgEnum("user_level", [
@@ -80,6 +82,8 @@ export const profiles = pgTable(
     level: userLevel("level").notNull().default("iniciante"),
     concursoAlvo: text("concurso_alvo"),
     bancaPreferida: text("banca_preferida"),
+    contestId: uuid("contest_id"),
+    positionId: uuid("position_id"),
     metaDiariaMin: integer("meta_diaria_min").notNull().default(120),
     modeloIaPadrao: aiModel("modelo_ia_padrao").notNull().default("flash"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -91,6 +95,18 @@ export const profiles = pgTable(
   },
   (t) => [
     check("chk_profiles_meta_diaria", sql`${t.metaDiariaMin} between 15 and 720`),
+    // FKs do domínio Contest (espelho de database/contest/schema.sql):
+    foreignKey({
+      columns: [t.contestId],
+      foreignColumns: [contests.id],
+      name: "fk_profiles_contest",
+    }).onDelete("set null"),
+    // FK composta garante que position pertence ao contest (DD-023 4b).
+    foreignKey({
+      columns: [t.contestId, t.positionId],
+      foreignColumns: [positions.contestId, positions.id],
+      name: "fk_profiles_contest_position",
+    }).onDelete("set null"),
   ]
 );
 
@@ -135,6 +151,16 @@ export const profilesRelations = relations(profiles, ({ one }) => ({
   user: one(authUsers, {
     fields: [profiles.id],
     references: [authUsers.id],
+  }),
+  /** Concurso alvo (domínio Contest). */
+  contest: one(contests, {
+    fields: [profiles.contestId],
+    references: [contests.id],
+  }),
+  /** Cargo do concurso (composta — pertence ao contest). */
+  position: one(positions, {
+    fields: [profiles.contestId, profiles.positionId],
+    references: [positions.contestId, positions.id],
   }),
 }));
 
