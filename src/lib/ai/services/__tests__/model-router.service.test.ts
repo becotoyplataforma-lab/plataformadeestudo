@@ -12,7 +12,6 @@ describe("ModelRouterService", () => {
   it("respeita modelo explícito", () => {
     expect(ModelRouterService.route({ requested: "pro" })).toBe("pro");
     expect(ModelRouterService.route({ requested: "flash" })).toBe("flash");
-    expect(ModelRouterService.route({ requested: "muse" })).toBe("muse");
   });
 
   it("promove para pro quando complexo", () => {

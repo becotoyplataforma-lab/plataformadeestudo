@@ -47,53 +47,19 @@ interface DeepSeekStreamChunk {
   usage?: { prompt_tokens: number; completion_tokens: number };
 }
 
-/** Configuração de endpoint/chave por modelo (DeepSeek ↔ Muse/Meta). */
-function providerConfig(model: AIModel): {
-  baseUrl: string;
-  apiKey: string;
-  label: string;
-} {
-  if (model === "muse") {
-    if (!env.MUSE_API_KEY) {
-      throw new Error("MUSE_API_KEY não configurada no servidor.");
-    }
-    if (!env.MUSE_BASE_URL) {
-      throw new Error(
-        "MUSE_BASE_URL não configurada — informe o endpoint do modelo Muse 1.2 no .env."
-      );
-    }
-    return {
-      baseUrl: env.MUSE_BASE_URL,
-      apiKey: env.MUSE_API_KEY,
-      label: "Muse",
-    };
-  }
+function apiUrl() {
+  return `${env.DEEPSEEK_BASE_URL.replace(/\/$/, "")}/chat/completions`;
+}
+
+async function postJson<T>(body: unknown, signal?: AbortSignal): Promise<T> {
   if (!env.DEEPSEEK_API_KEY) {
     throw new Error("DEEPSEEK_API_KEY não configurada no servidor.");
   }
-  return {
-    baseUrl: env.DEEPSEEK_BASE_URL,
-    apiKey: env.DEEPSEEK_API_KEY,
-    label: "DeepSeek",
-  };
-}
-
-function apiUrl(model: AIModel) {
-  const cfg = providerConfig(model);
-  return `${cfg.baseUrl.replace(/\/$/, "")}/chat/completions`;
-}
-
-async function postJson<T>(
-  body: unknown,
-  model: AIModel,
-  signal?: AbortSignal
-): Promise<T> {
-  const cfg = providerConfig(model);
-  const res = await fetch(apiUrl(model), {
+  const res = await fetch(apiUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${cfg.apiKey}`,
+      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
     },
     body: JSON.stringify(body),
     signal,
@@ -102,7 +68,7 @@ async function postJson<T>(
   if (!res.ok) {
     const text = await res.text();
     throw new Error(
-      `${cfg.label} API erro ${res.status}: ${text.slice(0, 500)}`
+      `DeepSeek API erro ${res.status}: ${text.slice(0, 500)}`
     );
   }
   return res.json() as Promise<T>;
@@ -123,7 +89,6 @@ export async function chatCompletion(
       top_p: params.topP,
       stream: false,
     },
-    req.model,
     signal
   );
 
@@ -142,14 +107,16 @@ export async function streamChatCompletion(
   req: ChatCompletionRequest,
   signal?: AbortSignal
 ): Promise<Response> {
-  const cfg = providerConfig(req.model);
+  if (!env.DEEPSEEK_API_KEY) {
+    throw new Error("DEEPSEEK_API_KEY não configurada no servidor.");
+  }
   const params = MODEL_PARAMS[req.model];
 
-  const upstream = await fetch(apiUrl(req.model), {
+  const upstream = await fetch(apiUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${cfg.apiKey}`,
+      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
     },
     body: JSON.stringify({
       model: MODEL_NAMES[req.model],

@@ -19,7 +19,7 @@ export const RagRequestDtoSchema = z.object({
   subject_id: z.string().uuid().optional(),
   document_ids: z.array(z.string().uuid()).max(20).optional(),
   top_k: z.number().int().min(1).max(20).default(5),
-  model: z.enum(["flash", "pro", "muse"]).optional(),
+  model: z.enum(["flash", "pro"]).optional(),
 });
 export type RagRequestDto = OutputOf<typeof RagRequestDtoSchema>;
 
@@ -67,7 +67,7 @@ export const RagResponseDtoSchema = z.object({
     total: z.number().int().nonnegative(),
   }),
   latency_ms: z.number().int().nonnegative(),
-  model: z.enum(["flash", "pro", "muse"]),
+  model: z.enum(["flash", "pro"]),
   confidence: z.number().min(0).max(1),
 });
 export type RagResponseDto = OutputOf<typeof RagResponseDtoSchema>;

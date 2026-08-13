@@ -41,7 +41,7 @@ interface Props {
   profileLevel?: string | null;
   profileBanca?: string | null;
   profileConcurso?: string | null;
-  defaultModel: "flash" | "pro" | "muse";
+  defaultModel: "flash" | "pro";
   usage: { used: number; max: number; canSend: boolean };
   subjects: { id: string; name: string }[];
 }
@@ -69,9 +69,7 @@ export function ChatClient({
   const [activeSessionId, setActiveSessionId] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<LocalMessage[]>([]);
   const [input, setInput] = React.useState("");
-  const [model, setModel] = React.useState<"flash" | "pro" | "muse">(
-    defaultModel
-  );
+  const [model, setModel] = React.useState<"flash" | "pro">(defaultModel);
   const [subjectId, setSubjectId] = React.useState("none");
   const [sending, setSending] = React.useState(false);
   const [usageLeft, setUsageLeft] = React.useState(usage.max - usage.used);
@@ -320,16 +318,10 @@ export function ChatClient({
                 <Button variant="outline" size="sm" className="border-white/10 bg-white/5 text-slate-100 hover:bg-white/10">
                   {model === "flash" ? (
                     <Zap className="h-3.5 w-3.5 text-amber-400" />
-                  ) : model === "pro" ? (
-                    <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                   ) : (
-                    <Bot className="h-3.5 w-3.5 text-cyan-400" />
+                    <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                   )}
-                  {model === "flash"
-                    ? "V4 Flash"
-                    : model === "pro"
-                      ? "V4 Pro"
-                      : "Muse Spark 1.2"}
+                  {model === "flash" ? "V4 Flash" : "V4 Pro"}
                   <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -339,9 +331,6 @@ export function ChatClient({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setModel("pro")} className="text-slate-100 focus:bg-white/5">
                   <Sparkles className="h-4 w-4 text-violet-400" /> V4 Pro — raciocínio profundo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setModel("muse")} className="text-slate-100 focus:bg-white/5">
-                  <Bot className="h-4 w-4 text-cyan-400" /> Meta Muse Spark 1.2
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
