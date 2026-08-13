@@ -39,7 +39,10 @@ export interface Subject {
 export interface StudyTask {
   id: string;
   user_id: string;
-  subject_id: string | null;
+  /** Novo schema (planner): FK para study_subjects */
+  study_subject_id: string | null;
+  /** Legado (compat): FK para subjects — manter até migração total */
+  subject_id?: string | null;
   title: string;
   description: string | null;
   scheduled_date: string;
@@ -165,4 +168,34 @@ export interface EvolutionPoint {
   total: number;
   acertos: number;
   taxa: number;
+}
+
+// ============================================================
+// Planner Adaptativo (POST /api/study/planner/generate)
+// ============================================================
+
+export interface PlannerPriorityFactor {
+  accuracy_pct: number | null;
+  total_questions: number;
+  trend: "up" | "down" | "stable";
+  days_since_last_task: number;
+  accuracy_score: number;
+  volume_score: number;
+  trend_score: number;
+  idle_score: number;
+}
+
+export interface PlannerPriority {
+  subject_id: string;
+  subject_name: string;
+  knowledge_subject_name: string | null;
+  link_method: "exact" | "slug" | "none";
+  priority: number;
+  performance: { total: number; correct: number; accuracy_pct: number } | null;
+  factors: PlannerPriorityFactor;
+}
+
+export interface PlannerGenerateResponse {
+  tasks_created: number;
+  priorities: PlannerPriority[];
 }

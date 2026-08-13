@@ -21,3 +21,14 @@ export {
   type ReviewRating,
   type ReviewResult,
 } from "./review-schedule.service";
+export {
+  LinkResolverService,
+  type LinkResult,
+} from "./link-resolver.service";
+export {
+  AdaptivePlannerService,
+  type SubjectPriority,
+  type PriorityFactors,
+  type WeekPlanResult,
+  type GenerateInput,
+} from "./adaptive-planner.service";

@@ -7,7 +7,7 @@
  *
  * Não escreve nas tabelas de origem — apenas agrega para o dashboard.
  */
-import { and, desc, eq, gte, isNull, lte, lt } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, lte } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import {
   questionAttempts,
@@ -189,6 +189,33 @@ export const AggregationRepository = {
     for (const a of attempts) dates.push(a.at);
     for (const t of tasks) if (t.at) dates.push(t.at);
     return dates;
+  },
+
+  /** Tentativas de um usuário para uma matéria específica em janela temporal. */
+  async listAttemptsBySubjectWindow(
+    userId: string,
+    knowledgeSubjectId: string,
+    since: Date,
+    before?: Date,
+    limit = 5000
+  ): Promise<{ total: number; correct: number }> {
+    const conditions = [
+      eq(questionAttempts.userId, userId),
+      eq(questions.knowledgeSubjectId, knowledgeSubjectId),
+      gte(questionAttempts.createdAt, since),
+    ];
+    if (before) conditions.push(lt(questionAttempts.createdAt, before));
+
+    const rows = await db
+      .select({ isCorrect: questionAttempts.isCorrect })
+      .from(questionAttempts)
+      .innerJoin(questions, eq(questionAttempts.questionId, questions.id))
+      .where(and(...conditions))
+      .limit(limit);
+
+    const total = rows.length;
+    const correct = rows.filter((r) => r.isCorrect).length;
+    return { total, correct };
   },
 
   /** Meta diária do usuário (profiles.meta_diaria_min). */

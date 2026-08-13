@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
     const from = searchParams.get("from") ?? undefined;
     const to = searchParams.get("to") ?? undefined;
 
-    const tasks = await StudyPlannerService.listTasks(session.user.id, {
+    // listTasksWithSubject retorna as tarefas já com a disciplina vinculada
+    // (study_subjects) — mesmo layer do AdaptivePlannerService.
+    const tasks = await StudyPlannerService.listTasksWithSubject(session.user.id, {
       status: status as "pendente" | "concluida" | "adiada" | undefined,
       from,
       to,

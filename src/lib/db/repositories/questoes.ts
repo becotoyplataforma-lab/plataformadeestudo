@@ -15,7 +15,9 @@ export async function listQuestions(
 
   let query = db
     .from("questions")
-    .select("*, subject:knowledge_subjects(*)", { count: "exact" })
+    .select("*, subject:knowledge_subjects(*), options:question_options(*)", {
+      count: "exact",
+    })
     .eq("is_public", true)
     .eq("status", "publicada")
     .order("created_at", { ascending: false })

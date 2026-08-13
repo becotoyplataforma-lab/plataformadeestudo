@@ -107,6 +107,47 @@ export const StudyPlannerService = {
     });
   },
 
+  /**
+   * Lista tarefas do usuário já no formato consumido pelo cronograma
+   * (snake_case + disciplina vinculada de study_subjects).
+   * Mesmo layer do AdaptivePlannerService — mantém a UI consistente
+   * com as tarefas geradas pelo planejador.
+   */
+  async listTasksWithSubject(
+    userId: string,
+    opts: { status?: TaskStatus; from?: string; to?: string } = {}
+  ) {
+    const rows = await StudyTaskRepository.listByUserWithSubject(userId, {
+      status: opts.status,
+      from: opts.from ? new Date(opts.from) : undefined,
+      to: opts.to ? new Date(opts.to) : undefined,
+    });
+
+    return rows.map((t) => ({
+      id: t.id,
+      user_id: t.userId,
+      study_subject_id: t.studySubjectId,
+      title: t.title,
+      description: t.description,
+      scheduled_date: t.scheduledDate.toISOString().slice(0, 10),
+      duration_min: t.durationMin,
+      status: t.status,
+      completed_at: t.completedAt ? t.completedAt.toISOString() : null,
+      created_at: t.createdAt.toISOString(),
+      subject: t.subject
+        ? {
+            id: t.subject.id,
+            user_id: userId,
+            name: t.subject.name,
+            color: t.subject.color,
+            priority: t.subject.priority,
+            carga_horaria_total: t.subject.carga_horaria_total,
+            created_at: t.subject.created_at.toISOString(),
+          }
+        : null,
+    }));
+  },
+
   async createTask(
     userId: string,
     input: {

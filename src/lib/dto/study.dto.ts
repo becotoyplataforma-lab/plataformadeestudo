@@ -318,6 +318,51 @@ export function mapQuestionToDto(
   };
 }
 
+// ============================================================
+// Planner (Adaptive)
+// ============================================================
+
+export const PlannerGenerateRequestDtoSchema = z.object({
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+  active_days: z.array(z.number().int().min(0).max(6)).min(1).max(7).default([1, 2, 3, 4, 5]),
+});
+export type PlannerGenerateRequestDto = OutputOf<typeof PlannerGenerateRequestDtoSchema>;
+
+export const PlannerPriorityFactorDtoSchema = z.object({
+  accuracy_pct: z.number().nullable(),
+  total_questions: z.number().int(),
+  trend: z.enum(["up", "down", "stable"]),
+  days_since_last_task: z.number().int(),
+  accuracy_score: z.number(),
+  volume_score: z.number(),
+  trend_score: z.number(),
+  idle_score: z.number(),
+});
+export type PlannerPriorityFactorDto = OutputOf<typeof PlannerPriorityFactorDtoSchema>;
+
+export const PlannerSubjectPriorityDtoSchema = z.object({
+  subject_id: z.string().uuid(),
+  subject_name: z.string(),
+  knowledge_subject_name: z.string().nullable(),
+  link_method: z.enum(["exact", "slug", "none"]),
+  priority: z.number().int().min(1).max(5),
+  performance: z
+    .object({
+      total: z.number().int(),
+      correct: z.number().int(),
+      accuracy_pct: z.number(),
+    })
+    .nullable(),
+  factors: PlannerPriorityFactorDtoSchema,
+});
+export type PlannerSubjectPriorityDto = OutputOf<typeof PlannerSubjectPriorityDtoSchema>;
+
+export const PlannerGenerateResponseDtoSchema = z.object({
+  tasks_created: z.number().int(),
+  priorities: z.array(PlannerSubjectPriorityDtoSchema),
+});
+export type PlannerGenerateResponseDto = OutputOf<typeof PlannerGenerateResponseDtoSchema>;
+
 export function mapAttemptToDto(
   row: {
     id: string;

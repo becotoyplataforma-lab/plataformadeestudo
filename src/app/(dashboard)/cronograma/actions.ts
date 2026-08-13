@@ -2,15 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
-import {
-  createSubject,
-  createTask,
-  deleteSubject,
-  deleteTask,
-  toggleTask,
-  updateTask,
-} from "@/lib/db/repositories/cronograma";
+import { StudyPlannerService } from "@/lib/study/services/study-planner.service";
 import {
   createSubjectSchema,
   createTaskSchema,
@@ -34,8 +26,13 @@ export async function actionCreateTask(
     if (!parsed.success) {
       return { success: false, message: parsed.error.issues[0]?.message ?? "Dados inválidos" };
     }
-    const db = await createClient();
-    await createTask(db, userId, parsed.data);
+    await StudyPlannerService.createTask(userId, {
+      study_subject_id: parsed.data.subject_id ?? undefined,
+      title: parsed.data.title,
+      description: parsed.data.description ?? undefined,
+      scheduled_date: parsed.data.scheduled_date,
+      duration_min: parsed.data.duration_min,
+    });
     revalidatePath("/cronograma");
     revalidatePath("/dashboard");
     return { success: true, message: "Tarefa criada!" };
@@ -48,8 +45,11 @@ export async function actionCreateTask(
 export async function actionToggleTask(taskId: string, currentStatus: string): Promise<ActionResult> {
   try {
     const userId = await requireUser();
-    const db = await createClient();
-    await toggleTask(db, userId, taskId, currentStatus);
+    if (currentStatus === "concluida") {
+      await StudyPlannerService.updateTask(userId, taskId, { status: "pendente" });
+    } else {
+      await StudyPlannerService.completeTask(userId, taskId);
+    }
     revalidatePath("/cronograma");
     revalidatePath("/dashboard");
     return { success: true, message: "Status atualizado." };
@@ -69,14 +69,12 @@ export async function actionUpdateTask(
     if (!parsed.success) {
       return { success: false, message: parsed.error.issues[0]?.message ?? "Dados inválidos" };
     }
-    const db = await createClient();
-    await updateTask(db, userId, taskId, {
-      title: parsed.data.title,
-      description: parsed.data.description ?? null,
-      subject_id: parsed.data.subject_id ?? null,
-      scheduled_date: parsed.data.scheduled_date,
-      duration_min: parsed.data.duration_min,
-      status: parsed.data.status,
+    await StudyPlannerService.updateTask(userId, taskId, {
+      ...(parsed.data.title !== undefined && { title: parsed.data.title }),
+      ...(parsed.data.description !== undefined && { description: parsed.data.description ?? undefined }),
+      ...(parsed.data.scheduled_date !== undefined && { scheduled_date: parsed.data.scheduled_date }),
+      ...(parsed.data.duration_min !== undefined && { duration_min: parsed.data.duration_min }),
+      ...(parsed.data.status !== undefined && { status: parsed.data.status }),
     });
     revalidatePath("/cronograma");
     return { success: true, message: "Tarefa atualizada." };
@@ -89,8 +87,7 @@ export async function actionUpdateTask(
 export async function actionDeleteTask(taskId: string): Promise<ActionResult> {
   try {
     const userId = await requireUser();
-    const db = await createClient();
-    await deleteTask(db, userId, taskId);
+    await StudyPlannerService.deleteTask(userId, taskId);
     revalidatePath("/cronograma");
     return { success: true, message: "Tarefa removida." };
   } catch (error) {
@@ -108,8 +105,12 @@ export async function actionCreateSubject(
     if (!parsed.success) {
       return { success: false, message: parsed.error.issues[0]?.message ?? "Dados inválidos" };
     }
-    const db = await createClient();
-    await createSubject(db, userId, parsed.data);
+    await StudyPlannerService.createSubject(userId, {
+      name: parsed.data.name,
+      color: parsed.data.color ?? undefined,
+      priority: parsed.data.priority,
+      carga_horaria_total: parsed.data.carga_horaria_total,
+    });
     revalidatePath("/cronograma");
     return { success: true, message: "Disciplina criada!" };
   } catch (error) {
@@ -121,8 +122,7 @@ export async function actionCreateSubject(
 export async function actionDeleteSubject(subjectId: string): Promise<ActionResult> {
   try {
     const userId = await requireUser();
-    const db = await createClient();
-    await deleteSubject(db, userId, subjectId);
+    await StudyPlannerService.deleteSubject(userId, subjectId);
     revalidatePath("/cronograma");
     return { success: true, message: "Disciplina removida." };
   } catch (error) {

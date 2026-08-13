@@ -11,6 +11,7 @@ const mockUpdate = vi.fn();
 const mockSoftDelete = vi.fn();
 const mockComplete = vi.fn();
 const mockListTasks = vi.fn();
+const mockListByUserWithSubject = vi.fn();
 
 vi.mock("../../repositories/study-subject.repository", () => ({
   StudySubjectRepository: {
@@ -26,6 +27,7 @@ vi.mock("../../repositories/study-subject.repository", () => ({
 vi.mock("../../repositories/study-task.repository", () => ({
   StudyTaskRepository: {
     listByUser: (...a: unknown[]) => mockListTasks(...a),
+    listByUserWithSubject: (...a: unknown[]) => mockListByUserWithSubject(...a),
     create: (...a: unknown[]) => mockCreate(...a),
     findById: (...a: unknown[]) => mockFindById(...a),
     update: (...a: unknown[]) => mockUpdate(...a),
@@ -124,6 +126,66 @@ describe("StudyPlannerService", () => {
       await expect(StudyPlannerService.completeTask("u1", "t1")).rejects.toMatchObject({
         code: "NOT_FOUND",
       });
+    });
+  });
+
+  describe("listTasksWithSubject", () => {
+    it("retorna tarefas com disciplina vinculada (formato do cronograma)", async () => {
+      mockListByUserWithSubject.mockResolvedValue([
+        {
+          id: "t1",
+          userId: "u1",
+          studySubjectId: "s1",
+          title: "Estudar Português",
+          description: null,
+          scheduledDate: new Date("2026-08-17T12:00:00Z"),
+          durationMin: 30,
+          status: "pendente" as const,
+          completedAt: null,
+          createdAt: new Date("2026-08-10T00:00:00Z"),
+          updatedAt: new Date("2026-08-10T00:00:00Z"),
+          subject: {
+            id: "s1",
+            name: "Português",
+            color: "#0ea5e9",
+            priority: 3,
+            carga_horaria_total: 50,
+            created_at: new Date("2026-01-01T00:00:00Z"),
+          },
+        },
+      ]);
+
+      const result = await StudyPlannerService.listTasksWithSubject("u1");
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.study_subject_id).toBe("s1");
+      expect(result[0]!.scheduled_date).toBe("2026-08-17");
+      expect(result[0]!.subject?.name).toBe("Português");
+      expect(mockListByUserWithSubject).toHaveBeenCalledWith("u1", expect.objectContaining({}));
+    });
+
+    it("retorna subject null quando a tarefa não tem disciplina", async () => {
+      mockListByUserWithSubject.mockResolvedValue([
+        {
+          id: "t2",
+          userId: "u1",
+          studySubjectId: null,
+          title: "Tarefa livre",
+          description: null,
+          scheduledDate: new Date("2026-08-18T12:00:00Z"),
+          durationMin: 30,
+          status: "pendente" as const,
+          completedAt: null,
+          createdAt: new Date("2026-08-10T00:00:00Z"),
+          updatedAt: new Date("2026-08-10T00:00:00Z"),
+          subject: null,
+        },
+      ]);
+
+      const result = await StudyPlannerService.listTasksWithSubject("u1");
+
+      expect(result[0]!.study_subject_id).toBeNull();
+      expect(result[0]!.subject).toBeNull();
     });
   });
 });
