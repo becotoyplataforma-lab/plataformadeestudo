@@ -1,5 +1,7 @@
 import "server-only";
-import { createClient as createSupabaseClient } from "@/lib/supabase/server";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { db } from "@/lib/db/drizzle";
+import { aiUsage } from "@/db/schema/ai";
 import type { Plan } from "@/types";
 
 /**
@@ -26,29 +28,29 @@ export interface UsageStatus {
 
 /** Retorna o status de uso de IA do usuário no dia atual. */
 export async function getAiUsage(userId: string): Promise<UsageStatus> {
-  const db = await createSupabaseClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 1);
 
-  // Plano do usuário
-  const { data: profile } = await db
-    .from("profiles")
-    .select("plano")
-    .eq("id", userId)
-    .single();
-  const plan = (profile?.plano as Plan) ?? "free";
+  const [usageRow] = await db
+    .select()
+    .from(aiUsage)
+    .where(
+      and(
+        eq(aiUsage.userId, userId),
+        gte(aiUsage.usageDate, start),
+        lt(aiUsage.usageDate, end)
+      )
+    )
+    .limit(1);
 
-  // Uso do dia (ai_usage é gerenciado via RPC DEFINER no fluxo real;
-  // aqui lemos de forma direta para fins de exibição)
-  const { data } = await db
-    .from("ai_usage")
-    .select("messages_count, tokens_in, tokens_out")
-    .eq("user_id", userId)
-    .eq("usage_date", today)
-    .maybeSingle();
-
+  // Plano efetivo hoje: "free" (profiles não possui coluna `plano`; a fonte
+  // real do plano fica em billing.subscriptions — fora do escopo desta frente).
+  const plan: Plan = "free";
   const limits = PLAN_LIMITS[plan];
-  const usedMessages = data?.messages_count ?? 0;
-  const usedTokens = (data?.tokens_in ?? 0) + (data?.tokens_out ?? 0);
+  const usedMessages = usageRow?.messagesCount ?? 0;
+  const usedTokens = (usageRow?.tokensIn ?? 0) + (usageRow?.tokensOut ?? 0);
 
   return {
     usedMessages,
@@ -61,21 +63,31 @@ export async function getAiUsage(userId: string): Promise<UsageStatus> {
   };
 }
 
-/** Registra uso de IA via RPC (SECURITY DEFINER no banco). */
+/** Registra uso de IA (upsert diário via Drizzle). */
 export async function registerUsage(
   userId: string,
   tokensIn: number,
   tokensOut: number
 ): Promise<void> {
-  const db = await createSupabaseClient();
-  // A tabela ai_usage não tem política RLS — a função é SECURITY DEFINER.
-  const { error } = await db.rpc("register_ai_usage", {
-    p_user_id: userId,
-    p_tokens_in: tokensIn,
-    p_tokens_out: tokensOut,
-  });
-  // Ignora erro se a função não existir (dev) — loga apenas
-  if (error) {
-    console.warn("[ai-usage] Falha ao registrar uso:", error.message);
-  }
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+
+  await db
+    .insert(aiUsage)
+    .values({
+      userId,
+      usageDate: start,
+      messagesCount: 1,
+      tokensIn,
+      tokensOut,
+    })
+    .onConflictDoUpdate({
+      target: [aiUsage.userId, aiUsage.usageDate],
+      set: {
+        messagesCount: sql`${aiUsage.messagesCount} + 1`,
+        tokensIn: sql`${aiUsage.tokensIn} + ${tokensIn}`,
+        tokensOut: sql`${aiUsage.tokensOut} + ${tokensOut}`,
+        updatedAt: new Date(),
+      },
+    });
 }
