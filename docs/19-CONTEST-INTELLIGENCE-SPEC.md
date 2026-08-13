@@ -84,10 +84,12 @@ flowchart TD
 
 - `editais.programmatic_content` (JSON) = **documento bruto** extraído/importado (fonte para ETL e auditoria).
 - `notice_subjects` (tabela relacional) = **fonte estruturada** consumida pelo planner, com `weight`.
-- `positions` (cargo) e `position_subjects` (peso por cargo) = **evolução natural** quando o concurso for multi-cargo; pode nascer já no modelo para não migrar duas vezes.
+- `positions` (cargo) e o peso por cargo (via `position_id` em `notice_subjects`, DD-020) = **evolução natural** quando o concurso for multi-cargo; pode nascer já no modelo para não migrar duas vezes.
 - `notice_topics` = **fase posterior** (granularidade fina), não bloqueia a 1ª versão.
 
 **Por quê:** o planner precisa de **JOIN e agregação por matéria** (peso, share, normalização). JSON não permite isso de forma robusta. O domínio Contest já tem `editais.programmatic_content` no físico — ele continua existindo como bruto, e o `notice_subjects` é a camada estruturada derivada.
+
+> **Nota (pós-review):** o `12-CONTEST-DOMAIN-REVIEW.md` posicionava `positions` para V1.1. Esta spec **antecipa** `positions` com `position_id` **nullable** em `notice_subjects` (NULL = peso geral). O cargo é **opcional** — não força nada na V1 e evita refazer a migration.
 
 ---
 
@@ -102,9 +104,9 @@ flowchart TD
 | `organs` | id, name(uniq), slug(uniq), description, status | — | Catálogo (leitura autenticado / escrita admin) |
 | `boards` | id, name(uniq), slug(uniq), description, status | — | Banca (catálogo) |
 | `contests` | id, organ_id, board_id, title, slug(uniq), status, start_date, end_date | organs, boards | Agregado raiz |
-| `editais` | id, contest_id, title, version, published_date, content_url, `programmatic_content` (JSON bruto), status | contests | Um edital vigente por concurso (via status) |
-| `positions` | id, contest_id, edital_id (opcional), name, slug, description | contests, editais | Cargo |
-| `notice_subjects` | id, edital_id, position_id (NULL = vale p/ todo o concurso), knowledge_subject_id, `weight` (0..100 ou 0..1), status | editais, positions, knowledge_subjects | **Matéria do edital com peso** — unique (edital_id, position_id, knowledge_subject_id) |
+| `editais` | id, contest_id, title, version, published_date, content_url, `programmatic_content` (JSON bruto), `is_current` (vigência explícita, DD-023), status | contests | Um edital vigente por concurso (`is_current` explícito) |
+| `positions` | id, contest_id, edital_id (opcional), name, slug, description | contests, editais | Cargo (opcional na V1) |
+| `notice_subjects` | id, edital_id, position_id (NULL = vale p/ todo o concurso), knowledge_subject_id, `weight` (INTEGER NOT NULL, 0–100), status | editais, positions, knowledge_subjects | **Matéria do edital com peso** — unique (edital_id, position_id, knowledge_subject_id) |
 | `notice_topics` *(fase 2)* | id, notice_subject_id, knowledge_topic_id, weight | notice_subjects, knowledge_topics | Granularidade fina |
 | `exam_phases` / `exams` *(fase 2)* | id, contest_id / exam_phase_id, title, date | contests | Provas (vinculação de questões) |
 
@@ -116,7 +118,7 @@ flowchart TD
 
 ### 5.3 Regras de negócio
 
-- Um edital vigente por concurso (status = `publicado`).
+- Um edital vigente por concurso = **`publicado` + `is_current` explícito** (DD-023); ambiguidade → **fator neutro**.
 - `notice_subjects` só referencia `knowledge_subjects` existentes (catálogo compartilhado — DD-001).
 - Ao **vincular** a disciplina do usuário (`study_subjects`) ao `knowledge_subject`, o planner herda o peso do edital (mesmo `LinkResolverService` do Grupo B/C).
 - Se não houver edital/`notice_subjects` para o usuário → fator neutro (comportamento do Grupo C preservado).
@@ -152,16 +154,76 @@ Grupo D:  + editalWeight
 
 ---
 
-## 7. Decisões em aberto (a resolver antes da migration)
+## 7. Decisões arquiteturais
 
-| # | Decisão | Opções | Recomendação provisória |
-| --- | --- | --- | --- |
-| 1 | Peso por **edital** × **cargo** | Só edital · edital+cargo · só cargo | Modelar `position_id` NULL e preenchido (cobre ambos) |
-| 2 | Escala do peso | 0–100 · 0–1 · share | Bruto 0–100, normalizar no consumo |
-| 3 | Granularidade | matéria · matéria+tópico | Matéria na 1ª versão; tópico em fase 2 |
-| 4 | Vínculo do usuário | `concurso_alvo` texto · `contest_id` FK · lista de editais seguidos | `contest_id` FK + fallback de texto |
-| 5 | Origem dos dados | Admin manual · IA assistida · pipelines ETL | Híbrido: admin + IA assistida |
-| 6 | Estratégia de migration | Drizzle `migrate` · SQL manual por domínio (`database/contest/schema.sql`) | **SQL manual** (padrão atual do projeto; evita o risco do `__drizzle_migrations` ausente) |
+### 7.1 Fechadas
+
+**D1 — Peso por edital × cargo — ✅ FECHADA (DD-020)**
+
+Regras aprovadas:
+- `notice_subjects`: `edital_id` (FK `editais`) · `knowledge_subject_id` · `position_id NULL` (peso geral) · `position_id` preenchido (peso específico do cargo).
+- Peso específico do cargo **substitui** o geral (não soma).
+- `weight NOT NULL`, faixa **0–100** (bruto; normalização como share **somente no consumo**).
+- `UNIQUE (edital_id, position_id, knowledge_subject_id)`.
+- Ausência de linha = matéria não prevista naquele escopo.
+- Sem posição do usuário → usar apenas o peso geral.
+- `notice_topics` → fase posterior.
+
+**D2 — Escala e semântica do peso — ✅ FECHADA (DD-021)**
+
+Regras aprovadas:
+- `weight INTEGER NOT NULL`, domínio **0–100**.
+- `0` é **explícito e distinto de ausência** (matéria declarada com peso zero).
+- Ausência de `notice_subjects` = matéria **não declarada** naquele escopo.
+- `share = weight / SUM(weight)` do escopo `(edital_id, position_id)` — **somente no consumo**.
+- Soma zero → fator **neutro** (sem divisão por zero).
+- `weight > 0` → participa do fator edital (share).
+- `weight = 0` → peso de edital **zero**.
+- Matéria **não listada** → fator de edital **neutro** (preserva desempenho e banca).
+- **Nunca armazenar `share`**.
+
+> Ex.: Edital X/Cargo Y — Português 20, Dir. Const. 30, Informática 0 → shares 0,40 / 0,60 / 0. Rac. Lógico não listado → **neutro** (não vira peso zero).
+
+**D3 — Granularidade matéria × tópico — ✅ FECHADA (DD-022)**
+
+Regras aprovadas:
+- `notice_subjects` é a granularidade da **1ª versão**; `editalWeight` é por matéria.
+- `notice_topics` será tabela **aditiva** (FK → `notice_subjects` + `knowledge_topic_id` + `weight`), sem alterar `notice_subjects`.
+- Peso de tópico segue a semântica da DD-021; ausência de `notice_topics` não prejudica o modelo.
+- **NÃO criar estrutura de tópico agora** (fase 2).
+
+**D4 — Vínculo do usuário com concurso/cargo — ✅ FECHADA (DD-023)**
+
+Regras aprovadas:
+- `profiles.contest_id` (FK contests) nullable + `profiles.position_id` (FK positions) nullable.
+- Posição escolhida **explicitamente** (não inferida); deve pertencer ao concurso selecionado; inconsistência → não aplica peso específico.
+- `concurso_alvo` permanece como **legado/exibição**; o planner D+ usa só o relacionamento estruturado.
+- Sem `user_contests` na V1.
+- Edital deve ser **explicitamente vigente** (`is_current`/equivalente); **ambiguidade → fator neutro**, nunca escolha silenciosa por data.
+
+**D5 — Origem dos dados — ✅ FECHADA (DD-024)**
+
+Regras aprovadas:
+- Fase 0: admin manual · Fase 1: IA assistida (gera **rascunho** p/ revisão) · Fase 2: ETL por banca.
+- `is_current` definido **explicitamente pelo admin** (nunca automático por data).
+- Origem **não altera o modelo relacional**.
+- Planner consome somente edital **publicado + vigente**, independentemente da origem.
+
+**D6 — Estratégia de migration — ✅ FECHADA (DD-025)**
+
+Regras aprovadas:
+- **SQL manual por domínio** como estratégia oficial (`database/contest/schema.sql` + `rls.sql` + `seeds.sql` + `functions.sql`).
+- Aplicação via DIRECT_URL; scripts idempotentes e reexecutáveis.
+- `profiles`: `ALTER TABLE ... IF NOT EXISTS`/guards.
+- **Verificação read-only obrigatória antes da aplicação**.
+- `contest.ts` espelha o schema (tipos/introspecção), **sem `drizzle:migrate`** e sem adoção de baseline Drizzle.
+
+> ## ✅ **D1–D6 FECHADAS — Grupo D arquiteturalmente especificado.**
+> Cadeia validada: `profiles.contest_id/position_id` → `contests` → edital **vigente** → `notice_subjects` (peso/share) → `editalWeight` no planner (neutro sem dados — regressão B/C preservada).
+
+### 7.2 Em aberto
+
+Nenhuma decisão em aberto — as 6 decisões (D1–D6) estão fechadas.
 
 ---
 
