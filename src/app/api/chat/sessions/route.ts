@@ -25,10 +25,13 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const db = await createClient();
+    // "muse" é provider extra; a coluna model é enum ai_model (flash/pro) —
+    // sem migration, persiste como "pro" (a chamada real usa o provider Muse).
+    const model = body.model === "muse" ? "pro" : body.model ?? "flash";
     const data = await createSession(db, session.user.id, {
       title: body.title ?? "Nova conversa",
       subject_id: body.subject_id ?? null,
-      model: body.model ?? "flash",
+      model,
     });
     return apiOk({ data }, 201);
   } catch (error) {

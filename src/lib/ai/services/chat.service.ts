@@ -74,6 +74,8 @@ export const ChatService = {
     const model = ModelRouterService.route({
       requested: input.model ?? session.model,
     });
+    // Coluna model é enum ai_model (flash/pro); "muse" persiste como "pro".
+    const dbModel: "flash" | "pro" = model === "muse" ? "pro" : model;
 
     // 3. Persiste mensagem do usuário
     await ChatRepository.createMessage({
@@ -81,7 +83,7 @@ export const ChatService = {
       userId,
       role: "user",
       content: message,
-      model,
+      model: dbModel,
       tokensIn: 0,
       tokensOut: 0,
     });
@@ -109,7 +111,7 @@ export const ChatService = {
       userId,
       role: "assistant",
       content: providerResult.content,
-      model: providerResult.model,
+      model: providerResult.model === "muse" ? "pro" : providerResult.model,
       tokensIn: providerResult.tokensIn,
       tokensOut: providerResult.tokensOut,
     });

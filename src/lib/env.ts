@@ -24,6 +24,13 @@ const serverEnvSchema = z.object({
   DEEPSEEK_MODEL_FLASH: z.string().default("deepseek-chat"),
   DEEPSEEK_MODEL_PRO: z.string().default("deepseek-reasoner"),
 
+  // Provedor Muse/Meta — modelo "Muse 1.2" (3ª opção no chat, roteado por provider).
+  // Chave e endpoint separados do DeepSeek; o endpoint deve servir o modelo
+  // num formato compatível com chat/completions.
+  MUSE_API_KEY: z.string().optional(),
+  MUSE_BASE_URL: z.string().url().optional(),
+  MUSE_MODEL: z.string().optional(),
+
   // Serviço de embeddings (BAAI/bge-m3 — self-hosted ou API).
   // Obrigatório em produção para ativar a busca vetorial (docs/10-EMBEDDING-STANDARD).
   EMBEDDING_API_URL: z.string().url().optional(),

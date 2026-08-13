@@ -28,8 +28,15 @@ export const ModelRouterService = {
    */
   route(ctx: RouterContext = {}): AIModel {
     if (ctx.requested) {
-      if (ctx.requested !== "flash" && ctx.requested !== "pro") {
-        throw new ModelRouterError("INVALID_MODEL", "Modelo inválido. Use flash ou pro.");
+      if (
+        ctx.requested !== "flash" &&
+        ctx.requested !== "pro" &&
+        ctx.requested !== "muse"
+      ) {
+        throw new ModelRouterError(
+          "INVALID_MODEL",
+          "Modelo inválido. Use flash, pro ou muse."
+        );
       }
       return ctx.requested;
     }

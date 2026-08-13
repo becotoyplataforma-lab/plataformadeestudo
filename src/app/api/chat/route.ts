@@ -46,6 +46,10 @@ export async function POST(req: Request) {
 
   const { session_id, message, model, subject_id } = parsed.data;
 
+  // "muse" é um provider extra; a coluna model é enum ai_model (flash/pro).
+  // Sem migration: persiste como "pro" e usa o provider real só na chamada.
+  const dbModel: "flash" | "pro" = model === "muse" ? "pro" : model;
+
   const db = await createClient();
 
   // --- Cotas de IA ---
@@ -53,7 +57,7 @@ export async function POST(req: Request) {
   if (!usage.canSend) {
     return apiError(
       429,
-      "Você atingiu o limite diário de mensagens do seu plano. Volte amanhã ou faça upgrade."
+      "Você atingiu o limite diário de mensagens. Tente novamente amanhã."
     );
   }
 
@@ -67,7 +71,7 @@ export async function POST(req: Request) {
     const created = await createSession(db, userId, {
       title: message.slice(0, 60),
       subject_id,
-      model,
+      model: dbModel,
     });
     activeSessionId = created.id;
   } else {
@@ -101,7 +105,7 @@ export async function POST(req: Request) {
     user_id: userId,
     role: "user",
     content: message,
-    model,
+    model: dbModel,
   });
 
   // --- Stream da DeepSeek ---
@@ -189,7 +193,7 @@ export async function POST(req: Request) {
             user_id: userId,
             role: "assistant",
             content: finalContent,
-            model: model as AIModel,
+            model: dbModel,
             tokens_in: tokensIn,
             tokens_out: tokensOut,
           });
