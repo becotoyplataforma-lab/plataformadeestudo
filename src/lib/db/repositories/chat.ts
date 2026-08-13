@@ -1,45 +1,69 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { db } from "@/lib/db/drizzle";
+import { chatSessions, chatMessages } from "@/db/schema/ai";
 import type { ChatMessage, ChatSession } from "@/types";
 
-type DB = SupabaseClient;
+type SessionRow = typeof chatSessions.$inferSelect;
+type MessageRow = typeof chatMessages.$inferSelect;
 
-/** Lista sessões de conversa do usuário */
-function normalizeChatSession(row: Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null }): ChatSession {
-  const knowledgeSubjectId = row.knowledge_subject_id ?? row.subject_id ?? null;
+function normalizeChatSession(row: SessionRow): ChatSession {
   return {
-    ...row,
-    knowledge_subject_id: knowledgeSubjectId,
-    subject_id: knowledgeSubjectId,
-  } as ChatSession;
+    id: row.id,
+    user_id: row.userId,
+    title: row.title,
+    knowledge_subject_id: row.knowledgeSubjectId,
+    subject_id: row.knowledgeSubjectId,
+    model: row.model,
+    created_at: row.createdAt.toISOString(),
+    updated_at: row.updatedAt.toISOString(),
+  };
 }
 
-export async function listSessions(db: DB, userId: string): Promise<ChatSession[]> {
-  const { data, error } = await db
-    .from("chat_sessions")
-    .select("*")
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return ((data as Array<Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null }>) ?? []).map(normalizeChatSession);
+function toChatMessage(row: MessageRow): ChatMessage {
+  return {
+    id: row.id,
+    session_id: row.sessionId,
+    user_id: row.userId,
+    role: row.role,
+    content: row.content,
+    model: row.model,
+    tokens_in: row.tokensIn,
+    tokens_out: row.tokensOut,
+    created_at: row.createdAt.toISOString(),
+  };
 }
 
+/** Lista sessões de conversa do usuário (mais recentes primeiro). */
+export async function listSessions(userId: string): Promise<ChatSession[]> {
+  const rows = await db
+    .select()
+    .from(chatSessions)
+    .where(and(eq(chatSessions.userId, userId), isNull(chatSessions.deletedAt)))
+    .orderBy(desc(chatSessions.updatedAt));
+  return rows.map(normalizeChatSession);
+}
+
+/** Busca sessão por ID (valida ownership). */
 export async function getSession(
-  db: DB,
   userId: string,
   sessionId: string
 ): Promise<ChatSession | null> {
-  const { data, error } = await db
-    .from("chat_sessions")
-    .select("*")
-    .eq("id", sessionId)
-    .eq("user_id", userId)
-    .single();
-  if (error) return null;
-  return normalizeChatSession(data as Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null });
+  const [row] = await db
+    .select()
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.id, sessionId),
+        eq(chatSessions.userId, userId),
+        isNull(chatSessions.deletedAt)
+      )
+    )
+    .limit(1);
+  return row ? normalizeChatSession(row) : null;
 }
 
+/** Cria sessão (usa knowledge_subject_id no lugar de subject_id). */
 export async function createSession(
-  db: DB,
   userId: string,
   input: {
     title?: string;
@@ -49,101 +73,125 @@ export async function createSession(
   }
 ): Promise<ChatSession> {
   const knowledgeSubjectId = input.knowledge_subject_id ?? input.subject_id ?? null;
-  const { data, error } = await db
-    .from("chat_sessions")
-    .insert({
-      user_id: userId,
+  const [row] = await db
+    .insert(chatSessions)
+    .values({
+      userId,
       title: input.title ?? "Nova conversa",
-      knowledge_subject_id: knowledgeSubjectId,
+      knowledgeSubjectId,
       model: input.model ?? "flash",
     })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return normalizeChatSession(data as Partial<ChatSession> & { subject_id?: string | null; knowledge_subject_id?: string | null });
+    .returning();
+  return normalizeChatSession(row);
 }
 
 export async function updateSessionTitle(
-  db: DB,
   userId: string,
   sessionId: string,
   title: string
 ): Promise<void> {
   await db
-    .from("chat_sessions")
-    .update({ title, updated_at: new Date().toISOString() })
-    .eq("id", sessionId)
-    .eq("user_id", userId);
+    .update(chatSessions)
+    .set({ title, updatedAt: new Date() })
+    .where(
+      and(
+        eq(chatSessions.id, sessionId),
+        eq(chatSessions.userId, userId),
+        isNull(chatSessions.deletedAt)
+      )
+    );
 }
 
-export async function touchSession(db: DB, userId: string, sessionId: string): Promise<void> {
+export async function touchSession(
+  userId: string,
+  sessionId: string
+): Promise<void> {
   await db
-    .from("chat_sessions")
-    .update({ updated_at: new Date().toISOString() })
-    .eq("id", sessionId)
-    .eq("user_id", userId);
+    .update(chatSessions)
+    .set({ updatedAt: new Date() })
+    .where(
+      and(
+        eq(chatSessions.id, sessionId),
+        eq(chatSessions.userId, userId),
+        isNull(chatSessions.deletedAt)
+      )
+    );
 }
 
-export async function deleteSession(db: DB, userId: string, sessionId: string): Promise<void> {
-  const { error } = await db
-    .from("chat_sessions")
-    .delete()
-    .eq("id", sessionId)
-    .eq("user_id", userId);
-  if (error) throw new Error(error.message);
+export async function deleteSession(
+  userId: string,
+  sessionId: string
+): Promise<void> {
+  await db
+    .update(chatSessions)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(chatSessions.id, sessionId),
+        eq(chatSessions.userId, userId),
+        isNull(chatSessions.deletedAt)
+      )
+    );
 }
 
-/** Histórico de mensagens de uma sessão (crescente) */
+/** Histórico de mensagens de uma sessão (crescente). */
 export async function listMessages(
-  db: DB,
   userId: string,
   sessionId: string
 ): Promise<ChatMessage[]> {
-  const { data, error } = await db
-    .from("chat_messages")
-    .select("*")
-    .eq("session_id", sessionId)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data as ChatMessage[]) ?? [];
-}
-
-export async function insertMessage(
-  db: DB,
-  msg: {
-    session_id: string;
-    user_id: string;
-    role: "system" | "user" | "assistant";
-    content: string;
-    model?: "flash" | "pro" | null;
-    tokens_in?: number;
-    tokens_out?: number;
-  }
-): Promise<ChatMessage> {
-  const { data, error } = await db
-    .from("chat_messages")
-    .insert(msg)
+  const rows = await db
     .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as ChatMessage;
+    .from(chatMessages)
+    .where(
+      and(
+        eq(chatMessages.sessionId, sessionId),
+        eq(chatMessages.userId, userId)
+      )
+    )
+    .orderBy(asc(chatMessages.createdAt));
+  return rows.map(toChatMessage);
 }
 
-/** Últimas N mensagens para montar contexto do LLM (janela deslizante) */
+export async function insertMessage(msg: {
+  session_id: string;
+  user_id: string;
+  role: "system" | "user" | "assistant";
+  content: string;
+  model?: "flash" | "pro" | null;
+  tokens_in?: number;
+  tokens_out?: number;
+}): Promise<ChatMessage> {
+  const [row] = await db
+    .insert(chatMessages)
+    .values({
+      sessionId: msg.session_id,
+      userId: msg.user_id,
+      role: msg.role,
+      content: msg.content,
+      model: msg.model ?? null,
+      tokensIn: msg.tokens_in ?? 0,
+      tokensOut: msg.tokens_out ?? 0,
+    })
+    .returning();
+  return toChatMessage(row);
+}
+
+/** Últimas N mensagens para montar contexto do LLM (janela deslizante). */
 export async function getRecentContext(
-  db: DB,
   userId: string,
   sessionId: string,
   limit = 10
 ): Promise<ChatMessage[]> {
-  const { data, error } = await db
-    .from("chat_messages")
-    .select("*")
-    .eq("session_id", sessionId)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+  const rows = await db
+    .select()
+    .from(chatMessages)
+    .where(
+      and(
+        eq(chatMessages.sessionId, sessionId),
+        eq(chatMessages.userId, userId)
+      )
+    )
+    .orderBy(desc(chatMessages.createdAt))
     .limit(limit);
-  if (error) throw new Error(error.message);
-  return ((data as ChatMessage[]) ?? []).reverse();
+  return rows.reverse().map(toChatMessage);
 }

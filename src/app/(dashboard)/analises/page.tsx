@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/drizzle";
+import { studyTasks } from "@/db/schema/study";
 import {
   getDashboardSummary,
   getEvolution,
@@ -18,25 +20,34 @@ export default async function AnalisesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const db = await createClient();
-  const [summary, bySubject, evolution, tasks] = await Promise.all([
-    getDashboardSummary(db, session.user.id),
-    getPerformanceBySubject(db, session.user.id),
-    getEvolution(db, session.user.id, 30),
+  const [summary, bySubject, evolution, taskRows] = await Promise.all([
+    getDashboardSummary(session.user.id),
+    getPerformanceBySubject(session.user.id),
+    getEvolution(session.user.id, 30),
     db
-      .from("study_tasks")
-      .select("scheduled_date, duration_min, status")
-      .eq("user_id", session.user.id)
-      .order("scheduled_date", { ascending: true })
+      .select({
+        scheduledDate: studyTasks.scheduledDate,
+        durationMin: studyTasks.durationMin,
+        status: studyTasks.status,
+      })
+      .from(studyTasks)
+      .where(eq(studyTasks.userId, session.user.id))
+      .orderBy(studyTasks.scheduledDate)
       .limit(500),
   ]);
+
+  const tasks = taskRows.map((t) => ({
+    scheduled_date: t.scheduledDate.toISOString(),
+    duration_min: t.durationMin,
+    status: t.status,
+  }));
 
   return (
     <AnalisesClient
       summary={summary}
       bySubject={bySubject}
       evolution={evolution}
-      tasks={(tasks.data ?? []) as { scheduled_date: string; duration_min: number; status: string }[]}
+      tasks={tasks}
     />
   );
 }

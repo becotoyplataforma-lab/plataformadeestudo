@@ -2,11 +2,8 @@ import { auth } from "@/lib/auth/auth";
 import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { answerQuestionSchema } from "@/lib/validations/questoes";
-import {
-  createAttempt,
-  getGabarito,
-  getQuestionWithOptions,
-} from "@/lib/db/repositories/questoes";
+import { getGabarito, getQuestionWithOptions } from "@/lib/db/repositories/questoes";
+import { QuestionAttemptRepository } from "@/lib/study/repositories";
 
 /**
  * POST /api/questoes/:id/responder
@@ -38,21 +35,17 @@ export async function POST(
     const gabarito = await getGabarito(db, id);
     const correct = gabarito?.gabarito === parsed.data.selected_letter;
 
-    await createAttempt(db, {
-      user_id: session.user.id,
-      question_id: id,
-      selected_letter: parsed.data.selected_letter,
-      is_correct: correct,
-      time_spent_sec: parsed.data.time_spent_sec,
+    await QuestionAttemptRepository.create({
+      userId: session.user.id,
+      questionId: id,
+      selectedLetter: parsed.data.selected_letter,
+      isCorrect: correct,
+      timeSpentSec: parsed.data.time_spent_sec,
       mode: parsed.data.mode,
     });
 
     // Total de acertos do usuário (para feedback)
-    const { count } = await db
-      .from("question_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", session.user.id)
-      .eq("is_correct", true);
+    const count = await QuestionAttemptRepository.countCorrectByUser(session.user.id);
 
     return apiOk({
       correct,

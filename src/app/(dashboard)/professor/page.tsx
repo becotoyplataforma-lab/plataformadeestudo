@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/db/drizzle";
+import { knowledgeSubjects } from "@/db/schema/knowledge";
 import { listSessions } from "@/lib/db/repositories/chat";
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { getAiUsage } from "@/lib/ai/limits";
@@ -16,12 +17,14 @@ export default async function ProfessorPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const db = await createClient();
   const [sessions, profile, usage, subjects] = await Promise.all([
-    listSessions(db, session.user.id),
+    listSessions(session.user.id),
     getProfile(session.user.id),
     getAiUsage(session.user.id),
-    db.from("knowledge_subjects").select("id, name").order("name"),
+    db
+      .select({ id: knowledgeSubjects.id, name: knowledgeSubjects.name })
+      .from(knowledgeSubjects)
+      .orderBy(knowledgeSubjects.name),
   ]);
 
   return (
@@ -38,7 +41,7 @@ export default async function ProfessorPage() {
         max: usage.maxMessages,
         canSend: usage.canSend,
       }}
-      subjects={(subjects.data ?? []) as { id: string; name: string }[]}
+      subjects={subjects}
     />
   );
 }

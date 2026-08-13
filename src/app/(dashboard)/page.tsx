@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { getDashboardSummary, getPerformanceBySubject, getEvolution } from "@/lib/db/repositories/analises";
+import { getProfile } from "@/lib/db/repositories/perfil";
 import { DashboardStats, QuickActions } from "@/components/dashboard/dashboard-stats";
 import { EvolutionChart } from "@/components/dashboard/evolution-chart";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
@@ -16,12 +16,11 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const db = await createClient();
   const [summary, bySubject, evolution, profile] = await Promise.all([
-    getDashboardSummary(db, session.user.id),
-    getPerformanceBySubject(db, session.user.id),
-    getEvolution(db, session.user.id, 30),
-    db.from("profiles").select("full_name").eq("id", session.user.id).single(),
+    getDashboardSummary(session.user.id),
+    getPerformanceBySubject(session.user.id),
+    getEvolution(session.user.id, 30),
+    getProfile(session.user.id),
   ]);
 
   return (
@@ -36,7 +35,7 @@ export default async function DashboardPage() {
               Dashboard
             </p>
             <h1 className="text-3xl font-extrabold tracking-[-0.06em] text-white md:text-5xl">
-              Olá, {firstName(profile.data?.full_name)} 👋
+              Olá, {firstName(profile?.full_name)} 👋
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300 md:text-base">
               Seu desempenho em destaque para continuar evoluindo com foco, consistência e inteligência.

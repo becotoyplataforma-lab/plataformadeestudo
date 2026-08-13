@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { listSessions, createSession } from "@/lib/db/repositories/chat";
 
@@ -8,8 +7,7 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) return apiError(401, "Não autenticado.");
-    const db = await createClient();
-    const data = await listSessions(db, session.user.id);
+    const data = await listSessions(session.user.id);
     return apiOk({ data });
   } catch (error) {
     console.error("[chat/sessions] GET", error);
@@ -24,8 +22,7 @@ export async function POST(req: Request) {
     if (!session?.user?.id) return apiError(401, "Não autenticado.");
 
     const body = await req.json().catch(() => ({}));
-    const db = await createClient();
-    const data = await createSession(db, session.user.id, {
+    const data = await createSession(session.user.id, {
       title: body.title ?? "Nova conversa",
       subject_id: body.subject_id ?? null,
       model: body.model ?? "flash",

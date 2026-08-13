@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
+import { and, eq, isNotNull } from "drizzle-orm";
+import { db } from "@/lib/db/drizzle";
+import { questionAttempts, studyTasks } from "@/db/schema/study";
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { AppHeader } from "@/components/layout/app-header";
 import {
@@ -22,28 +24,30 @@ export default async function DashboardLayout({
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const db = await createClient();
   const profile = await getProfile(session.user.id);
 
   // Calcula streak a partir das atividades do usuário
   let streakDays = 0;
   try {
-    const { data: attempts } = await db
-      .from("question_attempts")
-      .select("created_at")
-      .eq("user_id", session.user.id)
-      .order("created_at", { ascending: false })
+    const attempts = await db
+      .select({ createdAt: questionAttempts.createdAt })
+      .from(questionAttempts)
+      .where(eq(questionAttempts.userId, session.user.id))
       .limit(500);
-    const { data: tasks } = await db
-      .from("study_tasks")
-      .select("completed_at")
-      .eq("user_id", session.user.id)
-      .not("completed_at", "is", null)
+    const tasks = await db
+      .select({ completedAt: studyTasks.completedAt })
+      .from(studyTasks)
+      .where(
+        and(
+          eq(studyTasks.userId, session.user.id),
+          isNotNull(studyTasks.completedAt)
+        )
+      )
       .limit(500);
 
     const timestamps = [
-      ...((attempts ?? []).map((a) => a.created_at) as string[]),
-      ...((tasks ?? []).map((t) => t.completed_at as string)),
+      ...attempts.map((a) => a.createdAt.toISOString()),
+      ...tasks.map((t) => (t.completedAt as Date).toISOString()),
     ];
     const streak = computeStreak({
       activityDates: distinctActivityDates(timestamps),

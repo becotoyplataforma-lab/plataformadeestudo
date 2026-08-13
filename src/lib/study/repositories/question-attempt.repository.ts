@@ -58,4 +58,15 @@ export const QuestionAttemptRepository = {
       .where(eq(questionAttempts.userId, userId));
     return row?.count ?? 0;
   },
+
+  /** Contar acertos do usuário. */
+  async countCorrectByUser(userId: string): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(questionAttempts)
+      .where(
+        and(eq(questionAttempts.userId, userId), eq(questionAttempts.isCorrect, true))
+      );
+    return row?.count ?? 0;
+  },
 };

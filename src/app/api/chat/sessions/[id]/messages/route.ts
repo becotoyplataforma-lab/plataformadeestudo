@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { listMessages } from "@/lib/db/repositories/chat";
 
@@ -13,8 +12,7 @@ export async function GET(
     if (!session?.user?.id) return apiError(401, "Não autenticado.");
     const { id } = await params;
 
-    const db = await createClient();
-    const data = await listMessages(db, session.user.id, id);
+    const data = await listMessages(session.user.id, id);
     return apiOk({ data });
   } catch (error) {
     console.error("[chat/messages] GET", error);

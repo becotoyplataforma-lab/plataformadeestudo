@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { getDashboardSummary } from "@/lib/db/repositories/analises";
 
@@ -9,8 +8,7 @@ export async function GET() {
     const session = await auth();
     if (!session?.user?.id) return apiError(401, "Não autenticado.");
 
-    const db = await createClient();
-    const summary = await getDashboardSummary(db, session.user.id);
+    const summary = await getDashboardSummary(session.user.id);
     return apiOk(summary);
   } catch (error) {
     console.error("[analises] resumo", error);

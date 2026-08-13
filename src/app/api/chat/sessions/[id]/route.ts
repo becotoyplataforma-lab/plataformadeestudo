@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { deleteSession, getSession } from "@/lib/db/repositories/chat";
 
@@ -13,11 +12,10 @@ export async function DELETE(
     if (!session?.user?.id) return apiError(401, "Não autenticado.");
     const { id } = await params;
 
-    const db = await createClient();
-    const existing = await getSession(db, session.user.id, id);
+    const existing = await getSession(session.user.id, id);
     if (!existing) return apiError(404, "Conversa não encontrada.");
 
-    await deleteSession(db, session.user.id, id);
+    await deleteSession(session.user.id, id);
     return apiOk({ ok: true });
   } catch (error) {
     console.error("[chat/sessions] DELETE", error);

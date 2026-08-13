@@ -1,132 +1,125 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, eq, gte, lt, lte, sql } from "drizzle-orm";
+import { db } from "@/lib/db/drizzle";
+import {
+  questionAttempts,
+  questions,
+  reviewSchedules,
+  studyTasks,
+} from "@/db/schema/study";
+import { knowledgeSubjects } from "@/db/schema/knowledge";
+import { getProfile } from "./perfil";
+import { computeStreak, distinctActivityDates, todayISO } from "@/lib/analytics/streak";
 import type {
   DashboardSummary,
   EvolutionPoint,
   SubjectPerformance,
 } from "@/types";
-import { computeStreak, distinctActivityDates, todayISO } from "@/lib/analytics/streak";
-
-type DB = SupabaseClient;
 
 /**
  * Repository de analíticas — agregações de desempenho do usuário.
- * Implementa as queries de referência do doc 16-ANALYTICS.md.
+ * Implementa as queries de referência do doc 16-ANALYTICS.md (via Drizzle).
  */
-export async function getDashboardSummary(
-  db: DB,
-  userId: string
-): Promise<DashboardSummary> {
+export async function getDashboardSummary(userId: string): Promise<DashboardSummary> {
   const today = todayISO();
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 1);
+  const now = new Date();
 
-  // Questões totais
-  const [attempts, tasksToday, tasksDoneToday, dueCountRes] = await Promise.all([
+  const [attempts, tasksToday, tasksDoneToday, dueCount, profile] = await Promise.all([
     db
-      .from("question_attempts")
-      .select("is_correct, created_at")
-      .eq("user_id", userId),
+      .select({ isCorrect: questionAttempts.isCorrect, createdAt: questionAttempts.createdAt })
+      .from(questionAttempts)
+      .where(eq(questionAttempts.userId, userId)),
     db
-      .from("study_tasks")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("scheduled_date", today),
+      .select({ id: studyTasks.id, durationMin: studyTasks.durationMin })
+      .from(studyTasks)
+      .where(
+        and(
+          eq(studyTasks.userId, userId),
+          gte(studyTasks.scheduledDate, start),
+          lt(studyTasks.scheduledDate, end)
+        )
+      ),
     db
-      .from("study_tasks")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("scheduled_date", today)
-      .eq("status", "concluida"),
+      .select({ id: studyTasks.id, durationMin: studyTasks.durationMin })
+      .from(studyTasks)
+      .where(
+        and(
+          eq(studyTasks.userId, userId),
+          gte(studyTasks.scheduledDate, start),
+          lt(studyTasks.scheduledDate, end),
+          eq(studyTasks.status, "concluida")
+        )
+      ),
     db
-      .from("review_schedules")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .lte("due_date", today),
+      .select({ count: sql<number>`count(*)::int` })
+      .from(reviewSchedules)
+      .where(
+        and(eq(reviewSchedules.userId, userId), lte(reviewSchedules.dueDate, now))
+      ),
+    getProfile(userId),
   ]);
 
-  const dueCount = dueCountRes.count ?? 0;
+  const dueCountN = dueCount[0]?.count ?? 0;
+  const total = attempts.length;
+  const acertos = attempts.filter((a) => a.isCorrect).length;
+  const tasksDone = tasksDoneToday;
 
-  const allAttempts = (attempts.data ?? []) as Array<{ is_correct: boolean; created_at: string }>;
-  const total = allAttempts.length;
-  const acertos = allAttempts.filter((a) => a.is_correct).length;
-
-  // Tempo estudado hoje = duração das tarefas concluídas hoje + estimativa
-  // (No MVP: soma da duração das tarefas concluídas hoje)
-  const tasksDone = (tasksDoneToday.data ?? []) as Array<{ id: string }>;
-
-  // Atividade para streak: tentativas + tarefas concluídas
-  const activityTimestamps = [
-    ...allAttempts.map((a) => a.created_at),
-  ];
-  const streakDates = distinctActivityDates(activityTimestamps);
+  // Atividade para streak: tentativas
+  const streakDates = distinctActivityDates(
+    attempts.map((a) => a.createdAt.toISOString())
+  );
   const streak = computeStreak({ activityDates: streakDates, today });
-
-  // Meta diária (carrega do perfil)
-  const { data: profile } = await db
-    .from("profiles")
-    .select("meta_diaria_min, plano")
-    .eq("id", userId)
-    .single();
 
   return {
     total_questoes: total,
     acertos,
     taxa_acerto: total > 0 ? acertos / total : 0,
     streak_dias: streak.current,
-    meta_hoje_min: (profile?.meta_diaria_min as number) ?? 120,
-    estudado_hoje_min: tasksDone.length > 0 ? await sumMinutesFromTasks(db, userId, today) : 0,
-    revisoes_pendentes: dueCount ?? 0,
-    tarefas_hoje: (tasksToday.data ?? []).length,
+    meta_hoje_min: profile?.meta_diaria_min ?? 120,
+    estudado_hoje_min: tasksDone.reduce((acc, t) => acc + t.durationMin, 0),
+    revisoes_pendentes: dueCountN,
+    tarefas_hoje: tasksToday.length,
     tarefas_concluidas_hoje: tasksDone.length,
   };
 }
 
-async function sumMinutesFromTasks(db: DB, userId: string, date: string): Promise<number> {
-  const { data } = await db
-    .from("study_tasks")
-    .select("duration_min")
-    .eq("user_id", userId)
-    .eq("scheduled_date", date)
-    .eq("status", "concluida");
-  return (data ?? []).reduce((acc: number, t: { duration_min: number }) => acc + (t.duration_min ?? 0), 0);
-}
-
-/** Taxa de acerto por matéria (piores primeiro) */
+/** Taxa de acerto por matéria (piores primeiro). */
 export async function getPerformanceBySubject(
-  db: DB,
   userId: string
 ): Promise<SubjectPerformance[]> {
-  const { data, error } = await db
-    .from("question_attempts")
-    .select("is_correct, question:questions(subject:knowledge_subjects(id, name, color))")
-    .eq("user_id", userId)
-    .limit(5000);
-
-  if (error) throw new Error(error.message);
-
-  // Shape real do runtime: question_attempts.question → questions → knowledge_subjects (FK 1:1).
-  // O tipo gerado do Supabase tipa o nested select como array; aqui refletimos o runtime.
-  type SubjectRef = { id: string; name: string; color: string | null };
-  type AttemptRow = {
-    is_correct: boolean;
-    question: { subject: SubjectRef } | null;
-  };
+  const rows = await db
+    .select({
+      isCorrect: questionAttempts.isCorrect,
+      subjectId: questions.knowledgeSubjectId,
+      name: knowledgeSubjects.name,
+      color: knowledgeSubjects.color,
+    })
+    .from(questionAttempts)
+    .innerJoin(questions, eq(questionAttempts.questionId, questions.id))
+    .innerJoin(
+      knowledgeSubjects,
+      eq(questions.knowledgeSubjectId, knowledgeSubjects.id)
+    )
+    .where(eq(questionAttempts.userId, userId));
 
   const map = new Map<
     string,
     { name: string; color: string | null; total: number; acertos: number }
   >();
 
-  for (const row of (data as unknown as AttemptRow[] | null) ?? []) {
-    const subject = row.question?.subject;
-    if (!subject) continue;
-    const entry = map.get(subject.id) ?? {
-      name: subject.name,
-      color: subject.color ?? null,
+  for (const row of rows) {
+    const entry = map.get(row.subjectId) ?? {
+      name: row.name,
+      color: row.color ?? null,
       total: 0,
       acertos: 0,
     };
     entry.total++;
-    if (row.is_correct) entry.acertos++;
-    map.set(subject.id, entry);
+    if (row.isCorrect) entry.acertos++;
+    map.set(row.subjectId, entry);
   }
 
   return [...map.values()]
@@ -140,9 +133,8 @@ export async function getPerformanceBySubject(
     .sort((a, b) => a.taxa - b.taxa);
 }
 
-/** Série temporal de acertos (últimos N dias) */
+/** Série temporal de acertos (últimos N dias). */
 export async function getEvolution(
-  db: DB,
   userId: string,
   days = 30
 ): Promise<EvolutionPoint[]> {
@@ -150,21 +142,20 @@ export async function getEvolution(
   since.setDate(since.getDate() - (days - 1));
   since.setHours(0, 0, 0, 0);
 
-  const { data, error } = await db
-    .from("question_attempts")
-    .select("is_correct, created_at")
-    .eq("user_id", userId)
-    .gte("created_at", since.toISOString());
-
-  if (error) throw new Error(error.message);
+  const rows = await db
+    .select({ isCorrect: questionAttempts.isCorrect, createdAt: questionAttempts.createdAt })
+    .from(questionAttempts)
+    .where(
+      and(eq(questionAttempts.userId, userId), gte(questionAttempts.createdAt, since))
+    );
 
   // Agrupa por dia
   const map = new Map<string, { total: number; acertos: number }>();
-  for (const row of data ?? []) {
-    const day = (row.created_at as string).slice(0, 10);
+  for (const row of rows) {
+    const day = row.createdAt.toISOString().slice(0, 10);
     const entry = map.get(day) ?? { total: 0, acertos: 0 };
     entry.total++;
-    if (row.is_correct) entry.acertos++;
+    if (row.isCorrect) entry.acertos++;
     map.set(day, entry);
   }
 

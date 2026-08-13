@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { sendMessageSchema } from "@/lib/validations/chat";
 import { apiError } from "@/lib/api/helpers";
 import { prompts, interpolate } from "@/lib/ai/prompts";
@@ -46,8 +45,6 @@ export async function POST(req: Request) {
 
   const { session_id, message, model, subject_id } = parsed.data;
 
-  const db = await createClient();
-
   // --- Cotas de IA ---
   const usage = await getAiUsage(userId);
   if (!usage.canSend) {
@@ -60,23 +57,23 @@ export async function POST(req: Request) {
   // --- Sessão de chat ---
   let activeSessionId = session_id ?? null;
   if (activeSessionId) {
-    const existing = await getSession(db, userId, activeSessionId);
+    const existing = await getSession(userId, activeSessionId);
     if (!existing) activeSessionId = null;
   }
   if (!activeSessionId) {
-    const created = await createSession(db, userId, {
+    const created = await createSession(userId, {
       title: message.slice(0, 60),
       subject_id,
       model,
     });
     activeSessionId = created.id;
   } else {
-    await touchSession(db, userId, activeSessionId);
+    await touchSession(userId, activeSessionId);
   }
 
   // --- Perfil + contexto ---
   const profile = await getProfile(userId);
-  const history = await getRecentContext(db, userId, activeSessionId, 10);
+  const history = await getRecentContext(userId, activeSessionId, 10);
 
   const systemTemplate = await prompts.professorSystem();
   const systemPrompt = interpolate(systemTemplate, {
@@ -96,7 +93,7 @@ export async function POST(req: Request) {
   const messages = buildMessages(systemPrompt, historyMessages, message);
 
   // --- Salva mensagem do usuário ---
-  await insertMessage(db, {
+  await insertMessage({
     session_id: activeSessionId,
     user_id: userId,
     role: "user",
@@ -184,7 +181,7 @@ export async function POST(req: Request) {
         // Salva resposta final no banco
         try {
           const finalContent = fullText || "⚠️ Desculpe, não consegui gerar uma resposta. Tente novamente.";
-          await insertMessage(db, {
+          await insertMessage({
             session_id: activeSessionId,
             user_id: userId,
             role: "assistant",
@@ -197,13 +194,9 @@ export async function POST(req: Request) {
             await registerUsage(userId, tokensIn, tokensOut);
           }
           // Atualiza título da 1ª mensagem se ainda for genérico
-          const sessions = await db
-            .from("chat_sessions")
-            .select("title")
-            .eq("id", activeSessionId)
-            .single();
-          if (sessions.data?.title === "Nova conversa") {
-            await updateSessionTitle(db, userId, activeSessionId, message.slice(0, 60) || "Nova conversa");
+          const current = await getSession(userId, activeSessionId);
+          if (current?.title === "Nova conversa") {
+            await updateSessionTitle(userId, activeSessionId, message.slice(0, 60) || "Nova conversa");
           }
         } catch (err) {
           console.error("[chat] Falha ao salvar resposta:", err);
