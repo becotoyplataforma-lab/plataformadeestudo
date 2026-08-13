@@ -3,7 +3,7 @@
  *
  * Camada de persistência do agendamento SRS (ReviewSchedule) — 1:1 com Flashcard.
  */
-import { eq, and, isNull } from "drizzle-orm";
+import { and, eq, isNull, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import { reviewSchedules } from "@/db/schema/study";
 
@@ -64,5 +64,20 @@ export const ReviewScheduleRepository = {
       )
       .returning();
     return row ?? null;
+  },
+
+  /** Contar revisões vencidas do usuário (due_date <= agora). */
+  async countDue(userId: string): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(reviewSchedules)
+      .where(
+        and(
+          eq(reviewSchedules.userId, userId),
+          isNull(reviewSchedules.deletedAt),
+          lte(reviewSchedules.dueDate, new Date())
+        )
+      );
+    return row?.count ?? 0;
   },
 };

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { deleteFlashcard } from "@/lib/db/repositories/flashcards";
+import { FlashcardError } from "@/lib/study/services/flashcard.service";
 
 /** DELETE /api/flashcards/:id — remove flashcard do usuário */
 export async function DELETE(
@@ -13,10 +13,12 @@ export async function DELETE(
     if (!session?.user?.id) return apiError(401, "Não autenticado.");
 
     const { id } = await params;
-    const db = await createClient();
-    await deleteFlashcard(db, session.user.id, id);
+    await deleteFlashcard(session.user.id, id);
     return apiOk({ ok: true });
   } catch (error) {
+    if (error instanceof FlashcardError) {
+      return apiError(404, error.message);
+    }
     console.error("[flashcards] DELETE", error);
     return apiError(500, "Erro interno.");
   }
