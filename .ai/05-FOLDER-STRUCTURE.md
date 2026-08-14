@@ -56,7 +56,7 @@
 │   │   ├── auth/            → configuração NextAuth
 │   │   ├── supabase/        → client, server, admin, middleware
 │   │   ├── ai/              → deepseek.ts, prompts.ts, limits.ts, types.ts
-│   │   ├── payments/        → mercadopago.ts, plans.ts
+│   │   ├── payments/        → mercadopago.ts
 │   │   ├── dto/             → DTOs validados por Zod (contratos de fronteira)
 │   │   │   ├── index.ts                 → helpers (parseDto, strictDto, isDto)
 │   │   │   └── <modulo>.dto.ts          → schema + tipo + mapper por módulo

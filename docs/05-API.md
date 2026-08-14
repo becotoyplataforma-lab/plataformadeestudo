@@ -160,21 +160,13 @@ data: {"tokens_in":310,"tokens_out":420,"model":"flash"}
 
 ### 4.6 Cronograma
 
-| Método | Rota | Auth | Descrição |
-| --- | --- | --- | --- |
-| GET | `/api/cronograma/tarefas?date=...` | Sim | Tarefas do período |
-| POST | `/api/cronograma/tarefas` | Sim | Cria tarefa |
-| PATCH | `/api/cronograma/tarefas/[id]` | Sim | Atualiza/alterna status |
-| DELETE | `/api/cronograma/tarefas/[id]` | Sim | Remove |
-| GET/POST | `/api/cronograma/materias` | Sim | CRUD de disciplinas |
+> Fluxo via **Server Actions** (`cronograma/actions.ts`) e rotas `/api/study/*`
+> (`/api/study/subjects`, `/api/study/tasks`, `/api/study/planner`). A rota
+> REST legada `/api/cronograma/*` foi removida.
 
 ### 4.7 Perfil
 
-| Método | Rota | Auth | Descrição |
-| --- | --- | --- | --- |
-| GET | `/api/perfil` | Sim | Perfil atual |
-| PATCH | `/api/perfil` | Sim | Atualiza preferências |
-| POST | `/api/perfil/senha` | Sim | Altera senha |
+> Fluxo via **Server Actions** (`perfil/actions.ts`). Não há rotas REST `/api/perfil`.
 
 ### 4.8 Pagamentos (Mercado Pago)
 

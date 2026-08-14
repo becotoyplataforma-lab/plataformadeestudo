@@ -87,7 +87,6 @@ Regras:
 | `GET /api/questoes` | Lista questões (filtros + paginação) |
 | `POST /api/questoes/:id/responder` | Responde e retorna gabarito |
 | `GET/POST /api/flashcards`, `POST /review` | Flashcards e revisão SRS |
-| `GET /api/cronograma/tarefas` | Tarefas do cronograma |
 | `GET /api/analises/resumo` | KPIs agregados |
 | `POST /api/payments/checkout` | Checkout Mercado Pago |
 | `POST /api/payments/webhook` | Webhook Mercado Pago (ativo plano) |
