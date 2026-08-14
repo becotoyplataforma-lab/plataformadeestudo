@@ -25,8 +25,8 @@ describe("ai/limits (Drizzle)", () => {
     expect(usage).toMatchObject({
       usedMessages: 0,
       usedTokens: 0,
-      maxMessages: 100_000,
-      remainingMessages: 100_000,
+      maxMessages: 50,
+      remainingMessages: 50,
       canSend: true,
       plan: "free",
     });
@@ -47,7 +47,7 @@ describe("ai/limits (Drizzle)", () => {
 
     expect(usage.usedMessages).toBe(3);
     expect(usage.usedTokens).toBe(30);
-    expect(usage.remainingMessages).toBe(100_000 - 3);
+    expect(usage.remainingMessages).toBe(50 - 3);
     expect(usage.canSend).toBe(true);
   });
 

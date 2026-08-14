@@ -10,10 +10,10 @@ import type { Plan } from "@/types";
  * espelha os valores para uso em TS no servidor.
  */
 const PLAN_LIMITS: Record<Plan, { maxMessages: number; maxTokens: number }> = {
-  // Limites muito altos para não incomodar com aviso de limite diário no chat.
-  free: { maxMessages: 100_000, maxTokens: 100_000 },
-  pro: { maxMessages: 200_000, maxTokens: 1_000_000 },
-  intensivo: { maxMessages: 500_000, maxTokens: 5_000_000 },
+  // Espelha a função SQL get_plan_limits (sql/schema.sql) — fonte da verdade.
+  free: { maxMessages: 50, maxTokens: 100_000 },
+  pro: { maxMessages: 500, maxTokens: 1_000_000 },
+  intensivo: { maxMessages: 2_000, maxTokens: 5_000_000 },
 };
 
 export interface UsageStatus {
