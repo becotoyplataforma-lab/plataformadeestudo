@@ -5,6 +5,7 @@ export {
   EntitlementService,
 } from "./entitlement.service";
 export { resolveUserLimits } from "./limits.resolver";
+export { resolveUserPlan } from "./plan.resolver";
 export {
   SubscriptionService,
   SubscriptionError,
