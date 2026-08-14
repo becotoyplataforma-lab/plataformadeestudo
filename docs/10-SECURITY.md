@@ -84,7 +84,7 @@ Strict-Transport-Security: max-age=63072000
 ## 9. LGPD e Privacidade
 
 - **Base legal:** consentimento explícito no cadastro; finalidade clara.
-- **Direitos:** exportação de dados (`GET /api/perfil/exportar`), exclusão (`DELETE /api/perfil`).
+- **Direitos:** exportação de dados e exclusão de conta (LGPD — **planejado**, rotas ainda não implementadas).
 - **DPO/Contato:** política de privacidade e termos no site.
 - **Retenção:** dados de uso anonimizados após 12 meses; contas inativas excluídas após 2 anos (aviso).
 - **Cookies:** apenas essenciais (sessão) + analytics com consentimento.

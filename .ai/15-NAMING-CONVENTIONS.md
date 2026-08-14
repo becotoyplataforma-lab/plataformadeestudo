@@ -46,7 +46,7 @@
 
 | Item | Convenção | Exemplo |
 | --- | --- | --- |
-| Rotas | `kebab-case` | `/api/cronograma/tarefas` |
+| Rotas | `kebab-case` | `/api/study/tasks` |
 | Query params | `camelCase` | `?subjectId=` (ou `snake_case` se espelhar coluna) |
 | JSON | `snake_case` (espelha colunas) | `{ selected_letter }` |
 | Erros | `{ error: "pt-BR" }` | — |
