@@ -42,8 +42,13 @@ export function QuestionBrowser({
   const [search, setSearch] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const debouncedSearch = useDebounce(search, 400);
+  // Guard de requisições obsoletas: se um novo load() disparar antes de um
+  // load() antigo concluir, a resposta antiga é descartada (evita sobrescrever
+  // a lista filtrada com uma resposta defasada — race condition ao trocar filtros).
+  const requestSeq = React.useRef(0);
 
   async function load(nextPage = page) {
+    const seq = ++requestSeq.current;
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -57,11 +62,12 @@ export function QuestionBrowser({
 
       const res = await fetch(`/api/questoes?${params.toString()}`);
       const data = await res.json();
+      if (seq !== requestSeq.current) return; // resposta obsoleta — ignora
       setQuestions(data.data ?? []);
       setTotal(data.total ?? 0);
       setPage(nextPage);
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
   }
 

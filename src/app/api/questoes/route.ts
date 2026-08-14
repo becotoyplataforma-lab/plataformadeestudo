@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { questionFiltersSchema } from "@/lib/validations/questoes";
 import { listQuestions } from "@/lib/db/repositories/questoes";
@@ -26,8 +25,7 @@ export async function GET(req: Request) {
     const parsed = questionFiltersSchema.safeParse(raw);
     if (!parsed.success) return apiError(422, "Filtros inválidos.");
 
-    const db = await createClient();
-    let { data, total } = await listQuestions(db, parsed.data);
+    let { data, total } = await listQuestions(parsed.data);
 
     // Filtro textual (busca simples no client; no futuro usa pg_trgm no banco)
     if (q) {

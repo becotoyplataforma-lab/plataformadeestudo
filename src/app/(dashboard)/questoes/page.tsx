@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
-import { listBancas, listQuestions } from "@/lib/db/repositories/questoes";
+import { listBancas, listQuestions, listSubjects } from "@/lib/db/repositories/questoes";
 import { QuestionBrowser } from "@/components/questoes/question-browser";
 
 export const metadata: Metadata = {
@@ -14,11 +13,10 @@ export default async function QuestoesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const db = await createClient();
   const [initial, bancas, subjects] = await Promise.all([
-    listQuestions(db, { page: 1, pageSize: 15 }),
-    listBancas(db),
-    db.from("knowledge_subjects").select("id, name, color").order("name"),
+    listQuestions({ page: 1, pageSize: 15 }),
+    listBancas(),
+    listSubjects(),
   ]);
 
   return (
@@ -26,7 +24,7 @@ export default async function QuestoesPage() {
       initialQuestions={initial.data}
       initialTotal={initial.total}
       bancas={bancas}
-      subjects={(subjects.data ?? []) as { id: string; name: string; color: string | null }[]}
+      subjects={subjects}
       userId={session.user.id}
     />
   );

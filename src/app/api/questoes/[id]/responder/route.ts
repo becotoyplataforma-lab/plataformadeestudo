@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { answerQuestionSchema } from "@/lib/validations/questoes";
 import { getGabarito, getQuestionWithOptions } from "@/lib/db/repositories/questoes";
@@ -24,15 +23,13 @@ export async function POST(
       return apiError(422, parsed.error.issues[0]?.message ?? "Dados inválidos.");
     }
 
-    const db = await createClient();
-
     // Verifica se a questão existe e é pública
-    const question = await getQuestionWithOptions(db, id);
+    const question = await getQuestionWithOptions(id);
     if (!question || !question.is_public) {
       return apiError(404, "Questão não encontrada.");
     }
 
-    const gabarito = await getGabarito(db, id);
+    const gabarito = await getGabarito(id);
     const correct = gabarito?.gabarito === parsed.data.selected_letter;
 
     await QuestionAttemptRepository.create({
