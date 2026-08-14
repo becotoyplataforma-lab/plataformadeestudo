@@ -16,11 +16,11 @@ test.describe("Administration", () => {
     expect(res.status()).toBe(403);
   });
 
-  test.skip(
-    !process.env.E2E_ADMIN_EMAIL,
-    "Requer E2E_ADMIN_EMAIL na allowlist de administradores"
-  );
   test("admin lista configurações e auditoria", async () => {
+    test.skip(
+      !process.env.E2E_ADMIN_EMAIL,
+      "Requer E2E_ADMIN_EMAIL na allowlist de administradores"
+    );
     const api = await getAuthContext();
 
     const settingsRes = await api.get("/api/admin/settings");
@@ -34,11 +34,11 @@ test.describe("Administration", () => {
     expect(Array.isArray(audit.data)).toBe(true);
   });
 
-  test.skip(
-    !process.env.E2E_ADMIN_EMAIL,
-    "Requer E2E_ADMIN_EMAIL na allowlist de administradores"
-  );
   test("admin atualiza uma configuração e a remove", async () => {
+    test.skip(
+      !process.env.E2E_ADMIN_EMAIL,
+      "Requer E2E_ADMIN_EMAIL na allowlist de administradores"
+    );
     const api = await getAuthContext();
     const key = `e2e.flag.${Date.now()}`;
 

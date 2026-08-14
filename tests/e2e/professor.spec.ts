@@ -7,9 +7,15 @@
 import { test, expect } from "@playwright/test";
 import { getAuthContext, hasAuth, authenticateBrowser } from "./support/auth";
 
+const hasDeepSeek = Boolean(process.env.DEEPSEEK_API_KEY);
+
 test.describe("Professor IA — fluxo principal", () => {
   test.skip(!hasAuth, "Requer E2E_USER_EMAIL/E2E_USER_PASSWORD (backend real)");
   test("responde a uma pergunta simples (modo chat) via API", async () => {
+    test.skip(
+      !hasDeepSeek,
+      "Requer DEEPSEEK_API_KEY (backend de IA real configurado)"
+    );
     const api = await getAuthContext();
     const res = await api.post("/api/professor/chat", {
       data: { message: "Explique o que é a Constituição." },

@@ -21,6 +21,9 @@ const SUBJECTS = [
 
 test.describe("Grupo B — Planner pela UI real", () => {
   test.skip(!EMAIL || !PASSWORD, "Requer E2E_USER_EMAIL/E2E_USER_PASSWORD");
+  // Fluxo longo (5 cadastros com reload + replan) num dev server frio estoura
+  // o timeout padrão (30s). Mesmo padrão do grupob-p1p5.
+  test.describe.configure({ timeout: 120_000 });
 
   test("cadastra disciplinas → replan → P1–P5 → persistência", async ({ page }) => {
     // 1) Login
@@ -38,23 +41,37 @@ test.describe("Grupo B — Planner pela UI real", () => {
     ).toBeVisible({ timeout: 20000 });
     console.log("[GB-UI] CRONOGRAMA_OK");
 
-    // 3) Cadastra as disciplinas pela UI (uma a uma; a página recarrega após cada criação)
+    // 3) Garante as disciplinas registradas pela UI (uma a uma; a página recarrega
+    //    após cada criação bem-sucedida).
+    //    O usuário de teste pode já possuir study_subjects de execuções anteriores:
+    //    o produto aplica regra de negócio de nome único por usuário, então a
+    //    duplicata é rejeitada e o dialog permanece aberto. Para ser determinístico
+    //    em ambos os casos (criar ou já existir), fecha o dialog explicitamente
+    //    após cada tentativa antes de prosseguir.
     for (const name of SUBJECTS) {
       await page.getByRole("button", { name: "Disciplina" }).click();
       await page.locator("#subject-name").fill(name);
       await page.getByRole("button", { name: "Criar disciplina" }).click();
-      // Espera o reload terminar e a disciplina aparecer no card "Suas disciplinas"
-      await expect(page.getByText(name).first()).toBeVisible({ timeout: 15000 });
-      console.log("[GB-UI] DISCIPLINA_ADICIONADA=" + name);
+      // Sucesso → reload (dialog fecha). Duplicata → dialog permanece aberto:
+      // fecha explicitamente e aguarda o estado observável (dialog fechado).
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#subject-name")).toBeHidden({ timeout: 15000 });
+      console.log("[GB-UI] DISCIPLINA_OK=" + name);
     }
 
     // 4) Dispara o replan e captura a resposta da API
+    //    Estado observável antes de interagir: nenhum dialog aberto + botão habilitado.
+    await page.keyboard.press("Escape");
+    const replanBtn = page.getByRole("button", { name: "Replanejar com IA" });
+    await expect(replanBtn).toBeEnabled({ timeout: 30000 });
+    console.log("[GB-UI] REPLAN_BTN_OK");
+
     const respPromise = page.waitForResponse(
       (r) =>
         r.url().includes("/api/study/planner/generate") &&
         r.request().method() === "POST"
     );
-    await page.getByRole("button", { name: "Replanejar com IA" }).click();
+    await replanBtn.click();
     const resp = await respPromise;
     console.log("[GB-UI] REPLAN_HTTP=" + resp.status());
     const body = (await resp.json()) as {

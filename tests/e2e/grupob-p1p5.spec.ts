@@ -74,9 +74,13 @@ test.describe("Grupo B — P1–P5 variado (UI real)", () => {
       console.log(`[P1P5] ${name}: ${qs.length} questões carregadas`);
 
       // Abre a página de questões e filtra pela matéria
+      // (dropdown Radix: usa scrollIntoView + force click p/ evitar
+      // intercepção de ponteiro durante o mount — flakiness conhecida)
       await page.goto("/questoes");
       await page.getByRole("combobox").first().click();
-      await page.getByRole("option", { name }).click();
+      const opt = page.getByRole("option", { name });
+      await opt.scrollIntoViewIfNeeded();
+      await opt.click({ force: true });
 
       for (let i = 0; i < qs.length; i++) {
         const q = qs[i]!;
@@ -132,8 +136,19 @@ test.describe("Grupo B — P1–P5 variado (UI real)", () => {
 
     // Asserts principais
     expect(resp.status()).toBe(200);
-    expect(priorities.length).toBe(5);
-    expect(distinct).toBeGreaterThan(1); // NÃO pode ser tudo igual (P3)
+    // O usuário de teste pode acumular study_subjects de outras execuções E2E
+    // (ex.: "E2E Matéria <ts>") — filtra para as 5 matérias registradas por este
+    // teste antes de validar a priorização (poluição de dados de teste, não bug).
+    const EXPECTED = new Set([
+      "Português",
+      "Direito Constitucional",
+      "Direito Administrativo",
+      "Raciocínio Lógico",
+      "Informática",
+    ]);
+    const own = priorities.filter((p) => EXPECTED.has(p.subject_name));
+    expect(own.length).toBe(5);
+    expect(new Set(own.map((p) => p.priority)).size).toBeGreaterThan(1); // NÃO pode ser tudo igual (P3)
     expect(body.tasks_created).toBeGreaterThan(0);
 
     // Toast de sucesso
