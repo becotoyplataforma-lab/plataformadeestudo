@@ -120,7 +120,7 @@ describe("GET /api/billing/entitlement", () => {
       subscriptionStatus: null,
       startsAt: null,
       endsAt: null,
-      limits: { maxMessages: 50, maxTokens: 50000, allowPro: false },
+      limits: { maxMessages: 50, maxTokens: 100000, allowPro: false },
     });
     const res = await getEntitlement();
     expect(res.status).toBe(200);

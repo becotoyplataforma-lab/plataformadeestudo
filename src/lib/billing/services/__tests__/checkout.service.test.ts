@@ -37,7 +37,7 @@ const FREE_PLAN = {
   name: "Gratuito",
   code: "free",
   priceCents: 0,
-  limits: { maxMessages: 50, maxTokens: 50000 },
+  limits: { maxMessages: 50, maxTokens: 100000 },
   status: "active",
   createdAt: new Date(),
   updatedAt: new Date(),
