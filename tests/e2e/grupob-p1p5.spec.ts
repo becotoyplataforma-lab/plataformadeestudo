@@ -73,14 +73,15 @@ test.describe("Grupo B — P1–P5 variado (UI real)", () => {
       expect(qs.length).toBeGreaterThan(0);
       console.log(`[P1P5] ${name}: ${qs.length} questões carregadas`);
 
-      // Abre a página de questões e filtra pela matéria
-      // (dropdown Radix: usa scrollIntoView + force click p/ evitar
-      // intercepção de ponteiro durante o mount — flakiness conhecida)
+      // Abre a página de questões e filtra pela matéria.
+      // Dropdown Radix com lista longa (catálogo completo de matérias): clicar
+      // na opção por ponteiro é flaky (intercepção no re-render pode selecionar
+      // a matéria vizinha — ex.: Ética em vez de Informática). Seleção por
+      // teclado (typeahead + Enter) é determinística.
       await page.goto("/questoes");
       await page.getByRole("combobox").first().click();
-      const opt = page.getByRole("option", { name });
-      await opt.scrollIntoViewIfNeeded();
-      await opt.click({ force: true });
+      await page.keyboard.type(name, { delay: 25 });
+      await page.keyboard.press("Enter");
 
       for (let i = 0; i < qs.length; i++) {
         const q = qs[i]!;

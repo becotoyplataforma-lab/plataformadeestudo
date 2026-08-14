@@ -57,8 +57,10 @@ test.describe("Contest — seleção de concurso e cargo no perfil", () => {
     await page.getByRole("button", { name: "Replanejar com IA" }).click();
 
     // Painel "Planejamento inteligente" aparece após o replan.
+    // O replan leva ~20s com o volume de dados acumulado do usuário de teste
+    // (75+ tarefas) — timeout realista, não máscara de falha.
     await expect(page.getByText("Planejamento inteligente")).toBeVisible({
-      timeout: 15_000,
+      timeout: 60_000,
     });
 
     // Ao menos uma disciplina com peso no edital exibe o fator de edital
