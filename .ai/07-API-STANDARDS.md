@@ -43,7 +43,7 @@
 - Em rotas/actions novas:
   ```ts
   import { strictDto } from "@/lib/dto";
-  import { StudyTaskDtoSchema } from "@/lib/dto/cronograma.dto";
+  import { StudyTaskDtoSchema } from "@/lib/dto/study.dto";
   const dto = strictDto(StudyTaskDtoSchema, row); // ou toStudyTaskDto(row)
   ```
 - Use `parseDto` quando quiser tolerar erro (log + null); `strictDto` para
