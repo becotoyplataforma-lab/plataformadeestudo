@@ -3,7 +3,6 @@ import { env } from "@/lib/env";
 import {
   MODEL_NAMES,
   MODEL_PARAMS,
-  type AIModel,
   type ChatCompletionRequest,
   type ChatCompletionResult,
   type ChatMessage,

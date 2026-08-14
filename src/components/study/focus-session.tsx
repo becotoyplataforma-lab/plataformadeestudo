@@ -6,7 +6,7 @@ import { Play, Pause, RotateCcw, TimerReset } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn, formatMinutes } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const FOCUS_MINUTES = 25;
 const BREAK_MINUTES = 5;
@@ -17,7 +17,7 @@ type Phase = "focus" | "break";
  * Modo foco (estilo Pomodoro). No MVP, o registro de sessões de estudo
  * pode ser integrado ao cronograma em versões futuras.
  */
-export function FocusSession({ userId }: { userId: string }) {
+export function FocusSession() {
   const [phase, setPhase] = React.useState<Phase>("focus");
   const [secondsLeft, setSecondsLeft] = React.useState(FOCUS_MINUTES * 60);
   const [running, setRunning] = React.useState(false);

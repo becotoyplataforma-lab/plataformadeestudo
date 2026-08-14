@@ -11,9 +11,6 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { EvolutionPoint } from "@/types";
-import { formatPercent } from "@/lib/utils";
-
-const dataFormatter = (value: number) => formatPercent(value, 0);
 
 export function EvolutionChart({ data }: { data: EvolutionPoint[] }) {
   const chartData = data.map((d) => ({

@@ -5,12 +5,11 @@
  *
  * Segue: .ai/blueprints/05-hybrid-search.blueprint.md
  */
-import { and, eq, isNull, sql, or, inArray, desc } from "drizzle-orm";
+import { and, eq, isNull, sql, inArray, desc } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import {
   documents,
   documentChunks,
-  embeddings,
   documentSubjects,
   knowledgeSubjects,
 } from "@/db/schema/knowledge";

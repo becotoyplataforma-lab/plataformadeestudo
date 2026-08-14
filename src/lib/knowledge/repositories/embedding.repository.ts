@@ -1,7 +1,7 @@
 /**
  * ConcursoAI — EmbeddingRepository
  */
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import { embeddings } from "@/db/schema/knowledge";
 

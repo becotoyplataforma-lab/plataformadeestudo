@@ -28,11 +28,6 @@ function toISO(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-function diffDays(a: Date, b: Date): number {
-  const MS = 24 * 60 * 60 * 1000;
-  return Math.round((a.getTime() - b.getTime()) / MS);
-}
-
 export function computeStreak({ activityDates, today }: StreakInput): StreakResult {
   const set = new Set(activityDates);
   const todayDate = parseISO(today);

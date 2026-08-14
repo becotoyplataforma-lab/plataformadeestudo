@@ -1,7 +1,7 @@
 /**
  * ConcursoAI — Junction Repositories (document_subjects, document_topics, document_tags)
  */
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import {
   documentSubjects,

@@ -55,10 +55,8 @@ interface LocalMessage {
 }
 
 export function ChatClient({
-  userId,
   initialSessions,
   profileName,
-  profileLevel,
   profileBanca,
   profileConcurso,
   defaultModel,
@@ -342,7 +340,6 @@ export function ChatClient({
             {messages.length === 0 && (
               <EmptyState
                 name={profileName}
-                level={profileLevel}
                 banca={profileBanca}
                 concurso={profileConcurso}
                 onSuggestion={(t) => setInput(t)}
@@ -459,13 +456,11 @@ function TypingDots() {
 
 function EmptyState({
   name,
-  level,
   banca,
   concurso,
   onSuggestion,
 }: {
   name?: string | null;
-  level?: string | null;
   banca?: string | null;
   concurso?: string | null;
   onSuggestion: (t: string) => void;

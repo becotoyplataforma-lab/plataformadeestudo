@@ -35,7 +35,7 @@ interface Props {
   userId: string;
 }
 
-export function FlashcardsClient({ initialCards, dueCount, subjects, userId }: Props) {
+export function FlashcardsClient({ initialCards, dueCount, subjects }: Props) {
   const [cards, setCards] = React.useState(initialCards);
   const [due, setDue] = React.useState(dueCount);
   const [reviewing, setReviewing] = React.useState(false);

@@ -4,12 +4,10 @@ import {
   Bot,
   BrainCircuit,
   CalendarCheck2,
-  ChartNoAxesCombined,
   CheckCircle2,
   FileQuestion,
   Layers,
   LineChart,
-  Sparkles,
   Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

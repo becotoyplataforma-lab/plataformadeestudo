@@ -12,5 +12,5 @@ export default async function FocusSessionPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  return <FocusSession userId={session.user.id} />;
+  return <FocusSession />;
 }

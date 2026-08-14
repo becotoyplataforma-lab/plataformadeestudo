@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SubjectPerformance } from "@/types";
-import { formatPercent } from "@/lib/utils";
 
 export function PerformanceChart({ data }: { data: SubjectPerformance[] }) {
   const chartData = data.map((d) => ({

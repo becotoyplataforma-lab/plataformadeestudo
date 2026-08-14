@@ -7,7 +7,7 @@ import {
   ReviewScheduleService,
   ReviewScheduleError,
 } from "@/lib/study/services/review-schedule.service";
-import { ReviewRequestDtoSchema, mapScheduleToDto } from "@/lib/dto/study.dto";
+import { ReviewRequestDtoSchema } from "@/lib/dto/study.dto";
 
 type Ctx = { params: Promise<{ id: string }> };
 

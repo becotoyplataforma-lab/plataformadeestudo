@@ -245,7 +245,7 @@ export const ChunkService = {
 
     return {
       documentId,
-      chunks: chunksData.map(({ documentId: _did, content: _c, ...rest }) => ({
+      chunks: chunksData.map(({ documentId: _did, ...rest }) => ({
         documentId: _did,
         seq: rest.seq,
         contentHash: rest.contentHash,

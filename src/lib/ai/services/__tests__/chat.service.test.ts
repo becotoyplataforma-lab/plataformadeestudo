@@ -49,7 +49,7 @@ vi.mock("../usage.service", () => ({
   },
 }));
 
-import { ChatService, ChatError } from "../chat.service";
+import { ChatService } from "../chat.service";
 
 describe("ChatService", () => {
   beforeEach(() => vi.clearAllMocks());

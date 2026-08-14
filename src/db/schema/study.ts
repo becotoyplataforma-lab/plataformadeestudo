@@ -362,7 +362,7 @@ export const questionAttemptsRelations = relations(questionAttempts, ({ one }) =
   }),
 }));
 
-export const flashcardsRelations = relations(flashcards, ({ one, many }) => ({
+export const flashcardsRelations = relations(flashcards, ({ one }) => ({
   user: one(authUsers, {
     fields: [flashcards.userId],
     references: [authUsers.id],

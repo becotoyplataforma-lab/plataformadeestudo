@@ -306,7 +306,7 @@ async function calculateTrend(
 }
 
 /** Dias desde a última tarefa concluída da disciplina. */
-async function daysSinceLastStudyTask(userId: string, subjectId: string): Promise<number> {
+async function daysSinceLastStudyTask(userId: string): Promise<number> {
   try {
     const tasks = await AggregationRepository.listTasks(userId);
     const subjectTasks = tasks
@@ -389,7 +389,7 @@ export const AdaptivePlannerService = {
         ? (perfByKnowledgeId.get(link.knowledgeSubject.id) ?? null)
         : null;
 
-      const idle = await daysSinceLastStudyTask(userId, subject.id);
+      const idle = await daysSinceLastStudyTask(userId);
       const bancaRelevance = link.knowledgeSubject
         ? computeBancaRelevance(
             bancaTarget,
@@ -402,7 +402,7 @@ export const AdaptivePlannerService = {
         editalContext,
         link.knowledgeSubject?.id ?? null
       );
-      const { priority, factors } = calculatePriority(perf, idle, banca, editalFactor);
+      const { factors } = calculatePriority(perf, idle, banca, editalFactor);
 
       // Tendência real
       const trend = await calculateTrend(userId, link);

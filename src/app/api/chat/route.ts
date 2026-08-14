@@ -122,7 +122,6 @@ export async function POST(req: Request) {
   const decoder = new TextDecoder();
 
   let fullText = "";
-  let fullReasoning = "";
   let tokensIn = 0;
   let tokensOut = 0;
 
@@ -158,7 +157,6 @@ export async function POST(req: Request) {
                 const json = JSON.parse(payload);
                 const delta = json.choices?.[0]?.delta;
                 if (delta?.reasoning_content) {
-                  fullReasoning += delta.reasoning_content;
                   sendEvent("reasoning", { text: delta.reasoning_content });
                 }
                 if (delta?.content) {

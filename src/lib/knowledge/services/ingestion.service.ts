@@ -52,7 +52,6 @@ const MIME_TO_TYPE: Record<string, string> = {
 };
 
 const MAX_FILE_SIZE_FREE = 25 * 1024 * 1024; // 25 MB
-const MAX_FILE_SIZE_PRO = 100 * 1024 * 1024; // 100 MB
 
 // ============================================================
 // Helpers

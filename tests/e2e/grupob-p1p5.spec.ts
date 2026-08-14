@@ -46,7 +46,7 @@ test.describe("Grupo B — P1–P5 variado (UI real)", () => {
 
   test.skip(!EMAIL || !PASSWORD, "Requer E2E_USER_EMAIL/E2E_USER_PASSWORD");
 
-  test("responde questões pela UI → replan → prioridades variadas → persistência", async ({ page, request }) => {
+  test("responde questões pela UI → replan → prioridades variadas → persistência", async ({ page }) => {
     // Login
     await page.goto("/login?callbackUrl=%2F");
     await page.fill("#email", EMAIL);
