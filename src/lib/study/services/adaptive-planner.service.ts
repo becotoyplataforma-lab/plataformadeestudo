@@ -481,7 +481,10 @@ export const AdaptivePlannerService = {
       if (weekMin < 15) continue; // mínimo 15min/semana
 
       // Distribuir igualmente entre os dias ativos
-      const perDay = Math.round(weekMin / activeDays.length);
+      // Garante duração dentro do intervalo aceito pela constraint do banco
+      // chk_study_tasks_duration (5–600 min): arredondamentos podem produzir
+      // valores < 5 (ex.: 15min/semana ÷ 5 dias = 3min), o que o Postgres rejeita.
+      const perDay = Math.min(600, Math.max(5, Math.round(weekMin / activeDays.length)));
 
       for (const dayOffset of activeDays) {
         const taskDate = addDays(start, dayOffset);
