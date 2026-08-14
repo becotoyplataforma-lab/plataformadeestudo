@@ -1,8 +1,7 @@
 -- ============================================================
 -- ConcursoAI — Domínio: Billing — Seeds (dev/staging apenas)
 --
--- Planos padrão. Limites (JSON) espelham os planos legados
--- (src/lib/payments/plans.ts) e as cotas definidas em docs/03-AIDD.
+-- Planos padrão. Fonte de verdade: tabela public.plans (cotas em docs/03-AIDD).
 -- OPEN-004: Billing é dono dos limites.
 -- ============================================================
 
