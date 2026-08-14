@@ -83,7 +83,7 @@ export async function createCheckoutPreference(params: {
     payer: undefined,
     external_reference: params.externalReference,
     notification_url:
-      params.notificationUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/webhook`,
+      params.notificationUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/api/billing/webhook`,
     back_urls: {
       success: params.successUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?pagamento=sucesso`,
       failure: params.failureUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?pagamento=falha`,

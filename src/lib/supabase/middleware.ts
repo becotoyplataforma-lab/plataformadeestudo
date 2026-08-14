@@ -4,7 +4,7 @@ import { publicEnv } from "@/lib/env";
 
 /**
  * Middleware do Supabase — renova sessões e mantém cookies atualizados.
- * Usado no middleware.ts da raiz junto com a proteção de rotas.
+ * Usado no proxy.ts da raiz junto com a proteção de rotas.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
