@@ -17,6 +17,13 @@ vi.mock("@/lib/payments/mercadopago", () => ({
   createCheckoutPreference: (...args: unknown[]) => mockCreatePreference(...args),
 }));
 
+const mockFindByCode = vi.fn();
+vi.mock("@/lib/billing/repositories/plan.repository", () => ({
+  PlanRepository: {
+    findByCode: (...args: unknown[]) => mockFindByCode(...args),
+  },
+}));
+
 const mockHandleWebhook = vi.fn();
 vi.mock("@/lib/billing/services/webhook.service", async (importOriginal) => {
   const actual =
@@ -34,6 +41,18 @@ import { POST as postWebhook } from "@/app/api/payments/webhook/route";
 import { WebhookError } from "@/lib/billing/services/webhook.service";
 
 const UUID = "00000000-0000-0000-0000-000000000001";
+
+const PRO_PLAN = {
+  id: "00000000-0000-0000-0000-000000000002",
+  name: "Pro",
+  code: "pro",
+  priceCents: 2990,
+  limits: { maxMessages: 500, maxTokens: 1000000 },
+  status: "active",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  deletedAt: null,
+};
 
 function jsonReq(body: unknown): Request {
   return new Request("http://localhost/api/payments/checkout", {
@@ -55,6 +74,7 @@ describe("POST /api/payments/checkout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: UUID } });
+    mockFindByCode.mockResolvedValue(PRO_PLAN);
   });
 
   it("retorna 401 sem sessão", async () => {
@@ -85,7 +105,14 @@ describe("POST /api/payments/checkout", () => {
     expect(body.init_point).toBe("https://init.mercadopago.com/x");
     expect(body.external_reference).toBe(`pro:${UUID}`);
     expect(body.plan).toBe("pro");
+    expect(mockFindByCode).toHaveBeenCalledWith("pro");
     expect(mockCreatePreference).toHaveBeenCalledTimes(1);
+  });
+
+  it("retorna 404 quando o plano não é encontrado", async () => {
+    mockFindByCode.mockResolvedValue(null);
+    const res = await postCheckout(jsonReq({ plan: "pro" }));
+    expect(res.status).toBe(404);
   });
 
   it("retorna 500 quando o provedor falha", async () => {
