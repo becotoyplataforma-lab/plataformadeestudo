@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth/auth";
-import { createClient } from "@/lib/supabase/server";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { z } from "zod";
 import { PLANS, getPlan } from "@/lib/payments/plans";
@@ -25,13 +24,6 @@ export async function POST(req: Request) {
 
     const plan = getPlan(parsed.data.plan as Plan);
     if (plan.amountCents <= 0) return apiError(400, "Plano gratuito não requer pagamento.");
-
-    const db = await createClient();
-    const { data: profile } = await db
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", session.user.id)
-      .single();
 
     // external_reference: "plano:userId" — usada no webhook para identificar
     const externalReference = `${plan.id}:${session.user.id}`;
