@@ -12,7 +12,7 @@ VALUES
     'Gratuito',
     'free',
     0,
-    '{"maxMessages": 50, "maxTokens": 50000, "maxQuestionsPerDay": 20, "maxDocuments": 3, "allowPro": false}'::jsonb,
+    '{"maxMessages": 50, "maxTokens": 100000, "maxQuestionsPerDay": 20, "maxDocuments": 3, "allowPro": false}'::jsonb,
     'active'
   ),
   (
