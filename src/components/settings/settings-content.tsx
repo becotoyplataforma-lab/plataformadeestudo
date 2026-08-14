@@ -29,7 +29,7 @@ export function SettingsContent({ plano, email }: Props) {
   async function startCheckout(plan: "pro" | "intensivo") {
     setCheckoutLoading(plan);
     try {
-      const res = await fetch("/api/payments/checkout", {
+      const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
