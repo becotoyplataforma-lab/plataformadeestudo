@@ -30,7 +30,7 @@ const FREE_PLAN = {
   name: "Gratuito",
   code: "free",
   priceCents: 0,
-  limits: { maxMessages: 50, maxTokens: 50000, maxQuestionsPerDay: 20, maxDocuments: 3, allowPro: false },
+  limits: { maxMessages: 50, maxTokens: 100000, maxQuestionsPerDay: 20, maxDocuments: 3, allowPro: false },
   status: "active",
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -107,7 +107,7 @@ describe("EntitlementService", () => {
     mockFindActive.mockResolvedValue(null);
     const limits = await EntitlementService.getLimits("u1");
     expect(limits.maxMessages).toBe(50);
-    expect(limits.maxTokens).toBe(50000);
+    expect(limits.maxTokens).toBe(100000);
     expect(limits.allowPro).toBe(false);
   });
 
