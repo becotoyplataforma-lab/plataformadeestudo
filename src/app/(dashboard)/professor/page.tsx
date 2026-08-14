@@ -6,6 +6,7 @@ import { knowledgeSubjects } from "@/db/schema/knowledge";
 import { listSessions } from "@/lib/db/repositories/chat";
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { getAiUsage } from "@/lib/ai/limits";
+import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
 import { ChatClient } from "@/components/professor/chat-client";
 
 export const metadata: Metadata = {
@@ -20,7 +21,9 @@ export default async function ProfessorPage() {
   const [sessions, profile, usage, subjects] = await Promise.all([
     listSessions(session.user.id),
     getProfile(session.user.id),
-    getAiUsage(session.user.id),
+    resolveUserLimits(session.user.id).then((limits) =>
+      getAiUsage(session.user.id, limits)
+    ),
     db
       .select({ id: knowledgeSubjects.id, name: knowledgeSubjects.name })
       .from(knowledgeSubjects)

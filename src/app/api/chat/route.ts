@@ -4,6 +4,7 @@ import { apiError } from "@/lib/api/helpers";
 import { prompts, interpolate } from "@/lib/ai/prompts";
 import { buildMessages, streamChatCompletion } from "@/lib/ai/deepseek";
 import { getAiUsage, registerUsage } from "@/lib/ai/limits";
+import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
 import {
   createSession,
   getSession,
@@ -45,8 +46,8 @@ export async function POST(req: Request) {
 
   const { session_id, message, model, subject_id } = parsed.data;
 
-  // --- Cotas de IA ---
-  const usage = await getAiUsage(userId);
+  // --- Cotas de IA (limites resolvidos pelo Billing — OPEN-004) ---
+  const usage = await getAiUsage(userId, await resolveUserLimits(userId));
   if (!usage.canSend) {
     return apiError(
       429,

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getAiUsage, registerUsage } from "@/lib/ai/limits";
+import type { PlanLimits } from "@/lib/billing/types";
 
 const mocks = vi.hoisted(() => ({
   select: vi.fn(),
@@ -9,6 +10,15 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/db/drizzle", () => ({
   db: { select: mocks.select, insert: mocks.insert },
 }));
+
+// Limites do plano gratuito (Billing) — injetados, nunca decididos pelo módulo.
+const FREE_LIMITS: PlanLimits = {
+  maxMessages: 50,
+  maxTokens: 100_000,
+  maxQuestionsPerDay: 20,
+  maxDocuments: 3,
+  allowPro: false,
+};
 
 describe("ai/limits (Drizzle)", () => {
   beforeEach(() => {
@@ -20,15 +30,15 @@ describe("ai/limits (Drizzle)", () => {
       from: () => ({ where: () => ({ limit: async () => [] }) }),
     });
 
-    const usage = await getAiUsage("user-1");
+    const usage = await getAiUsage("user-1", FREE_LIMITS);
 
     expect(usage).toMatchObject({
       usedMessages: 0,
       usedTokens: 0,
       maxMessages: 50,
+      maxTokens: 100_000,
       remainingMessages: 50,
       canSend: true,
-      plan: "free",
     });
   });
 
@@ -43,11 +53,47 @@ describe("ai/limits (Drizzle)", () => {
       }),
     });
 
-    const usage = await getAiUsage("user-1");
+    const usage = await getAiUsage("user-1", FREE_LIMITS);
 
     expect(usage.usedMessages).toBe(3);
     expect(usage.usedTokens).toBe(30);
     expect(usage.remainingMessages).toBe(50 - 3);
+    expect(usage.canSend).toBe(true);
+  });
+
+  it("bloqueia quando o uso atinge o limite de mensagens", async () => {
+    mocks.select.mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: async () => [{ messagesCount: 50, tokensIn: 0, tokensOut: 0 }],
+        }),
+      }),
+    });
+
+    const usage = await getAiUsage("user-1", FREE_LIMITS);
+
+    expect(usage.remainingMessages).toBe(0);
+    expect(usage.canSend).toBe(false);
+  });
+
+  it("limites maiores injetados liberam uso que o fallback bloquearia", async () => {
+    mocks.select.mockReturnValue({
+      from: () => ({
+        where: () => ({
+          limit: async () => [{ messagesCount: 60, tokensIn: 0, tokensOut: 0 }],
+        }),
+      }),
+    });
+
+    const proLimits: PlanLimits = {
+      maxMessages: 500,
+      maxTokens: 1_000_000,
+      allowPro: true,
+    };
+    const usage = await getAiUsage("user-1", proLimits);
+
+    expect(usage.maxMessages).toBe(500);
+    expect(usage.remainingMessages).toBe(500 - 60);
     expect(usage.canSend).toBe(true);
   });
 

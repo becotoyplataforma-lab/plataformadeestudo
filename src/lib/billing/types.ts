@@ -37,7 +37,7 @@ export interface PlanLimits {
 /** Limites padrão do plano gratuito (fallback caso o seed não exista). */
 export const DEFAULT_FREE_LIMITS: PlanLimits = {
   maxMessages: 50,
-  maxTokens: 50_000,
+  maxTokens: 100_000,
   maxQuestionsPerDay: 20,
   maxDocuments: 3,
   allowPro: false,
