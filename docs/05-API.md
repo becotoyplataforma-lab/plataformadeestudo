@@ -172,14 +172,18 @@ data: {"tokens_in":310,"tokens_out":420,"model":"flash"}
 
 | Método | Rota | Auth | Descrição |
 | --- | --- | --- | --- |
-| POST | `/api/payments/checkout` | Sim | Cria preferência de checkout p/ o plano |
-| POST | `/api/payments/webhook` | Não | Webhook do Mercado Pago (ativa plano) |
+| POST | `/api/billing/checkout` | Sim | Cria preferência de checkout p/ o plano |
+| POST | `/api/billing/webhook` | Não | Webhook do Mercado Pago (ativa plano) |
 
-**POST /api/payments/checkout**
+> `/api/payments/webhook` é mantido como **alias de compatibilidade** de
+> `/api/billing/webhook` (ambos delegam ao `WebhookService`). O frontend usa
+> `/api/billing/checkout`.
+
+**POST /api/billing/checkout**
 
 ```json
 // Request
-{ "plan": "pro" } // pro | intensivo
+{ "plan": "pro" } // free | pro | intensivo
 
 // Response 200
 {
@@ -190,14 +194,15 @@ data: {"tokens_in":310,"tokens_out":420,"model":"flash"}
 }
 ```
 
-**POST /api/payments/webhook** — chamado pelo Mercado Pago:
+**POST /api/billing/webhook** — chamado pelo Mercado Pago:
 
 ```json
 { "action": "payment.created", "type": "payment", "data": { "id": "123456789" } }
 ```
 
-- O servidor consulta o status na API do MP; se `approved`, chama a função
-  `register_payment` (SECURITY DEFINER) que grava o pagamento e ativa o plano.
+- O servidor valida a assinatura (HMAC quando `MERCADO_PAGO_WEBHOOK_SECRET` definido),
+  confirma o status no MP, aplica idempotência (provider_id) e ativa a assinatura
+  via `WebhookService` (Drizzle).
 - Sempre responde `200` para evitar retries infinitos.
 
 ## 5. Rate Limiting

@@ -45,10 +45,10 @@
 
 - **Validação:** Zod em toda entrada (Server Actions e API routes).
 - **Rate limiting:** registro/login (anti brute-force), chat (cotas), API geral.
-- **Headers de segurança** via middleware Next.js:
+- **Headers de segurança** via proxy do Next.js (arquivo `src/proxy.ts`):
 
 ```ts
-// Exemplos de headers aplicados no middleware
+// Exemplos de headers aplicados no proxy
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: strict-origin-when-cross-origin
