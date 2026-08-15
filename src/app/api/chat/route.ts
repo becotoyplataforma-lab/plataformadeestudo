@@ -14,6 +14,8 @@ import {
   updateSessionTitle,
 } from "@/lib/db/repositories/chat";
 import { getProfile } from "@/lib/db/repositories/perfil";
+import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
+import { DocumentChunkRepository } from "@/lib/knowledge/repositories/chunk.repository";
 import type { AIModel, ChatMessage } from "@/lib/ai/types";
 
 export const runtime = "nodejs";
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
     return apiError(422, parsed.error.issues[0]?.message ?? "Dados inválidos.");
   }
 
-  const { session_id, message, model, subject_id } = parsed.data;
+  const { session_id, message, model, subject_id, document_id } = parsed.data;
 
   // --- Cotas de IA (limites resolvidos pelo Billing — OPEN-004) ---
   const usage = await getAiUsage(userId, await resolveUserLimits(userId));
@@ -76,6 +78,21 @@ export async function POST(req: Request) {
   const profile = await getProfile(userId);
   const history = await getRecentContext(userId, activeSessionId, 10);
 
+  // RAG: se o aluno escolheu uma apostila, injeta o conteúdo como contexto.
+  let contextoRag = "";
+  if (document_id) {
+    const doc = await DocumentRepository.findById(document_id).catch(() => null);
+    if (doc && doc.userId === userId) {
+      const chunks = await DocumentChunkRepository.listByDocument(document_id).catch(() => []);
+      if (chunks.length > 0) {
+        contextoRag = `Conteúdo da apostila "${doc.title}":\n${chunks
+          .map((c) => c.content ?? "")
+          .join("\n\n")
+          .slice(0, 6000)}`;
+      }
+    }
+  }
+
   const systemTemplate = await prompts.professorSystem();
   const systemPrompt = interpolate(systemTemplate, {
     nome_usuario: profile?.full_name ?? "Aluno",
@@ -83,7 +100,7 @@ export async function POST(req: Request) {
     disciplina: subject_id ? "específica" : "geral",
     banca: profile?.banca_preferida ?? "diversas",
     cargo: profile?.concurso_alvo ?? "concurso público",
-    contexto_rag: "",
+    contexto_rag: contextoRag,
   });
 
   const historyMessages: ChatMessage[] = history.map((m) => ({

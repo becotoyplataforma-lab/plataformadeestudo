@@ -21,6 +21,8 @@ export interface FlashcardCreateInput {
   front: string;
   back: string;
   tags?: string[];
+  sourceDocumentId?: string | null;
+  sourceChunkId?: string | null;
 }
 
 export const FlashcardService = {
@@ -51,6 +53,8 @@ export const FlashcardService = {
       front,
       back,
       tags: input.tags ?? [],
+      sourceDocumentId: input.sourceDocumentId ?? null,
+      sourceChunkId: input.sourceChunkId ?? null,
     });
 
     // Cria schedule inicial (SRS): vence hoje

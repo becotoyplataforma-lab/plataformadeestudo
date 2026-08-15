@@ -7,6 +7,7 @@ import { listSessions } from "@/lib/db/repositories/chat";
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { getAiUsage } from "@/lib/ai/limits";
 import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
+import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { ChatClient } from "@/components/professor/chat-client";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default async function ProfessorPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [sessions, profile, usage, subjects] = await Promise.all([
+  const [sessions, profile, usage, subjects, docs] = await Promise.all([
     listSessions(session.user.id),
     getProfile(session.user.id),
     resolveUserLimits(session.user.id).then((limits) =>
@@ -28,6 +29,7 @@ export default async function ProfessorPage() {
       .select({ id: knowledgeSubjects.id, name: knowledgeSubjects.name })
       .from(knowledgeSubjects)
       .orderBy(knowledgeSubjects.name),
+    DocumentRepository.listByUser(session.user.id, 50),
   ]);
 
   return (
@@ -45,6 +47,9 @@ export default async function ProfessorPage() {
         canSend: usage.canSend,
       }}
       subjects={subjects}
+      documents={docs
+        .filter((d) => d.status === "chunked" || d.status === "indexed")
+        .map((d) => ({ id: d.id, title: d.title }))}
     />
   );
 }

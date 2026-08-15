@@ -5,6 +5,7 @@ export const sendMessageSchema = z.object({
   message: z.string().min(1, "Mensagem vazia").max(4000),
   model: z.enum(["flash", "pro"]).default("flash"),
   subject_id: z.string().uuid().optional().nullable(),
+  document_id: z.string().uuid().optional().nullable(),
 });
 
 export const newSessionSchema = z.object({

@@ -91,6 +91,8 @@ describe("AI DTOs", () => {
         userId: "00000000-0000-0000-0000-000000000002",
         title: "Conversa",
         knowledgeSubjectId: null,
+        documentId: null,
+        chapter: null,
         model: "flash",
         createdAt: new Date("2026-08-04T12:00:00Z"),
         updatedAt: new Date("2026-08-04T12:00:00Z"),

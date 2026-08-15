@@ -44,6 +44,7 @@ interface Props {
   defaultModel: "flash" | "pro";
   usage: { used: number; max: number; canSend: boolean };
   subjects: { id: string; name: string }[];
+  documents?: { id: string; title: string }[];
 }
 
 interface LocalMessage {
@@ -62,6 +63,7 @@ export function ChatClient({
   defaultModel,
   usage,
   subjects,
+  documents = [],
 }: Props) {
   const [sessions, setSessions] = React.useState<ChatSession[]>(initialSessions);
   const [activeSessionId, setActiveSessionId] = React.useState<string | null>(null);
@@ -69,6 +71,7 @@ export function ChatClient({
   const [input, setInput] = React.useState("");
   const [model, setModel] = React.useState<"flash" | "pro">(defaultModel);
   const [subjectId, setSubjectId] = React.useState("none");
+  const [documentId, setDocumentId] = React.useState("none");
   const [sending, setSending] = React.useState(false);
   const [usageLeft, setUsageLeft] = React.useState(usage.max - usage.used);
   const bottomRef = React.useRef<HTMLDivElement>(null);
@@ -154,6 +157,7 @@ export function ChatClient({
           message: content,
           model,
           subject_id: subjectId === "none" ? null : subjectId,
+          document_id: documentId === "none" ? null : documentId,
         }),
         signal: controller.signal,
       });
@@ -408,6 +412,21 @@ export function ChatClient({
                 ))}
               </SelectContent>
             </Select>
+            {documents.length > 0 && (
+              <Select value={documentId} onValueChange={setDocumentId}>
+                <SelectTrigger className="h-8 w-auto min-w-40 border-white/10 bg-white/5 text-xs text-slate-100">
+                  <SelectValue placeholder="Apostila (RAG)" />
+                </SelectTrigger>
+                <SelectContent className="border-white/10 bg-slate-950 text-slate-100">
+                  <SelectItem value="none" className="focus:bg-white/5">Sem apostila</SelectItem>
+                  {documents.map((d) => (
+                    <SelectItem key={d.id} value={d.id} className="focus:bg-white/5">
+                      {d.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <p className="text-xs text-slate-400">
               O Professor IA adapta a resposta ao contexto selecionado.
             </p>
