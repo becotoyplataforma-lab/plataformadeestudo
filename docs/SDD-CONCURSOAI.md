@@ -121,7 +121,9 @@ validável localmente com `DEEPSEEK_API_KEY`/`EMBEDDING_API_URL` (bloqueados por
 `SUPABASE_SERVICE_ROLE_KEY`, `AUTH_SECRET`, `ADMIN_EMAILS`, `DEEPSEEK_API_KEY`,
 `DEEPSEEK_BASE_URL`, `EMBEDDING_API_URL`, `EMBEDDING_API_KEY`, `EMBEDDING_MODEL`,
 `EMBEDDING_DIMENSION`, `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_PUBLIC_KEY`,
-`MERCADO_PAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL`. (Valores NUNCA versionados.)
+`MERCADO_PAGO_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL`. Storage: `R2_ACCOUNT_ID`,
+`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` (opcionais — sem eles
+usa Supabase Storage). (Valores NUNCA versionados.)
 
 ## 30. Migrations
 `database/migrations/2026-08-15-concursoai-e2e.sql` — aplicada (idempotente) via

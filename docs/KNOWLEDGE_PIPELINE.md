@@ -13,8 +13,11 @@ UPLOAD → STORAGE → DOCUMENT → EXTRAÇÃO → NORMALIZAÇÃO → CHUNKING �
   vetorial pendente) — **não é falha**; o metadata registra `embedding_skipped`.
 
 ## Componentes
-- **`DocumentStorageService`** (`src/lib/knowledge/storage.service.ts`): Supabase Storage
-  (bucket privado `documents`, service role server-side). Caminho `{userId}/{documentId}/{file}`.
+- **`DocumentStorageService`** (`src/lib/knowledge/storage.service.ts`): armazenamento físico com
+  backend configurável — **Cloudflare R2** (preferencial, S3-compatível) ou **Supabase Storage**
+  (fallback, bucket privado `documents`, service role server-side). Caminho
+  `{userId}/{documentId}/{file}`. R2 ativa automaticamente quando `R2_ACCESS_KEY_ID` está
+  configurado; implementação em `src/lib/knowledge/storage/r2-storage.service.ts`.
 - **`DocumentExtractionService`** (`services/extraction.service.ts`): PDF (`pdf-parse`),
   DOCX (`mammoth`), TXT/Markdown (UTF-8), HTML (strip). Retorna `{ text, pageCount }`.
 - **`ChunkService`**: chunking fixo (1000/200) ou estrutural (headings Markdown), breakpoints
