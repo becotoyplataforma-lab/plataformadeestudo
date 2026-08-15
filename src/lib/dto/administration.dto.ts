@@ -66,8 +66,17 @@ export const ModerationQuestionDtoSchema = z.object({
   ano: z.number().int().nullable(),
   nivel: z.enum(["facil", "medio", "dificil"]),
   enunciado: z.string(),
-  status: z.enum(["rascunho", "publicada", "bloqueada"]),
+  status: z.enum(["rascunho", "publicada", "bloqueada", "em_revisao", "rejeitada"]),
   is_public: z.boolean(),
+  origin: z.string().nullable().optional(),
+  fonte: z.string().nullable().optional(),
+  confidence: z.number().min(0).max(1).nullable().optional(),
+  ai_generated: z.boolean().nullable().optional(),
+  needs_review: z.boolean().nullable().optional(),
+  source_document_id: z.string().uuid().nullable().optional(),
+  source_chunk_id: z.string().uuid().nullable().optional(),
+  source_edital_id: z.string().uuid().nullable().optional(),
+  source_position_id: z.string().uuid().nullable().optional(),
   created_at: z.string(),
 });
 export type ModerationQuestionDto = OutputOf<typeof ModerationQuestionDtoSchema>;
@@ -79,7 +88,7 @@ export const ModerationListDtoSchema = z.object({
 export type ModerationListDto = OutputOf<typeof ModerationListDtoSchema>;
 
 export const SetQuestionStatusRequestDtoSchema = z.object({
-  status: z.enum(["rascunho", "publicada", "bloqueada"]),
+  status: z.enum(["rascunho", "publicada", "bloqueada", "em_revisao", "rejeitada"]),
 });
 export type SetQuestionStatusRequestDto = OutputOf<
   typeof SetQuestionStatusRequestDtoSchema
@@ -87,7 +96,7 @@ export type SetQuestionStatusRequestDto = OutputOf<
 
 export const QuestionStatusDtoSchema = z.object({
   id: z.string().uuid(),
-  status: z.enum(["rascunho", "publicada", "bloqueada"]),
+  status: z.enum(["rascunho", "publicada", "bloqueada", "em_revisao", "rejeitada"]),
 });
 export type QuestionStatusDto = OutputOf<typeof QuestionStatusDtoSchema>;
 
@@ -128,8 +137,17 @@ export interface ModerationQuestionInput {
   ano: number | null;
   nivel: "facil" | "medio" | "dificil";
   enunciado: string;
-  status: "rascunho" | "publicada" | "bloqueada";
+  status: "rascunho" | "publicada" | "bloqueada" | "em_revisao" | "rejeitada";
   isPublic: boolean;
+  origin?: string | null;
+  fonte?: string | null;
+  confidence?: number | null;
+  aiGenerated?: boolean | null;
+  needsReview?: boolean | null;
+  sourceDocumentId?: string | null;
+  sourceChunkId?: string | null;
+  sourceEditalId?: string | null;
+  sourcePositionId?: string | null;
   createdAt: Date;
 }
 
@@ -146,13 +164,22 @@ export function mapModerationQuestionToDto(
     enunciado: q.enunciado,
     status: q.status,
     is_public: q.isPublic,
+    origin: q.origin ?? null,
+    fonte: q.fonte ?? null,
+    confidence: q.confidence ?? null,
+    ai_generated: q.aiGenerated ?? null,
+    needs_review: q.needsReview ?? null,
+    source_document_id: q.sourceDocumentId ?? null,
+    source_chunk_id: q.sourceChunkId ?? null,
+    source_edital_id: q.sourceEditalId ?? null,
+    source_position_id: q.sourcePositionId ?? null,
     created_at: q.createdAt.toISOString(),
   };
 }
 
 export function mapQuestionStatusToDto(row: {
   id: string;
-  status: "rascunho" | "publicada" | "bloqueada";
+  status: "rascunho" | "publicada" | "bloqueada" | "em_revisao" | "rejeitada";
 }): QuestionStatusDto {
   return { id: row.id, status: row.status };
 }

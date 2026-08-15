@@ -11,6 +11,7 @@ import {
   type QuestionStatus,
   type ModerationFilters,
 } from "../repositories/moderation.repository";
+import { QuestionWriteRepository } from "../repositories/question.repository";
 import { AdminGuardService, type AdminSession } from "./admin-guard.service";
 import { AuditService } from "./audit.service";
 
@@ -49,6 +50,47 @@ export const ModerationService = {
       entityType: "question",
       entityId: questionId,
       details,
+      ip: admin.ip,
+    });
+    return row;
+  },
+
+  /** Revisão de questão (aprovar/rejeitar/publicar/bloquear/revisar) + histórico. */
+  async review(
+    admin: AdminSession,
+    questionId: string,
+    action: "aprovar" | "rejeitar" | "publicar" | "bloquear" | "revisar",
+    notes?: string
+  ) {
+    await AdminGuardService.requireAdmin(admin);
+    const existing = await ModerationRepository.findById(questionId);
+    if (!existing) {
+      throw new ModerationError("QUESTION_NOT_FOUND", "Questão não encontrada.");
+    }
+
+    const map: Record<string, { status: QuestionStatus; needsReview: boolean }> = {
+      aprovar: { status: "publicada", needsReview: false },
+      publicar: { status: "publicada", needsReview: false },
+      rejeitar: { status: "rejeitada", needsReview: false },
+      bloquear: { status: "bloqueada", needsReview: false },
+      revisar: { status: "em_revisao", needsReview: true },
+    };
+    const target = map[action];
+    if (!target) throw new ModerationError("INVALID_ACTION", `Ação inválida: ${action}`);
+
+    const row = await ModerationRepository.updateQuestionState(questionId, target);
+    await QuestionWriteRepository.createModerationEvent({
+      questionId,
+      adminUserId: admin.userId,
+      action,
+      notes: notes ?? null,
+    });
+    await AuditService.record({
+      adminId: admin.userId,
+      action: `question.review.${action}`,
+      entityType: "question",
+      entityId: questionId,
+      details: { action, notes },
       ip: admin.ip,
     });
     return row;

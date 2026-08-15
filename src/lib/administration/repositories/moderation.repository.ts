@@ -18,6 +18,10 @@ export interface ModerationFilters {
   status?: QuestionStatus;
   subjectId?: string;
   banca?: string;
+  origin?: string;
+  sourceDocumentId?: string;
+  difficulty?: "facil" | "medio" | "dificil";
+  needsReview?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -25,12 +29,26 @@ export interface ModerationFilters {
 export const ModerationRepository = {
   /** Listar questões para curadoria (todas, com filtros opcionais). */
   async listQuestions(filters: ModerationFilters = {}) {
-    const { status, subjectId, banca, page = 1, pageSize = 20 } = filters;
+    const {
+      status,
+      subjectId,
+      banca,
+      origin,
+      sourceDocumentId,
+      difficulty,
+      needsReview,
+      page = 1,
+      pageSize = 20,
+    } = filters;
 
     const conditions = [isNull(questions.deletedAt)];
     if (status) conditions.push(eq(questions.status, status));
     if (subjectId) conditions.push(eq(questions.knowledgeSubjectId, subjectId));
     if (banca) conditions.push(eq(questions.banca, banca));
+    if (origin) conditions.push(eq(questions.origin, origin));
+    if (sourceDocumentId) conditions.push(eq(questions.sourceDocumentId, sourceDocumentId));
+    if (difficulty) conditions.push(eq(questions.nivel, difficulty));
+    if (needsReview !== undefined) conditions.push(eq(questions.needsReview, needsReview));
 
     const rows = await db
       .select({
@@ -43,6 +61,15 @@ export const ModerationRepository = {
         enunciado: questions.enunciado,
         status: questions.status,
         isPublic: questions.isPublic,
+        origin: questions.origin,
+        fonte: questions.fonte,
+        confidence: questions.confidence,
+        aiGenerated: questions.aiGenerated,
+        needsReview: questions.needsReview,
+        sourceDocumentId: questions.sourceDocumentId,
+        sourceChunkId: questions.sourceChunkId,
+        sourceEditalId: questions.sourceEditalId,
+        sourcePositionId: questions.sourcePositionId,
         createdAt: questions.createdAt,
       })
       .from(questions)
@@ -80,6 +107,22 @@ export const ModerationRepository = {
       .set({ status, updatedAt: new Date() })
       .where(and(eq(questions.id, id), isNull(questions.deletedAt)))
       .returning({ id: questions.id, status: questions.status });
+    return row ?? null;
+  },
+
+  /** Atualizar estado de curadoria (status + needs_review). */
+  async updateQuestionState(
+    id: string,
+    patch: { status?: QuestionStatus; needsReview?: boolean }
+  ) {
+    const set: Record<string, unknown> = { updatedAt: new Date() };
+    if (patch.status !== undefined) set.status = patch.status;
+    if (patch.needsReview !== undefined) set.needsReview = patch.needsReview;
+    const [row] = await db
+      .update(questions)
+      .set(set)
+      .where(and(eq(questions.id, id), isNull(questions.deletedAt)))
+      .returning({ id: questions.id, status: questions.status, needsReview: questions.needsReview });
     return row ?? null;
   },
 };
