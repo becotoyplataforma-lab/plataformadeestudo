@@ -15,6 +15,9 @@ import {
   Cpu,
   BookOpen,
   Globe,
+  ShieldCheck,
+  Database,
+  Upload,
 } from "lucide-react";
 
 const items = [
@@ -24,9 +27,12 @@ const items = [
   { href: "/admin/editais/importar", label: "Edital IA", icon: Sparkles },
   { href: "/admin/materias", label: "Matérias", icon: BookOpen },
   { href: "/admin/apostilas", label: "Apostilas", icon: FileText },
+  { href: "/admin/apostilas/revisao", label: "Revisão material", icon: ShieldCheck },
   { href: "/admin/importar", label: "Importar (URL)", icon: Globe },
+  { href: "/admin/fontes", label: "Fontes externas", icon: Database },
   { href: "/admin/questoes", label: "Questões", icon: ListChecks },
   { href: "/admin/questoes/gerar", label: "Gerar questões", icon: Sparkles },
+  { href: "/admin/questoes/importar", label: "Importar questões", icon: Upload },
   { href: "/admin/questoes/revisao", label: "Revisão", icon: ClipboardCheck },
   { href: "/admin/aulas", label: "Aulas", icon: PlayCircle },
   { href: "/admin/avatares", label: "Avatares", icon: UserRound },
