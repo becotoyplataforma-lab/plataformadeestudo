@@ -48,6 +48,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# artefatos de auditoria (não versionar)
+/visual-audit/
+/test-results/
+
 # supabase
 supabase/.temp
 
