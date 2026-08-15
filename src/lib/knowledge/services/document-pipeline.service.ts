@@ -66,8 +66,33 @@ export const DocumentPipelineService = {
         doc.type
       );
       const normalized = normalizeText(text);
+
+      // Item 8 (OCR): PDFs escaneados não têm camada de texto. Detecta e
+      // sinaliza em vez de falhar genericamente.
+      const mediaType = (doc.metadata as Record<string, unknown> | null)?.media_type;
+      if (mediaType && mediaType !== "text") {
+        const note =
+          "Mídia (áudio/vídeo) detectada: transcrição requer serviço externo (Whisper) não configurado.";
+        await DocumentRepository.updateMetadata(documentId, {
+          transcription_needed: true,
+          transcription_note: note,
+        });
+        throw new PipelineError("TRANSCRIPTION_NOT_CONFIGURED", note);
+      }
+
       if (!normalized) {
-        throw new PipelineError("EMPTY_TEXT", "Nenhum texto extraído do documento.");
+        await DocumentRepository.updateMetadata(documentId, { ocr_needed: true });
+        throw new PipelineError(
+          "EMPTY_TEXT",
+          "Nenhum texto extraído. Se for PDF escaneado, é necessário OCR (não configurado)."
+        );
+      }
+      if ((pageCount ?? 0) > 1 && normalized.length < 60) {
+        await DocumentRepository.updateMetadata(documentId, { ocr_needed: true });
+        throw new PipelineError(
+          "EMPTY_TEXT",
+          "Texto extraído muito curto para um documento com páginas. Provável PDF escaneado — OCR não configurado."
+        );
       }
 
       const chunkResult = await ChunkService.chunk({
