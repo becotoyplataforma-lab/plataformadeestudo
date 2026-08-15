@@ -7,6 +7,7 @@ import { db } from "@/lib/db/drizzle";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
 import { questions } from "@/db/schema/study";
+import { GerarQuestoes } from "@/components/apostilas/gerar-questoes";
 
 export const metadata: Metadata = { title: "Apostila" };
 
@@ -62,6 +63,8 @@ export default async function ApostilaDetailPage({
           Resolver questões
         </Link>
       </div>
+
+      <GerarQuestoes documentId={doc.id} />
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-sm font-medium text-slate-200">Matérias</p>

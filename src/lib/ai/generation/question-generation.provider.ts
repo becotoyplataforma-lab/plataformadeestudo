@@ -26,6 +26,7 @@ export interface QuestionGenerationRequest {
   banca?: string;
   cargo?: string;
   focusTopic?: string;
+  editalWeight?: number;
   context: string;
 }
 
@@ -104,6 +105,9 @@ function buildPrompt(req: QuestionGenerationRequest): string {
     req.banca ? `Banca: ${req.banca}.` : "",
     req.cargo ? `Cargo: ${req.cargo}.` : "",
     req.focusTopic ? `Tema em foco (priorize questões sobre): ${req.focusTopic}.` : "",
+    req.editalWeight !== undefined
+      ? `Peso desta matéria no edital: ${req.editalWeight}%. Priorize os assuntos de maior peso.`
+      : "",
     `Matéria: ${req.subjectName}. Documento: ${req.documentTitle}.`,
     `Responda SOMENTE com JSON no formato:`,
     `{"questions":[{"enunciado":"...","alternativas":["...","...","...","...","..."],"gabarito":"B","explicacao":"...","dificuldade":"${nivel}","topico":"..."}]}`,
@@ -114,3 +118,6 @@ function buildPrompt(req: QuestionGenerationRequest): string {
     .filter(Boolean)
     .join("\n");
 }
+
+/** Builder de prompt exportado para teste. */
+export const buildQuestionGenerationPrompt = buildPrompt;

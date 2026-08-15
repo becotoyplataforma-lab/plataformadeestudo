@@ -9,6 +9,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getAdminSession } from "@/lib/administration/session";
+import { getProfile } from "@/lib/db/repositories/perfil";
+import { getCurrentEditalByContest } from "@/lib/db/repositories/edital";
 import { IngestionService, IngestionError } from "@/lib/knowledge/services/ingestion.service";
 import { DocumentStorageService } from "@/lib/knowledge/storage.service";
 import { DocumentPipelineService } from "@/lib/knowledge/services/document-pipeline.service";
@@ -70,20 +72,34 @@ export async function POST(request: NextRequest) {
       console.error("[knowledge/upload] Processamento falhou:", error);
     }
 
-    // 5b. Associação admin (matéria/edital/cargo) quando informada
+    // 5b. Associação (matéria/edital/cargo)
     const admin = await getAdminSession().catch(() => null);
-    if (admin && (subjectId || editalId || positionId)) {
-      if (subjectId) {
-        await DocumentSubjectRepository.upsert(result.documentId, subjectId, 100).catch(
-          () => undefined
+
+    // Matéria: qualquer usuário autenticado pode vincular sua própria apostila.
+    if (subjectId) {
+      await DocumentSubjectRepository.upsert(result.documentId, subjectId, 100).catch(
+        () => undefined
+      );
+    }
+
+    // Edital/cargo: admin informa explicitamente; aluno herda do perfil (best-effort).
+    let effectiveEditalId = admin ? editalId : null;
+    let effectivePositionId = admin ? positionId : null;
+    if (!admin) {
+      const profile = await getProfile(userId).catch(() => null);
+      if (profile?.contest_id) {
+        const current = await getCurrentEditalByContest(profile.contest_id).catch(
+          () => null
         );
+        if (current) effectiveEditalId = current.id;
+        effectivePositionId = profile.position_id ?? null;
       }
-      if (editalId || positionId) {
-        await DocumentRepository.updateAssociations(result.documentId, {
-          editalId: editalId ?? null,
-          positionId: positionId ?? null,
-        }).catch(() => undefined);
-      }
+    }
+    if (effectiveEditalId || effectivePositionId) {
+      await DocumentRepository.updateAssociations(result.documentId, {
+        editalId: effectiveEditalId ?? null,
+        positionId: effectivePositionId ?? null,
+      }).catch(() => undefined);
     }
 
     // 6. Estado final do documento

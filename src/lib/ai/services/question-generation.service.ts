@@ -35,6 +35,7 @@ export interface GenerateFromDocumentInput {
   editalId?: string;
   positionId?: string;
   focusTopic?: string;
+  editalWeight?: number;
 }
 
 export interface GeneratedQuestionSummary {
@@ -109,6 +110,7 @@ export const QuestionGenerationService = {
       banca: input.banca,
       cargo: input.cargo,
       focusTopic: input.focusTopic,
+      editalWeight: input.editalWeight,
       context,
     });
 
