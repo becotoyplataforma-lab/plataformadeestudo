@@ -58,6 +58,14 @@ test.describe("Grupo B — P1–P5 variado (UI real)", () => {
     // Contexto de API autenticado p/ listar questões e seus gabaritos
     const api = await getAuthContext();
 
+    // Garante as 5 disciplinas do usuário (o replan só prioriza study_subjects).
+    // Com o isolamento E2E o usuário começa limpo — cria se ainda não existirem
+    // (409 de duplicata é tolerado). Auto-suficiente: não depende da ordem dos
+    // testes nem de execuções anteriores.
+    for (const name of Object.keys(SUBJECTS)) {
+      await api.post("/api/study/subjects", { data: { name } });
+    }
+
     // 2) Responde as questões por matéria via UI
     for (const [name, cfg] of Object.entries(SUBJECTS)) {
       const res = await api.get(

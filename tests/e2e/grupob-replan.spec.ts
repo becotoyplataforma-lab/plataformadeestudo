@@ -51,11 +51,18 @@ test.describe("Grupo B — Planner pela UI real", () => {
     for (const name of SUBJECTS) {
       await page.getByRole("button", { name: "Disciplina" }).click();
       await page.locator("#subject-name").fill(name);
-      await page.getByRole("button", { name: "Criar disciplina" }).click();
-      // Sucesso → reload (dialog fecha). Duplicata → dialog permanece aberto:
-      // fecha explicitamente e aguarda o estado observável (dialog fechado).
-      await page.keyboard.press("Escape");
-      await expect(page.locator("#subject-name")).toBeHidden({ timeout: 15000 });
+      // noWaitAfter: o submit bem-sucedido recarrega a página (detacha o botão).
+      await page
+        .getByRole("button", { name: "Criar disciplina" })
+        .click({ noWaitAfter: true });
+      // Estado observável: dialog fecha (sucesso → reload).
+      try {
+        await expect(page.locator("#subject-name")).toBeHidden({ timeout: 15000 });
+      } catch {
+        // Duplicata (já existia): produto mantém o dialog aberto — fecha e segue.
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#subject-name")).toBeHidden({ timeout: 5000 });
+      }
       console.log("[GB-UI] DISCIPLINA_OK=" + name);
     }
 
