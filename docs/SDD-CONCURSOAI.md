@@ -90,11 +90,36 @@ Ver `docs/AVATAR.md`.
 
 ## 19. Área administrativa
 `/admin/*` (ver `docs/ADMIN.md`): dashboard, alunos, concursos/editais/cargos, apostilas,
-questões (gerar/revisão), aulas, avatares, IA.
+questões (gerar/revisão), aulas, avatares, IA. **Alimentação de conteúdo**: cadastro de
+matérias (`/admin/materias`), extração de estrutura do edital via IA (`/admin/editais/importar`)
+e importador por URL (`/admin/importar`) — ver `docs/GUIA-CONTEUDO-ADMIN-CONCURSOAI.md`.
 
 ## 20. Concursos/editais/cargos
 Hierarquia existente: concurso → edital → cargo → matéria (notice_subjects) → apostilas →
 questões. Leitura em `/admin/concursos`.
+
+### 20.1 Edital via IA (parse/apply)
+- `POST /api/admin/editais/parse` `{document_id}` → `EditalParsingService` usa a IA
+  (modelo "pro") para sugerir `{banca?, cargo?, dataProva?, materias:[{name,weight}]}` a partir
+  de um documento processado. Erros: `DOC_NOT_FOUND`/`DOC_NOT_READY`/`NO_CHUNKS`/
+  `INVALID_RESPONSE`; 503 `AI_NOT_CONFIGURED` sem `DEEPSEEK_API_KEY`.
+- `POST /api/admin/editais/apply` `{document_id, contest_id, position_id?, title?, banca?,
+  materias}` → `EditalApplyService`: cria edital vigente se não existir, find-or-create das
+  matérias e upsert de `notice_subjects` (peso), vincula o documento ao edital/cargo.
+- UI: `/admin/editais/importar` (`edital-import.tsx`) — seleciona documento processado +
+  concurso, analisa com IA, ajusta pesos e aplica.
+
+## 20.2 Matérias (catálogo)
+- `GET/POST /api/admin/subjects` — lista e cria matéria (slug único, 409 duplicado).
+- UI: `/admin/materias` (`materia-create-form.tsx`).
+
+## 20.3 Importador por URL
+- `POST /api/admin/import/url` `{url, title?, subject_id?}` → `UrlImportService` baixa
+  (≤25 MB, valida content-type), registra via `IngestionService` (`sourceType:"url"`,
+  rastreia URL de origem), armazena e processa pela pipeline. Erros:
+  `FETCH_FAILED`/`HTTP_ERROR`/`FILE_TOO_LARGE`/`EMPTY_CONTENT`/`DUPLICATE_FILE`.
+- UI: `/admin/importar` (`url-import-form.tsx`). Uso restrito a conteúdo público/oficial
+  (editais, leis, diários oficiais) — regra de direito autoral em `docs/GUIA-CONTEUDO-ADMIN-CONCURSOAI.md`.
 
 ## 21. Usuários
 `auth.users` + `profiles` (nível, concurso/cargo alvo, meta diária). Lista em `/admin/alunos`.
@@ -155,7 +180,10 @@ Ver `docs/IMPLEMENTATION-REPORT.md` (commits locais, sem push).
 ## 33. O que NÃO foi implementado
 - Geração real de vídeo/voz/lip-sync (só arquitetura + player).
 - Simulados completos (`/simulados`).
-- CRUD completo de concursos/editais/cargos (leitura apenas — dados existem).
+- CRUD completo de concursos/editais/cargos (escrita de edital via IA existe em
+  `/admin/editais/importar`; demais leitura apenas — dados existem).
+- Upload em lote de apostilas, fila de revisão de material, biblioteca de fontes e
+  importador de questões CSV/XLSX (ver checklist em `docs/GUIA-CONTEUDO-ADMIN-CONCURSOAI.md`).
 - Enforcement de limites de questões/documentos por plano.
 
 ## 34. Como operar o sistema
@@ -167,6 +195,8 @@ Ver `docs/IMPLEMENTATION-REPORT.md` (commits locais, sem push).
 2. `/admin/apostilas` → enviar PDF/DOCX/TXT/MD/HTML.
 3. A apostila é armazenada no Supabase Storage e processada (extração → chunk → embedding
    quando configurado). Acompanhe o status na lista.
+4. Alternativa para conteúdo externo (editais/leis/diários oficiais): `/admin/importar` → colar
+   a URL; o sistema baixa, registra e processa automaticamente.
 
 ## 36. Como gerar questões
 1. `/admin/questoes/gerar` → escolha apostila (status chunked/indexed) + matéria + quantidade.
