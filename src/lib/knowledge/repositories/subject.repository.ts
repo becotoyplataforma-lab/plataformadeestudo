@@ -55,4 +55,10 @@ export const KnowledgeSubjectRepository = {
       )
       .limit(10);
   },
+
+  /** Criar matéria no catálogo. */
+  async create(input: typeof knowledgeSubjects.$inferInsert) {
+    const [row] = await db.insert(knowledgeSubjects).values(input).returning();
+    return row;
+  },
 };
