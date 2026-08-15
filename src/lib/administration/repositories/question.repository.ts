@@ -18,6 +18,18 @@ export const QuestionWriteRepository = {
     return row;
   },
 
+  /** Buscar questão pelo hash de conteúdo (dedup na importação). */
+  async findByContentHash(contentHash: string) {
+    const [row] = await db
+      .select({ id: questions.id })
+      .from(questions)
+      .where(
+        and(eq(questions.contentHash, contentHash), isNull(questions.deletedAt))
+      )
+      .limit(1);
+    return row ?? null;
+  },
+
   /** Criar alternativas em lote. */
   async createOptions(options: (typeof questionOptions.$inferInsert)[]) {
     if (options.length === 0) return [];
