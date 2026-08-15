@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/auth";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
+import { ApostilaUpload } from "@/components/apostilas/apostila-upload";
 
 export const metadata: Metadata = { title: "Apostilas" };
 
@@ -26,8 +27,12 @@ export default async function ApostilasPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Apostilas</h1>
-        <p className="text-sm text-slate-400">Suas apostilas e o estado de processamento.</p>
+        <p className="text-sm text-slate-400">
+          Envie suas apostilas e o ConcursoAI as transforma em conteúdo inteligente.
+        </p>
       </div>
+
+      <ApostilaUpload />
 
       {docs.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center">

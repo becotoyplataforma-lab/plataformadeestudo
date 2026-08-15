@@ -52,6 +52,9 @@ next-env.d.ts
 /visual-audit/
 /test-results/
 
+# materiais de estudo do usuário (não versionar)
+/materiais/
+
 # supabase
 supabase/.temp
 

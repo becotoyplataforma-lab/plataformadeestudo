@@ -30,6 +30,13 @@ const serverEnvSchema = z.object({
   EMBEDDING_API_KEY: z.string().optional(),
   EMBEDDING_MODEL: z.string().default("BAAI/bge-m3"),
   EMBEDDING_DIMENSION: z.coerce.number().int().default(1024),
+
+  // Cloudflare R2 (storage S3-compatível). Opcional: sem config, usa Supabase Storage.
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET: z.string().optional(),
+  R2_ENDPOINT: z.string().url().optional(),
 });
 
 const result = serverEnvSchema.safeParse(process.env);
