@@ -8,10 +8,13 @@
  * Requer backend real com catálogo Contest publicado e cargo ativo (seed).
  */
 import { test, expect } from "@playwright/test";
-import { hasAuth, authenticateBrowser } from "./support/auth";
+import { getAuthContext, hasAuth, authenticateBrowser } from "./support/auth";
 
 test.describe("Contest — seleção de concurso e cargo no perfil", () => {
   test.skip(!hasAuth, "Requer E2E_USER_EMAIL/E2E_USER_PASSWORD (backend real)");
+  // O teste de replan leva ~20s (replan com dados reais) + fluxo completo
+  // (login → perfil → cronograma). Mesmo padrão dos outros replan tests.
+  test.describe.configure({ timeout: 120_000 });
 
   test("selecionar concurso e cargo persiste no perfil", async ({ page }) => {
     await authenticateBrowser(page);
@@ -50,6 +53,16 @@ test.describe("Contest — seleção de concurso e cargo no perfil", () => {
     page,
   }) => {
     await authenticateBrowser(page);
+
+    // Garante as disciplinas com peso no edital (Direito Constitucional e
+    // Português têm peso no edital MPF). Auto-suficiente: com o isolamento E2E
+    // o usuário começa limpo; 409 de duplicata é tolerado.
+    const api = await getAuthContext();
+    for (const name of ["Direito Constitucional", "Português"]) {
+      await api.post("/api/study/subjects", { data: { name } });
+    }
+    await api.dispose();
+
     await page.goto("/cronograma");
     await expect(page).toHaveURL(/\/cronograma/);
 
@@ -57,8 +70,7 @@ test.describe("Contest — seleção de concurso e cargo no perfil", () => {
     await page.getByRole("button", { name: "Replanejar com IA" }).click();
 
     // Painel "Planejamento inteligente" aparece após o replan.
-    // O replan leva ~20s com o volume de dados acumulado do usuário de teste
-    // (75+ tarefas) — timeout realista, não máscara de falha.
+    // O replan leva ~20s com dados reais — timeout realista, não máscara.
     await expect(page.getByText("Planejamento inteligente")).toBeVisible({
       timeout: 60_000,
     });
