@@ -101,6 +101,10 @@ export const documents = pgTable(
     metadata: jsonb("metadata").default({}),
     pageCount: integer("page_count"),
     processingError: text("processing_error"),
+    reviewStatus: text("review_status").notNull().default("pendente"),
+    reviewedBy: uuid("reviewed_by"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewNote: text("review_note"),
     chunkCount: integer("chunk_count").notNull().default(0),
     embeddingCount: integer("embedding_count").notNull().default(0),
     processedAt: timestamp("processed_at", { withTimezone: true }),
@@ -126,6 +130,9 @@ export const documents = pgTable(
     index("idx_documents_user_hash").on(t.userId, t.fileHash),
     index("idx_documents_status")
       .on(t.status)
+      .where(sql`${t.deletedAt} is null`),
+    index("idx_documents_review_status")
+      .on(t.reviewStatus)
       .where(sql`${t.deletedAt} is null`),
   ]
 );

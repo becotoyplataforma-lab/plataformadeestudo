@@ -4,7 +4,7 @@
  * Camada de persistência para o agregado Document.
  * Toda query passa por aqui (DD-004: Repository Pattern obrigatório).
  */
-import { eq, and, isNull, sql, sum } from "drizzle-orm";
+import { eq, and, isNull, or, sql, sum } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import { documents } from "@/db/schema/knowledge";
 
@@ -156,5 +156,65 @@ export const DocumentRepository = {
       .from(documents)
       .where(and(eq(documents.userId, userId), isNull(documents.deletedAt)));
     return row?.total ?? 0;
+  },
+
+  /** Atualizar revisão de conteúdo (admin). */
+  async updateReview(
+    id: string,
+    patch: {
+      reviewStatus: "pendente" | "aprovado" | "rejeitado";
+      reviewedBy: string | null;
+      reviewNote: string | null;
+      reviewedAt: Date;
+    }
+  ) {
+    const [row] = await db
+      .update(documents)
+      .set({
+        reviewStatus: patch.reviewStatus,
+        reviewedBy: patch.reviewedBy,
+        reviewNote: patch.reviewNote,
+        reviewedAt: patch.reviewedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, id))
+      .returning();
+    return row ?? null;
+  },
+
+  /** Fila de revisão de material (admin) — pendentes/não aprovados. */
+  async listForReview(limit = 100, offset = 0) {
+    return db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          isNull(documents.deletedAt),
+          sql`${documents.reviewStatus} <> 'aprovado'`
+        )
+      )
+      .orderBy(sql`${documents.createdAt} ASC`)
+      .limit(limit)
+      .offset(offset);
+  },
+
+  /** Biblioteca de fontes externas (admin) — docs com origem registrada. */
+  async listExternalSources(limit = 200) {
+    return db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          isNull(documents.deletedAt),
+          or(
+            eq(documents.sourceType, "url"),
+            sql`${documents.sourceUrl} is not null`,
+            sql`${documents.metadata}->>'fonte' is not null`,
+            sql`${documents.metadata}->>'licenca' is not null`
+          )
+        )
+      )
+      .orderBy(sql`${documents.createdAt} DESC`)
+      .limit(limit);
   },
 };

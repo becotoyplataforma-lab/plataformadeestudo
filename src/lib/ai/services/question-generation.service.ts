@@ -90,6 +90,12 @@ export const QuestionGenerationService = {
         `Documento em estado ${doc.status}; processe a apostila antes de gerar questões.`
       );
     }
+    if (doc.reviewStatus === "rejeitado") {
+      throw new GenerationServiceError(
+        "DOC_REJECTED",
+        "Este material foi rejeitado na revisão de conteúdo e está bloqueado para geração de questões."
+      );
+    }
 
     const subject = await KnowledgeSubjectRepository.findById(input.subjectId);
     const chunks = await DocumentChunkRepository.listByDocument(input.documentId);
