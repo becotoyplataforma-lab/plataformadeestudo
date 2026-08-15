@@ -13,13 +13,18 @@ import {
   PlayCircle,
   UserRound,
   Cpu,
+  BookOpen,
+  Globe,
 } from "lucide-react";
 
 const items = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/alunos", label: "Alunos", icon: Users },
   { href: "/admin/concursos", label: "Concursos/Editais", icon: Trophy },
+  { href: "/admin/editais/importar", label: "Edital IA", icon: Sparkles },
+  { href: "/admin/materias", label: "Matérias", icon: BookOpen },
   { href: "/admin/apostilas", label: "Apostilas", icon: FileText },
+  { href: "/admin/importar", label: "Importar (URL)", icon: Globe },
   { href: "/admin/questoes", label: "Questões", icon: ListChecks },
   { href: "/admin/questoes/gerar", label: "Gerar questões", icon: Sparkles },
   { href: "/admin/questoes/revisao", label: "Revisão", icon: ClipboardCheck },
