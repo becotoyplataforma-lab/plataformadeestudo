@@ -30,7 +30,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { authUsers } from "./identity";
-import { knowledgeSubjects } from "./knowledge";
+import { knowledgeSubjects, documents, documentChunks } from "./knowledge";
+import { editais, positions } from "./contest";
+import { avatars } from "./ai";
 
 // ============================================================
 // ENUMS
@@ -55,6 +57,8 @@ export const questionStatus = pgEnum("question_status", [
   "rascunho",
   "publicada",
   "bloqueada",
+  "em_revisao",
+  "rejeitada",
 ]);
 
 /** Modo de resolução de questão (attempt_mode). */
@@ -159,6 +163,27 @@ export const questions = pgTable(
     explicacao: text("explicacao"),
     tipo: text("tipo").notNull().default("multipla_escolha"),
     fonte: text("fonte"),
+    sourceDocumentId: uuid("source_document_id").references(
+      () => documents.id,
+      { onDelete: "set null" }
+    ),
+    sourceChunkId: uuid("source_chunk_id").references(
+      () => documentChunks.id,
+      { onDelete: "set null" }
+    ),
+    sourceEditalId: uuid("source_edital_id").references(
+      () => editais.id,
+      { onDelete: "set null" }
+    ),
+    sourcePositionId: uuid("source_position_id").references(
+      () => positions.id,
+      { onDelete: "set null" }
+    ),
+    origin: text("origin").notNull().default("manual"),
+    confidence: numeric("confidence", { precision: 3, scale: 2 }),
+    aiGenerated: boolean("ai_generated").notNull().default(false),
+    needsReview: boolean("needs_review").notNull().default(false),
+    topic: text("topic"),
     isPublic: boolean("is_public").notNull().default(false),
     contentHash: text("content_hash"),
     status: questionStatus("status").notNull().default("rascunho"),
@@ -257,6 +282,14 @@ export const flashcards = pgTable(
     ),
     front: text("front").notNull(),
     back: text("back").notNull(),
+    sourceDocumentId: uuid("source_document_id").references(
+      () => documents.id,
+      { onDelete: "set null" }
+    ),
+    sourceChunkId: uuid("source_chunk_id").references(
+      () => documentChunks.id,
+      { onDelete: "set null" }
+    ),
     tags: jsonb("tags").notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -312,6 +345,102 @@ export const reviewSchedules = pgTable(
 );
 
 // ============================================================
+// QUESTION_MODERATION_EVENTS — histórico de moderação (admin)
+// ============================================================
+
+export const questionModerationEvents = pgTable(
+  "question_moderation_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    questionId: uuid("question_id")
+      .notNull()
+      .references(() => questions.id, { onDelete: "cascade" }),
+    adminUserId: uuid("admin_user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    action: text("action").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("idx_moderation_events_question").on(t.questionId),
+    index("idx_moderation_events_admin").on(t.adminUserId),
+  ]
+);
+
+// ============================================================
+// LESSONS — aula gerada a partir da apostila
+// ============================================================
+
+export const lessons = pgTable(
+  "lessons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => authUsers.id, {
+      onDelete: "cascade",
+    }),
+    knowledgeSubjectId: uuid("knowledge_subject_id")
+      .notNull()
+      .references(() => knowledgeSubjects.id, { onDelete: "restrict" }),
+    documentId: uuid("document_id").references(() => documents.id, {
+      onDelete: "set null",
+    }),
+    avatarId: uuid("avatar_id").references(() => avatars.id, {
+      onDelete: "set null",
+    }),
+    chapter: text("chapter"),
+    title: text("title").notNull(),
+    roteiro: jsonb("roteiro").notNull().default([]),
+    conteudo: text("conteudo"),
+    duracaoMin: integer("duracao_min"),
+    status: text("status").notNull().default("publicada"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("idx_lessons_user").on(t.userId),
+    index("idx_lessons_subject").on(t.knowledgeSubjectId),
+    index("idx_lessons_document").on(t.documentId),
+  ]
+);
+
+// ============================================================
+// LESSON_PROGRESS — progresso do aluno por aula
+// ============================================================
+
+export const lessonProgress = pgTable(
+  "lesson_progress",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    lessonId: uuid("lesson_id")
+      .notNull()
+      .references(() => lessons.id, { onDelete: "cascade" }),
+    progress: numeric("progress", { precision: 3, scale: 2 })
+      .notNull()
+      .default("0"),
+    currentSection: text("current_section"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("uq_lesson_progress_user_lesson").on(t.userId, t.lessonId),
+    index("idx_lesson_progress_user").on(t.userId),
+  ]
+);
+
+// ============================================================
 // RELAÇÕES
 // ============================================================
 
@@ -340,8 +469,54 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
     fields: [questions.knowledgeSubjectId],
     references: [knowledgeSubjects.id],
   }),
+  sourceDocument: one(documents, {
+    fields: [questions.sourceDocumentId],
+    references: [documents.id],
+  }),
   options: many(questionOptions),
   attempts: many(questionAttempts),
+  moderationEvents: many(questionModerationEvents),
+}));
+
+export const questionModerationEventsRelations = relations(
+  questionModerationEvents,
+  ({ one }) => ({
+    question: one(questions, {
+      fields: [questionModerationEvents.questionId],
+      references: [questions.id],
+    }),
+    admin: one(authUsers, {
+      fields: [questionModerationEvents.adminUserId],
+      references: [authUsers.id],
+    }),
+  })
+);
+
+export const lessonsRelations = relations(lessons, ({ one, many }) => ({
+  subject: one(knowledgeSubjects, {
+    fields: [lessons.knowledgeSubjectId],
+    references: [knowledgeSubjects.id],
+  }),
+  document: one(documents, {
+    fields: [lessons.documentId],
+    references: [documents.id],
+  }),
+  avatar: one(avatars, {
+    fields: [lessons.avatarId],
+    references: [avatars.id],
+  }),
+  progress: many(lessonProgress),
+}));
+
+export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
+  user: one(authUsers, {
+    fields: [lessonProgress.userId],
+    references: [authUsers.id],
+  }),
+  lesson: one(lessons, {
+    fields: [lessonProgress.lessonId],
+    references: [lessons.id],
+  }),
 }));
 
 export const questionOptionsRelations = relations(questionOptions, ({ one }) => ({

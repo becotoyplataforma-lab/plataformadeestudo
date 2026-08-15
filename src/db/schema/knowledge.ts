@@ -99,6 +99,13 @@ export const documents = pgTable(
     externalId: uuid("external_id"),
     fileHash: text("file_hash"),
     metadata: jsonb("metadata").default({}),
+    pageCount: integer("page_count"),
+    processingError: text("processing_error"),
+    chunkCount: integer("chunk_count").notNull().default(0),
+    embeddingCount: integer("embedding_count").notNull().default(0),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    editalId: uuid("edital_id"),
+    positionId: uuid("position_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

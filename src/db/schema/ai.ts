@@ -13,6 +13,7 @@
 import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   integer,
@@ -24,7 +25,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { authUsers, aiModel } from "./identity";
-import { knowledgeSubjects } from "./knowledge";
+import { knowledgeSubjects, documents } from "./knowledge";
 
 // ============================================================
 // ENUMS
@@ -49,6 +50,10 @@ export const chatSessions = pgTable(
       () => knowledgeSubjects.id,
       { onDelete: "set null" }
     ),
+    documentId: uuid("document_id").references(() => documents.id, {
+      onDelete: "set null",
+    }),
+    chapter: text("chapter"),
     model: aiModel("model").notNull().default("flash"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -117,6 +122,34 @@ export const aiUsage = pgTable(
     uniqueIndex("uq_ai_usage_user_date").on(t.userId, t.usageDate),
     check("chk_ai_usage_counts", sql`${t.messagesCount} >= 0 AND ${t.tokensIn} >= 0 AND ${t.tokensOut} >= 0`),
     index("idx_ai_usage_user_date").on(t.userId, t.usageDate),
+  ]
+);
+
+// ============================================================
+// AVATARS — professor virtual (personagem ORIGINAL, sem copyright)
+// ============================================================
+
+export const avatars = pgTable(
+  "avatars",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nome: text("nome").notNull(),
+    slug: text("slug").notNull(),
+    descricao: text("descricao"),
+    personalidade: text("personalidade"),
+    aparencia: text("aparencia"),
+    voz: text("voz"),
+    ativo: boolean("ativo").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("uq_avatars_slug").on(t.slug),
   ]
 );
 

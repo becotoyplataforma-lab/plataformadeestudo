@@ -64,7 +64,8 @@ const authSchema = pgSchema("auth");
  */
 export const authUsers = authSchema.table("users", {
   id: uuid("id").primaryKey(),
-  // Demais colunas (email, senha, MFA, recovery...) gerenciadas pelo Supabase Auth.
+  email: text("email"),
+  // Demais colunas (senha, MFA, recovery...) gerenciadas pelo Supabase Auth.
 });
 
 // ============================================================
