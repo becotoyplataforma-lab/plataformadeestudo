@@ -17,6 +17,8 @@ test.describe("Study — fluxo principal", () => {
       data: { name: `E2E Matéria ${stamp}` },
     });
     expect(subjectRes.ok()).toBeTruthy();
+    const subject = (await subjectRes.json()) as { id: string };
+    expect(subject.id).toBeTruthy();
 
     const taskRes = await api.post("/api/study/tasks", {
       data: {
@@ -33,6 +35,10 @@ test.describe("Study — fluxo principal", () => {
     await authenticateBrowser(page);
     await page.goto("/cronograma");
     await expect(page.getByText(`E2E Revisar CF ${stamp}`).first()).toBeVisible();
+
+    // Cleanup — o teste não deixa dados acumulados (subject/task criados aqui).
+    await api.delete(`/api/study/tasks/${task.id}`);
+    await api.delete(`/api/study/subjects/${subject.id}`);
   });
 
   test("lista questões públicas via API", async () => {
