@@ -121,6 +121,43 @@ questões. Leitura em `/admin/concursos`.
 - UI: `/admin/importar` (`url-import-form.tsx`). Uso restrito a conteúdo público/oficial
   (editais, leis, diários oficiais) — regra de direito autoral em `docs/GUIA-CONTEUDO-ADMIN-CONCURSOAI.md`.
 
+## 20.4 Upload em lote (apostilas)
+- `POST /api/admin/apostilas/batch` (multipart `files` + `subject_id` obrigatório +
+  `edital_id?`/`position_id?`) → processa cada arquivo (ingest → storage → pipeline →
+  vínculo de matéria/edital/cargo) e retorna resultado por arquivo (207 se houver falha).
+- UI: `/admin/apostilas` (`batch-upload-form.tsx`, múltiplos arquivos + fila visível).
+
+## 20.5 Revisão de conteúdo de material (fila + preview)
+- Colunas `documents.review_status` (`pendente|aprovado|rejeitado`), `reviewed_by`,
+  `reviewed_at`, `review_note` — migration `2026-08-15-admin-content.sql` (idempotente).
+- `POST /api/admin/documents/[id]/review` (`aprovar|rejeitar|voltar_pendente`) e
+  `GET /api/admin/documents/[id]/preview` (chunks p/ conferir texto extraído/OCR quebrado).
+- UI: `/admin/apostilas/revisao` (`review-queue.tsx`). **Gate**: documento `rejeitado` fica
+  bloqueado na geração de questões (`DOC_REJECTED`); `pendente` gera com aviso (soft gate).
+
+## 20.6 Biblioteca de fontes externas
+- `GET /api/admin/fontes` (origem por `source_type`/`source_url`/`metadata.fonte|licenca`) e
+  `POST /api/admin/documents/[id]/fonte` (`{fonte?, licenca?}`).
+- UI: `/admin/fontes` (`fontes-list.tsx`) com edição inline de fonte/licença.
+
+## 20.7 Importador de questões prontas (CSV/XLSX/JSON)
+- `POST /api/admin/questions/import` (multipart `file` + `subject_id` + `banca?`/`cargo?`/
+  `ano?`) → `QuestionImportService`: parse (CSV com delimitador auto, XLSX via `xlsx`, JSON),
+  aliases de colunas, validação (enunciado, 2–5 alternativas, gabarito A–E), dedup por hash
+  de conteúdo, grava como `em_revisao` (`origin:"import"`). Erros por linha, nunca grava inválidas.
+- `GET /api/admin/questions/import/template` (CSV modelo). UI: `/admin/questoes/importar`
+  (`questoes-import-form.tsx`).
+
+## 20.8 OCR (PDFs escaneados) — detecção
+O pipeline detecta PDF com texto ausente/muito curto e marca `metadata.ocr_needed=true` com
+`processingError` claro ("OCR não configurado"). Integração real de OCR pendente (serviço
+externo) — ver `docs/GUIA-CONTEUDO-ADMIN-CONCURSOAI.md` §5.3.
+
+## 20.9 Transcrição de vídeo/áudio — hook
+`TranscriptionService` (stub): `isConfigured()` = `Boolean(WHISPER_API_URL)`; documento com
+`metadata.media_type` é marcado `transcription_needed` e falha com mensagem clara. Upload de
+mídia continua rejeitado pelo `IngestionService` (allowlist de MIME) até o serviço existir.
+
 ## 21. Usuários
 `auth.users` + `profiles` (nível, concurso/cargo alvo, meta diária). Lista em `/admin/alunos`.
 
@@ -140,11 +177,14 @@ Ver `database/migrations/2026-08-15-concursoai-e2e.sql` (idempotente, não destr
 schemas Drizzle em `src/db/schema/`.
 
 ## 26. APIs
-`/api/knowledge/*`, `/api/lessons/*`, `/api/admin/*` (questões generate/review, avatares,
-lessons generate), `/api/ai/rag`, `/api/chat` (RAG por document_id).
+`/api/knowledge/*`, `/api/lessons/*`, `/api/admin/*` (questões generate/review/import,
+apostilas batch, documents review/preview/fonte, editais parse/apply, fontes, subjects,
+import URL), `/api/ai/rag`, `/api/chat` (RAG por document_id).
 
 ## 27. Testes
-Vitest unitário (423 passed / 25 skipped) — destaque para `QuestionValidationService`.
+Vitest unitário (442 passed / 25 skipped) — destaque para `QuestionValidationService`,
+`QuestionImportService` (CSV/JSON/XLSX + dedup) e gate de revisão do
+`QuestionGenerationService`.
 
 ## 28. E2E
 Playwright: baseline mantido (21 passed / 3 skipped). Fluxo completo apostila→questão é
@@ -161,7 +201,8 @@ usa Supabase Storage). (Valores NUNCA versionados.)
 
 ## 30. Migrations
 `database/migrations/2026-08-15-concursoai-e2e.sql` — aplicada (idempotente) via
-`node scripts/apply-migration.mjs`.
+`node scripts/apply-migration.mjs`. `2026-08-15-admin-content.sql` (revisão de conteúdo)
+também aplicada.
 
 ## 31. Commits realizados
 Ver `docs/IMPLEMENTATION-REPORT.md` (commits locais, sem push).
@@ -182,8 +223,8 @@ Ver `docs/IMPLEMENTATION-REPORT.md` (commits locais, sem push).
 - Simulados completos (`/simulados`).
 - CRUD completo de concursos/editais/cargos (escrita de edital via IA existe em
   `/admin/editais/importar`; demais leitura apenas — dados existem).
-- Upload em lote de apostilas, fila de revisão de material, biblioteca de fontes e
-  importador de questões CSV/XLSX (ver checklist em `docs/GUIA-CONTEUDO-ADMIN-CONCURSOAI.md`).
+- OCR real (só detecção/sinalização — ver §20.8) e transcrição real de vídeo/áudio
+  (só hook/stub — ver §20.9), ambos dependentes de serviço externo.
 - Enforcement de limites de questões/documentos por plano.
 
 ## 34. Como operar o sistema

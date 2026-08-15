@@ -1,5 +1,11 @@
 # Guia de Alimentação de Conteúdo — ConcursoAI
 
+> **Status da implementação (2026-08-15):** itens 1–7 do checklist (§6) implementados
+> (código, UI, migration e testes) — ver `docs/SDD-CONCURSOAI.md` §20. Itens 8 (OCR) e 9
+> (transcrição) ficam como **detecção/hook**: o pipeline sinaliza material que precisa de OCR
+> ou transcrição e falha com mensagem clara, pois o serviço externo ainda não está configurado
+> (bloqueio real, não silencioso).
+
 Este documento define **tudo que o administrador precisa para alimentar a plataforma com material de estudo** — tanto por upload direto quanto por conteúdo externo da internet — e o que falta construir no admin para isso funcionar de ponta a ponta. É um guia operacional + funcional, complementar ao SDD-CONCURSOAI.md.
 
 ---
