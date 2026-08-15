@@ -54,6 +54,22 @@ export const DocumentRepository = {
     return row ?? null;
   },
 
+  /** Atualizar associações de edital/cargo do documento. */
+  async updateAssociations(
+    id: string,
+    patch: { editalId?: string | null; positionId?: string | null }
+  ) {
+    const set: Record<string, unknown> = { updatedAt: new Date() };
+    if (patch.editalId !== undefined) set.editalId = patch.editalId;
+    if (patch.positionId !== undefined) set.positionId = patch.positionId;
+    const [row] = await db
+      .update(documents)
+      .set(set)
+      .where(eq(documents.id, id))
+      .returning();
+    return row ?? null;
+  },
+
   /** Atualizar status do documento. */
   async updateStatus(id: string, status: string) {
     const [row] = await db
@@ -62,6 +78,54 @@ export const DocumentRepository = {
       .where(eq(documents.id, id))
       .returning();
     return row ?? null;
+  },
+
+  /** Atualizar campos de pipeline (status, contagens, erro, data). */
+  async updatePipeline(
+    id: string,
+    patch: {
+      status?: string;
+      chunkCount?: number;
+      embeddingCount?: number;
+      pageCount?: number | null;
+      processingError?: string | null;
+      processedAt?: Date | null;
+    }
+  ) {
+    const set: Record<string, unknown> = { updatedAt: new Date() };
+    if (patch.status !== undefined) set.status = patch.status;
+    if (patch.chunkCount !== undefined) set.chunkCount = patch.chunkCount;
+    if (patch.embeddingCount !== undefined) set.embeddingCount = patch.embeddingCount;
+    if (patch.pageCount !== undefined) set.pageCount = patch.pageCount;
+    if (patch.processingError !== undefined) set.processingError = patch.processingError;
+    if (patch.processedAt !== undefined) set.processedAt = patch.processedAt;
+
+    const [row] = await db
+      .update(documents)
+      .set(set)
+      .where(eq(documents.id, id))
+      .returning();
+    return row ?? null;
+  },
+
+  /** Listar TODOS os documentos (admin) com paginação. */
+  async listAll(limit = 100, offset = 0) {
+    return db
+      .select()
+      .from(documents)
+      .where(isNull(documents.deletedAt))
+      .orderBy(sql`${documents.createdAt} DESC`)
+      .limit(limit)
+      .offset(offset);
+  },
+
+  /** Contar todos os documentos ativos (admin). */
+  async countAll() {
+    const [row] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documents)
+      .where(isNull(documents.deletedAt));
+    return row?.n ?? 0;
   },
 
   /** Soft delete. */

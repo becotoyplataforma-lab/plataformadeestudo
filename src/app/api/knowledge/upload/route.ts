@@ -8,7 +8,12 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
+import { getAdminSession } from "@/lib/administration/session";
 import { IngestionService, IngestionError } from "@/lib/knowledge/services/ingestion.service";
+import { DocumentStorageService } from "@/lib/knowledge/storage.service";
+import { DocumentPipelineService } from "@/lib/knowledge/services/document-pipeline.service";
+import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
+import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
 import { mapDocumentToDto } from "@/lib/dto/knowledge.dto";
 
 export async function POST(request: NextRequest) {
@@ -27,6 +32,9 @@ export async function POST(request: NextRequest) {
     const sourceType = (formData.get("source_type") as string) || "upload";
     const sourceUrl = formData.get("source_url") as string | null;
     const externalId = formData.get("external_id") as string | null;
+    const subjectId = formData.get("subject_id") as string | null;
+    const editalId = formData.get("edital_id") as string | null;
+    const positionId = formData.get("position_id") as string | null;
 
     if (!file) {
       return NextResponse.json(
@@ -35,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Upload via Ingestion Service
+    // 3. Upload via Ingestion Service (validação + registro no banco)
     const result = await IngestionService.ingest({
       userId,
       file,
@@ -44,23 +52,68 @@ export async function POST(request: NextRequest) {
       externalId: externalId ?? undefined,
     });
 
-    // 4. Retornar DTO
-    const dto = mapDocumentToDto({
-      id: result.documentId,
+    // 4. Armazenamento físico (Supabase Storage, bucket privado)
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await DocumentStorageService.upload({
       userId,
-      type: "txt", // fallback; o tipo real é mapeado no service
-      title: file.name,
-      storagePath: result.storagePath,
-      status: "pending" as const,
-      fileSize: result.fileSize,
+      documentId: result.documentId,
+      fileName: file.name,
+      buffer,
       mimeType: result.mimeType,
-      sourceType: sourceType as "upload" | "edital" | "url",
-      sourceUrl: sourceUrl ?? null,
-      externalId: externalId ?? null,
-      metadata: {},
-      createdAt: result.createdAt,
-      updatedAt: result.createdAt,
-    } as Parameters<typeof mapDocumentToDto>[0]);
+    });
+
+    // 5. Pipeline real: extração → chunking → embedding (quando configurado)
+    try {
+      await DocumentPipelineService.processDocument(result.documentId);
+    } catch (error) {
+      // O pipeline já marca o documento como failed; segue para a resposta.
+      console.error("[knowledge/upload] Processamento falhou:", error);
+    }
+
+    // 5b. Associação admin (matéria/edital/cargo) quando informada
+    const admin = await getAdminSession().catch(() => null);
+    if (admin && (subjectId || editalId || positionId)) {
+      if (subjectId) {
+        await DocumentSubjectRepository.upsert(result.documentId, subjectId, 100).catch(
+          () => undefined
+        );
+      }
+      if (editalId || positionId) {
+        await DocumentRepository.updateAssociations(result.documentId, {
+          editalId: editalId ?? null,
+          positionId: positionId ?? null,
+        }).catch(() => undefined);
+      }
+    }
+
+    // 6. Estado final do documento
+    const finalDoc = await DocumentRepository.findById(result.documentId);
+    const dto = finalDoc
+      ? mapDocumentToDto(finalDoc)
+      : mapDocumentToDto({
+          id: result.documentId,
+          userId,
+          type: "txt",
+          title: file.name,
+          storagePath: result.storagePath,
+          status: "pending" as const,
+          fileSize: result.fileSize,
+          mimeType: result.mimeType,
+          sourceType: sourceType as "upload" | "edital" | "url",
+          sourceUrl: sourceUrl ?? null,
+          externalId: externalId ?? null,
+          metadata: {},
+          pageCount: null,
+          chunkCount: 0,
+          embeddingCount: 0,
+          processingError: null,
+          editalId: null,
+          positionId: null,
+          processedAt: null,
+          deletedAt: null,
+          createdAt: result.createdAt,
+          updatedAt: result.createdAt,
+        } as Parameters<typeof mapDocumentToDto>[0]);
 
     return NextResponse.json({ document: dto }, { status: 201 });
   } catch (error) {
