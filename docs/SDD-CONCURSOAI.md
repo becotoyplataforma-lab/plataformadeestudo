@@ -31,8 +31,8 @@ performance por matéria) + concurso/cargo do perfil, apostilas/aulas/questões,
 estudando" e "você precisa reforçar" (WeaknessAnalysisService).
 
 ## 7. Apostilas
-- Aluno: `/apostilas` (lista com status) e `/apostilas/[id]` (matérias, professor IA,
-  questões relacionadas).
+- Aluno: `/apostilas` (lista com status + **formulário de upload**) e `/apostilas/[id]`
+  (matérias, professor IA, questões relacionadas).
 - Admin: `/admin/apostilas` (lista, upload, processamento, reprocessar, associação de
   matéria/edital/cargo).
 
@@ -40,6 +40,9 @@ estudando" e "você precisa reforçar" (WeaknessAnalysisService).
 Ver `docs/KNOWLEDGE_PIPELINE.md`. Upload → Storage → extração (PDF/DOCX/TXT/MD/HTML) →
 normalização → chunking → embedding (opcional) → indexação. Estados `document_status` com
 retry seguro (`/api/knowledge/documents/[id]/process`).
+
+Storage: **Cloudflare R2** (preferencial, S3-compatível) com fallback para **Supabase
+Storage** — ativa R2 automaticamente quando `R2_ACCESS_KEY_ID` está configurado.
 
 ## 9. RAG
 `RagService` + `HybridSearchService` (pgvector + FTS). O chat do Professor injeta o
@@ -52,6 +55,12 @@ plano (`resolveUserLimits`). Requer `DEEPSEEK_API_KEY` (sem chave → 502 elegan
 ## 11. Geração de questões
 Ver `docs/QUESTION_GENERATION.md`. `QuestionGenerationService` → DeepSeek → validação →
 persistência `em_revisao` com `source_document_id`/`source_chunk_id`.
+
+**Fluxo do aluno (novo):** `POST /api/questions/generate` — o aluno gera questões de UMA
+apostila própria, cruzadas com a matéria/peso do edital do concurso dele (`notice_subjects`).
+UI em `/apostilas/[id]` (botão "Gerar questões desta apostila"). A matéria do edital é
+obtida de `profiles.contest_id`/`position_id` → edital vigente → pesos. O prompt recebe o
+peso (`editalWeight`) para priorizar assuntos. Questões entram na mesma fila de revisão admin.
 
 ## 12. Validação de questões
 `QuestionValidationService` (5 alternativas, gabarito A–E, explicação, dificuldade,
@@ -138,7 +147,9 @@ Ver `docs/IMPLEMENTATION-REPORT.md` (commits locais, sem push).
 - `get_plan_limits` (SQL legado) sem consumidores.
 - `maxQuestionsPerDay`/`maxDocuments` definidos mas não aplicados (decisão de produto).
 - `/api/payments/*` ↔ `/api/billing/*` duplicados (contrato preservado).
-- Rastreabilidade chunk→questão é heurística (sobreposição de termos); sem seleção de chunk pela IA.
+- Rastreabilidade chunk→questão: **registrada** no novo fluxo (`source_document_id` +
+  `source_chunk_id`); a escolha do chunk é heurística (sobreposição de termos) — melhoria
+  futura: seleção de chunk pela própria IA.
 - Geração de vídeo/voz/avatar é arquitetura preparada (sem serviço externo).
 
 ## 33. O que NÃO foi implementado
