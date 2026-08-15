@@ -35,6 +35,25 @@ export async function getCurrentEditalByContest(
   return edital ?? null;
 }
 
+/** Criar edital (sem conflito com o índice de edital vigente por concurso). */
+export async function createEdital(input: {
+  contestId: string;
+  title: string;
+  isCurrent: boolean;
+  status: "rascunho" | "publicado" | "arquivado";
+}) {
+  const [row] = await db
+    .insert(editais)
+    .values({
+      contestId: input.contestId,
+      title: input.title,
+      isCurrent: input.isCurrent,
+      status: input.status,
+    })
+    .returning();
+  return row;
+}
+
 /** Matérias do edital vigente do concurso/cargo do aluno (com pesos). */
 export async function listEditalSubjectsForStudent(
   contestId: string,
