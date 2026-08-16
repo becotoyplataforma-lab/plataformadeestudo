@@ -324,6 +324,13 @@ export const reviewSchedules = pgTable(
       .notNull()
       .default("2.50"),
     repetitions: integer("repetitions").notNull().default(0),
+    stability: numeric("stability", { precision: 10, scale: 4 })
+      .notNull()
+      .default("0"),
+    difficulty: numeric("difficulty", { precision: 6, scale: 4 })
+      .notNull()
+      .default("5"),
+    lastRating: text("last_rating"),
     dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
     lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

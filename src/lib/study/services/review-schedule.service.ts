@@ -6,6 +6,7 @@
  */
 import { ReviewScheduleRepository } from "../repositories/review-schedule.repository";
 import { FlashcardRepository } from "../repositories/flashcard.repository";
+import { fsrsNextState, type FsrsRating } from "./fsrs";
 
 export class ReviewScheduleError extends Error {
   code: string;
@@ -17,6 +18,18 @@ export class ReviewScheduleError extends Error {
 }
 
 export type ReviewRating = "facil" | "medio" | "dificil";
+
+/** Mapeia a autoavaliação de 3 botões da UI para as notas FSRS. */
+export function toFsrsRating(rating: ReviewRating): FsrsRating {
+  switch (rating) {
+    case "dificil":
+      return "again";
+    case "facil":
+      return "easy";
+    default:
+      return "good";
+  }
+}
 
 export interface ReviewResult {
   scheduleId: string;
@@ -76,7 +89,8 @@ export function srsNextState(current: {
 
 export const ReviewScheduleService = {
   /**
-   * Registrar revisão de um flashcard.
+   * Registrar revisão de um flashcard (FSRS).
+   * Atualiza intervalo, estabilidade, dificuldade e data de revisão.
    */
   async review(userId: string, flashcardId: string, rating: ReviewRating): Promise<ReviewResult> {
     const flashcard = await FlashcardRepository.findById(flashcardId, userId);
@@ -86,39 +100,46 @@ export const ReviewScheduleService = {
 
     let schedule = await ReviewScheduleRepository.findByFlashcard(flashcardId, userId);
     if (!schedule) {
-      // Recupera de schedule "deleted" ou cria novo
       schedule = await ReviewScheduleRepository.create({
         userId,
         flashcardId,
         intervalDays: 0,
         easeFactor: "2.50",
         repetitions: 0,
+        stability: "0",
+        difficulty: "5",
         dueDate: new Date(),
       });
     }
 
-    const next = srsNextState(
+    const fsrsRating = toFsrsRating(rating);
+    const now = new Date();
+    const next = fsrsNextState(
       {
-        intervalDays: schedule.intervalDays,
-        easeFactor: Number(schedule.easeFactor),
-        repetitions: schedule.repetitions,
+        difficulty: Number(schedule.difficulty ?? 5),
+        stability: Number(schedule.stability ?? 0),
+        lastReviewAt: schedule.lastReviewedAt,
       },
-      rating
+      fsrsRating,
+      now
     );
 
     const updated = await ReviewScheduleRepository.update(schedule.id, userId, {
       intervalDays: next.intervalDays,
-      easeFactor: next.easeFactor.toFixed(2),
-      repetitions: next.repetitions,
+      easeFactor: "2.50",
+      repetitions: schedule.repetitions + 1,
+      stability: next.stability.toFixed(4),
+      difficulty: next.difficulty.toFixed(4),
+      lastRating: fsrsRating,
       dueDate: next.dueDate,
-      lastReviewedAt: new Date(),
+      lastReviewedAt: now,
     });
 
     return {
       scheduleId: updated?.id ?? schedule.id,
       intervalDays: next.intervalDays,
-      easeFactor: next.easeFactor,
-      repetitions: next.repetitions,
+      easeFactor: Number(schedule.easeFactor),
+      repetitions: schedule.repetitions + 1,
       dueDate: next.dueDate,
     };
   },
