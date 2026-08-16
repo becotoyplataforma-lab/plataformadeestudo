@@ -138,6 +138,6 @@ describe("EntitlementService", () => {
     mockFindByCode.mockResolvedValue(null);
     const ent = await EntitlementService.getCurrent("u1");
     expect(ent.planCode).toBe("free");
-    expect(ent.limits.maxMessages).toBe(50);
+    expect(ent.limits.maxMessages).toBe(5);
   });
 });

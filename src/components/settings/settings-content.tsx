@@ -89,7 +89,7 @@ export function SettingsContent({ plano, email }: Props) {
               <p className="font-semibold">{PLAN_LABEL[plano]}</p>
               <p className="text-sm text-muted-foreground">
                 {plano === "free"
-                  ? "20 questões/dia · 50 mensagens IA"
+                  ? "20 questões/dia · 5 mensagens IA/dia"
                   : plano === "pro"
                     ? "Questões ilimitadas · IA Flash + Pro"
                     : "Tudo do Pro + Knowledge Engine"}
@@ -111,7 +111,7 @@ export function SettingsContent({ plano, email }: Props) {
                 >
                   <div>
                     <p className="font-semibold">Pro</p>
-                    <p className="text-xs text-muted-foreground">R$ 29,90/mês · questões ilimitadas + IA Pro</p>
+                    <p className="text-xs text-muted-foreground">R$ 9,90 no 1º mês, depois R$ 19,90/mês · questões ilimitadas + IA Pro</p>
                   </div>
                   <Sparkles className="h-5 w-5 text-blue-600" />
                 </button>
@@ -186,7 +186,7 @@ export function SettingsContent({ plano, email }: Props) {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>📄 <strong>Knowledge Engine</strong> — importe PDFs, apostilas e editais.</li>
+            <li>📄 <strong>Knowledge Engine</strong> — importe PDFs, apostilas e editais <Badge variant="outline" className="ml-1">exclusivo Intensivo</Badge>.</li>
             <li>🎯 <strong>Contest Intelligence</strong> — análise de bancas e editais.</li>
             <li>🔁 <strong>Revisão espaçada avançada</strong> — algoritmo FSRS.</li>
             <li>🤖 <strong>Correção de redação</strong> — com o Professor IA.</li>

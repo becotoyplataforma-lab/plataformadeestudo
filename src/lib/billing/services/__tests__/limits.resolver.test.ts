@@ -40,7 +40,7 @@ describe("resolveUserLimits (Billing)", () => {
 
     const limits = await resolveUserLimits("u1");
 
-    expect(limits.maxMessages).toBe(50);
+    expect(limits.maxMessages).toBe(5);
     expect(limits.maxTokens).toBe(100_000);
     expect(limits.allowPro).toBe(false);
   });

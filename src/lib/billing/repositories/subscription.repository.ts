@@ -25,6 +25,17 @@ export const SubscriptionRepository = {
     return row ?? null;
   },
 
+  /** true se o usuário já teve QUALQUER assinatura (ativa ou não).
+   *  Usado pelo checkout para decidir preço promocional (1º ciclo). */
+  async hasAnyByUser(userId: string): Promise<boolean> {
+    const [row] = await db
+      .select({ id: subscriptions.id })
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .limit(1);
+    return Boolean(row);
+  },
+
   /** Buscar assinatura por ID (valida ownership quando userId informado). */
   async findById(id: string, userId?: string) {
     const [row] = await db

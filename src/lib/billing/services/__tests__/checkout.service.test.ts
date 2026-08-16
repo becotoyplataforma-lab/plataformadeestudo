@@ -18,13 +18,21 @@ vi.mock("../../repositories/plan.repository", () => ({
   },
 }));
 
+const mockHasAnyByUser = vi.fn();
+vi.mock("../../repositories/subscription.repository", () => ({
+  SubscriptionRepository: {
+    hasAnyByUser: (...args: unknown[]) => mockHasAnyByUser(...args),
+  },
+}));
+
 import { CheckoutService, CheckoutError } from "../checkout.service";
 
 const PRO_PLAN = {
   id: "p-pro",
   name: "Pro",
   code: "pro",
-  priceCents: 2990,
+  priceCents: 1990,
+  promoPriceCents: 990,
   limits: { maxMessages: 500, maxTokens: 1000000, allowPro: true },
   status: "active",
   createdAt: new Date(),
@@ -56,17 +64,31 @@ describe("CheckoutService", () => {
 
   it("cria preferência de checkout para plano pago (reutiliza o gateway)", async () => {
     mockFindByCode.mockResolvedValue(PRO_PLAN);
+    mockHasAnyByUser.mockResolvedValue(true); // já assinou antes → preço cheio
     const result = await CheckoutService.createCheckout("u1", "pro");
 
     expect(result.plan).toBe("pro");
     expect(result.externalReference).toBe("pro:u1");
     expect(result.initPoint).toBe("https://init.mercadopago.com/x");
-    expect(result.priceCents).toBe(2990);
+    expect(result.priceCents).toBe(1990);
+    expect(result.promoApplied).toBe(false);
     expect(mockCreatePreference).toHaveBeenCalledWith(
       expect.objectContaining({
         externalReference: "pro:u1",
-        unitPriceCents: 2990,
+        unitPriceCents: 1990,
       })
+    );
+  });
+
+  it("aplica preço promocional no primeiro ciclo", async () => {
+    mockFindByCode.mockResolvedValue(PRO_PLAN);
+    mockHasAnyByUser.mockResolvedValue(false); // 1ª assinatura → R$ 9,90
+    const result = await CheckoutService.createCheckout("u1", "pro");
+
+    expect(result.priceCents).toBe(990);
+    expect(result.promoApplied).toBe(true);
+    expect(mockCreatePreference).toHaveBeenCalledWith(
+      expect.objectContaining({ unitPriceCents: 990 })
     );
   });
 

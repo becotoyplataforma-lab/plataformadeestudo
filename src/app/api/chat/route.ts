@@ -53,7 +53,13 @@ export async function POST(req: Request) {
   if (!usage.canSend) {
     return apiError(
       429,
-      "Você atingiu o limite diário de mensagens. Tente novamente amanhã."
+      `Você atingiu o limite diário de mensagens do seu plano (${usage.maxMessages}/dia). Tente novamente amanhã ou faça upgrade.`
+    );
+  }
+  if (usage.usedTokens >= usage.maxTokens) {
+    return apiError(
+      429,
+      "Você atingiu o limite diário de tokens de IA do seu plano. Tente novamente amanhã ou faça upgrade."
     );
   }
 

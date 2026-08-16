@@ -63,6 +63,7 @@ export const plans = pgTable(
     name: text("name").notNull(),
     code: text("code").notNull(),
     priceCents: integer("price_cents").notNull().default(0),
+    promoPriceCents: integer("promo_price_cents"),
     limits: jsonb("limits").notNull().default({}),
     status: lifecycleStatus("status").notNull().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true })

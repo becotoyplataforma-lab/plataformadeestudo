@@ -105,6 +105,7 @@ export const CheckoutDtoSchema = z.object({
   external_reference: z.string(),
   plan: z.string(),
   price_cents: z.number().int().nonnegative(),
+  promo_applied: z.boolean().optional(),
 });
 export type CheckoutDto = OutputOf<typeof CheckoutDtoSchema>;
 
@@ -194,6 +195,7 @@ export function mapCheckoutToDto(c: CheckoutResult): CheckoutDto {
     external_reference: c.externalReference,
     plan: c.plan,
     price_cents: c.priceCents,
+    promo_applied: c.promoApplied,
   };
 }
 

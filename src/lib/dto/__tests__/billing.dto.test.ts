@@ -26,7 +26,8 @@ const PLAN_ROW = {
   id: UUID,
   name: "Pro",
   code: "pro",
-  priceCents: 2990,
+  priceCents: 1990,
+  promoPriceCents: 990,
   limits: { maxMessages: 500, maxTokens: 1000000, allowPro: true },
   status: "active",
   createdAt: new Date(),
@@ -134,7 +135,8 @@ describe("CheckoutDtoSchema", () => {
       sandboxInitPoint: "https://sandbox.mercadopago.com/x",
       externalReference: "pro:u1",
       plan: "pro",
-      priceCents: 2990,
+      priceCents: 1990,
+      promoApplied: true,
     });
     const parsed = CheckoutDtoSchema.safeParse(dto);
     expect(parsed.success).toBe(true);

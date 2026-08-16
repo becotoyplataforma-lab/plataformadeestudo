@@ -9,6 +9,7 @@
  */
 import "server-only";
 import { PlanRepository } from "../repositories/plan.repository";
+import { SubscriptionRepository } from "../repositories/subscription.repository";
 import { createCheckoutPreference } from "@/lib/payments/mercadopago";
 
 export class CheckoutError extends Error {
@@ -26,10 +27,12 @@ export interface CheckoutResult {
   externalReference: string;
   plan: string;
   priceCents: number;
+  promoApplied: boolean;
 }
 
 export const CheckoutService = {
-  /** Cria preferência de checkout (apenas planos pagos). */
+  /** Cria preferência de checkout (apenas planos pagos).
+   *  Preço promocional (1º ciclo) quando o usuário nunca teve assinatura. */
   async createCheckout(userId: string, planCode: string): Promise<CheckoutResult> {
     const plan = await PlanRepository.findByCode(planCode);
     if (!plan) {
@@ -39,6 +42,11 @@ export const CheckoutService = {
       throw new CheckoutError("FREE_PLAN", "Plano gratuito não requer pagamento.");
     }
 
+    // 1º ciclo usa o preço promocional (se o plano tiver), senão o preço cheio.
+    const firstCycle = !(await SubscriptionRepository.hasAnyByUser(userId));
+    const promoApplied = firstCycle && plan.promoPriceCents !== null && plan.promoPriceCents !== undefined;
+    const priceCents = promoApplied ? plan.promoPriceCents! : plan.priceCents;
+
     // external_reference: "plano:userId" — usada no webhook para identificar.
     const externalReference = `${plan.code}:${userId}`;
 
@@ -46,7 +54,7 @@ export const CheckoutService = {
       externalReference,
       title: `Plano ${plan.name} — ConcursoAI`,
       description: `Assinatura ${plan.name} — ConcursoAI`,
-      unitPriceCents: plan.priceCents,
+      unitPriceCents: priceCents,
     });
 
     return {
@@ -54,7 +62,8 @@ export const CheckoutService = {
       sandboxInitPoint: preference.sandbox_init_point,
       externalReference,
       plan: plan.code,
-      priceCents: plan.priceCents,
+      priceCents,
+      promoApplied,
     };
   },
 };
