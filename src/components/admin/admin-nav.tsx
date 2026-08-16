@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Database,
   Upload,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,6 +51,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: "/admin/concursos", label: "Concursos/Editais", icon: Trophy },
       { href: "/admin/editais/importar", label: "Edital IA", icon: Sparkles },
       { href: "/admin/importar", label: "Importar (URL)", icon: Globe },
+      { href: "/admin/contest-intelligence", label: "Intelligence", icon: BarChart3 },
     ],
   },
   {
