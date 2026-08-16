@@ -75,6 +75,7 @@ export const sourceTypeEnum = pgEnum("source_type", [
   "upload",
   "edital",
   "url",
+  "consolidated",
 ]);
 
 // ============================================================
@@ -97,6 +98,7 @@ export const documents = pgTable(
     sourceType: sourceTypeEnum("source_type").notNull().default("upload"),
     sourceUrl: text("source_url"),
     externalId: uuid("external_id"),
+    sourceDocumentIds: jsonb("source_document_ids"),
     fileHash: text("file_hash"),
     metadata: jsonb("metadata").default({}),
     pageCount: integer("page_count"),

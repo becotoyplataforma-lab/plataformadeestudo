@@ -108,6 +108,20 @@ describe("QuestionGenerationService — gate de revisão de conteúdo", () => {
     ).rejects.toMatchObject({ code: "DOC_NOT_READY" });
   });
 
+  it("bloqueia consolidado pendente de aprovação (DOC_PENDING_REVIEW)", async () => {
+    (DocumentRepository.findById as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "d1",
+      status: "indexed",
+      reviewStatus: "pendente",
+      sourceType: "consolidated",
+      title: "Consolidado",
+    });
+
+    await expect(
+      QuestionGenerationService.generateFromDocument(baseInput)
+    ).rejects.toMatchObject({ code: "DOC_PENDING_REVIEW" });
+  });
+
   it("lança DOC_NOT_FOUND para documento inexistente", async () => {
     (DocumentRepository.findById as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     await expect(

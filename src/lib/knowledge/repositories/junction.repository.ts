@@ -1,7 +1,7 @@
 /**
  * ConcursoAI — Junction Repositories (document_subjects, document_topics, document_tags)
  */
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import {
   documentSubjects,
@@ -42,6 +42,24 @@ export const DocumentSubjectRepository = {
         eq(documentSubjects.subjectId, knowledgeSubjects.id)
       )
       .where(eq(documentSubjects.documentId, documentId));
+  },
+
+  /** Matérias de vários documentos de uma vez (para seleção/consolidação). */
+  async listSubjectsByDocuments(documentIds: string[]) {
+    if (documentIds.length === 0) return [];
+    const { knowledgeSubjects } = await import("@/db/schema/knowledge");
+    return db
+      .select({
+        documentId: documentSubjects.documentId,
+        subjectId: documentSubjects.subjectId,
+        subjectName: knowledgeSubjects.name,
+      })
+      .from(documentSubjects)
+      .innerJoin(
+        knowledgeSubjects,
+        eq(documentSubjects.subjectId, knowledgeSubjects.id)
+      )
+      .where(inArray(documentSubjects.documentId, documentIds));
   },
 
   async deleteByDocument(documentId: string) {

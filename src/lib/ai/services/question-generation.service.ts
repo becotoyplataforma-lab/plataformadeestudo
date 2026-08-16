@@ -96,6 +96,12 @@ export const QuestionGenerationService = {
         "Este material foi rejeitado na revisão de conteúdo e está bloqueado para geração de questões."
       );
     }
+    if (doc.sourceType === "consolidated" && doc.reviewStatus !== "aprovado") {
+      throw new GenerationServiceError(
+        "DOC_PENDING_REVIEW",
+        "Este material consolidado aguarda aprovação na revisão de conteúdo antes de gerar questões."
+      );
+    }
 
     const subject = await KnowledgeSubjectRepository.findById(input.subjectId);
     const chunks = await DocumentChunkRepository.listByDocument(input.documentId);
