@@ -158,6 +158,29 @@ externo) — ver `docs/GUIA-CONTEUDO-ADMIN-CONCURSOAI.md` §5.3.
 `metadata.media_type` é marcado `transcription_needed` e falha com mensagem clara. Upload de
 mídia continua rejeitado pelo `IngestionService` (allowlist de MIME) até o serviço existir.
 
+## 20.10 Consolidação de apostilas (Fase 3 do PLANO-MESTRE)
+- `documents.source_type` ganha o valor `consolidated` (migration `2026-08-15-consolidation.sql`)
+  + coluna `source_document_ids jsonb` (rastreabilidade dos documentos-fonte).
+- `ConsolidationService.consolidate({userId,isAdmin,documentIds,subjectId})`: valida 2–10 docs,
+  mesma matéria (via `document_subjects`), todos `chunked|indexed`, ownership (aluno só os seus);
+  junta chunks → síntese via IA (DeepSeek, modelo "pro", NÃO concatenação) → cria documento
+  `markdown` `consolidated` → storage → pipeline → vínculo de matéria. Erros: `MIN_DOCUMENTS`,
+  `MAX_DOCUMENTS`, `DOC_NOT_FOUND`, `FORBIDDEN`, `DOC_NOT_READY`, `MIXED_SUBJECTS`,
+  `SUBJECT_MISMATCH`, `NO_CONTENT`, `AI_NOT_CONFIGURED` (503), `EMPTY_SYNTHESIS`.
+- `POST /api/documents/consolidate` `{document_ids, subject_id}` (aluno ou admin).
+- UI aluno: `/apostilas` ("Selecionar várias" → "Consolidar em um resumo", desabilitado se
+  cruzar matérias ou incluir doc não pronto) — `apostilas-list.tsx`.
+- **Curadoria**: consolidado nasce `review_status=pendente` e entra na fila
+  `/admin/apostilas/revisao`; a geração de questões bloqueia consolidado não aprovado
+  (`DOC_PENDING_REVIEW`).
+
+## 20.11 Seed PME-RJ (dado real de teste)
+- Migration idempotente `2026-08-15-pme-rj-seed.sql`: órgão PMERJ (REAL), banca "a confirmar"
+  (NÃO inventar), concurso "Concurso PMERJ — Soldado PM (REAL)" (`publicado`), cargo
+  "Soldado PM (REAL)" e matéria "Português". Edital/pesos ficam PENDENTES (nenhum
+  `notice_subjects` criado — nunca inventar peso). IDs fixos e marcados como REAL para
+  diferenciar de dados mock.
+
 ## 21. Usuários
 `auth.users` + `profiles` (nível, concurso/cargo alvo, meta diária). Lista em `/admin/alunos`.
 
@@ -201,8 +224,9 @@ usa Supabase Storage). (Valores NUNCA versionados.)
 
 ## 30. Migrations
 `database/migrations/2026-08-15-concursoai-e2e.sql` — aplicada (idempotente) via
-`node scripts/apply-migration.mjs`. `2026-08-15-admin-content.sql` (revisão de conteúdo)
-também aplicada.
+`node scripts/apply-migration.mjs`. Também aplicadas: `2026-08-15-admin-content.sql`
+(revisão de conteúdo), `2026-08-15-consolidation.sql` (consolidação) e
+`2026-08-15-pme-rj-seed.sql` (seed PME-RJ).
 
 ## 31. Commits realizados
 Ver `docs/IMPLEMENTATION-REPORT.md` (commits locais, sem push).
