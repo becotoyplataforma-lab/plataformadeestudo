@@ -286,3 +286,30 @@ Aula (roteiro) → avatar (personagem original) → TTS → lip-sync → vídeo 
 - [ ] Aplicar migration no ambiente alvo e revisar RLS.
 - [ ] Definir enforcement de `maxQuestionsPerDay`/`maxDocuments`.
 - [ ] Rodar E2E completo com backend real configurado.
+
+## 42. Rodada noturna (2026-08-15/16) — decisões registradas
+- **FASE 1 — Preços/limites**: Grátis 5 msgs IA/dia. Pro R$ 9,90 no 1º mês e R$ 19,90/mês a
+  partir do 2º. **Decisão (escalonamento)**: sem job de renovação automática (Mercado Pago
+  preferência one-time); o preço é decidido no checkout pela **existência de assinatura
+  anterior** (`subscriptions.hasAnyByUser`) — 1º ciclo usa `promo_price_cents`, ciclos
+  seguintes usam `price_cents`. Migration `2026-08-15-pricing-limits.sql`. Enforcement de
+  tokens no `/api/chat` (429 educado). **Limitações**: não há débito automático mensal nem
+  expiração forçada da assinatura (ends_at null) — renovação = novo checkout.
+- **FASE 1.5 — "Knowledge Engine"**: é recurso de ingestão (docs/01-PRD) mantido **exclusivo
+  Intensivo**. Na seção "Em breve" ganhou badge "exclusivo Intensivo" para não repetir o nome
+  sem contexto.
+- **FASE 2 — "Em breve"**: já existia em `/configuracoes`; atualizada (preços + badge + link
+  de correção de redação).
+- **FASE 3 — FSRS**: `src/lib/study/services/fsrs.ts` (FSRS simplificado escrito do zero a
+  partir da spec pública: D, S, R(t) = (1+t/(9S))^-1, notas again/hard/good/easy). Colunas
+  `stability`, `difficulty`, `last_rating` em `review_schedules` (migration
+  `2026-08-15-fsrs.sql`). `ReviewScheduleService.review` usa FSRS (SM-2 `srsNextState`
+  mantido por compat). Nota da UI (facil/medio/dificil) mapeada p/ easy/good/again.
+- **FASE 4 — Contest Intelligence v1**: `GET /api/admin/contest-intelligence?edital_id=` +
+  página `/admin/contest-intelligence`. Mostra peso por matéria (notice_subjects) e, se houver
+  questões publicadas da mesma banca, contagem histórica por matéria. **Honesto**: sem banca
+  confirmada ou histórico < 5 questões, exibe aviso claro, nunca número inventado.
+- **FASE 5 — Correção de redação**: `POST /api/essay/correct` + página `/redacao`. Critérios
+  estilo ENEM (coerência, coesão, norma culta, argumentação, proposta de intervenção),
+  nota 0–1000 + feedback por critério. Respeita cota diária de IA.
+- **FASE 0 — Sidebar admin**: substituiu o menu horizontal (ver commit `f9c0d7c`).

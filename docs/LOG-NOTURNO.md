@@ -27,4 +27,18 @@ timestamp, o que foi feito, resultado da validação (typecheck/lint/vitest/buil
   R(t), notas again/hard/good/easy). Colunas `stability`, `difficulty`, `last_rating` em
   `review_schedules` (migration `2026-08-15-fsrs.sql` aplicada). `ReviewScheduleService.review`
   passou a usar FSRS (mantém SM-2 `srsNextState` por compat). +7 testes unitários.
-- **Validação:** typecheck 0 · lint 0 · vitest 457/25 · build 0. Commit pendente nesta fase.
+- **Validação:** typecheck 0 · lint 0 · vitest 457/25 · build 0. Commit `23b93dc`.
+
+## FASE 4 — Contest Intelligence v1
+- **Feito:** serviço `ContestIntelligenceService` (peso por matéria via notice_subjects +
+  histórico de questões publicadas da mesma banca), API `GET /api/admin/contest-intelligence`,
+  página `/admin/contest-intelligence` + item "Intelligence" na sidebar. Honesto: sem banca
+  confirmada ou histórico < 5 questões → aviso claro, nunca número fake.
+- **Validação:** typecheck 0 · lint 0 · vitest 457/25 · build 0. Commit `c9050b7`.
+
+## FASE 5 — Correção de redação (Professor IA)
+- **Feito:** `EssayCorrectionService` (DeepSeek "pro", critérios estilo ENEM, nota 0–1000 +
+  feedback por critério), `POST /api/essay/correct` (respeita cota diária), página `/redacao`
+  e link na seção "Em breve" das configurações.
+- **Validação:** (pendente nesta fase — typecheck/lint/vitest/build em execução).
+

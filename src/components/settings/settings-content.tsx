@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { CreditCard, FileLock2, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -189,7 +190,11 @@ export function SettingsContent({ plano, email }: Props) {
             <li>📄 <strong>Knowledge Engine</strong> — importe PDFs, apostilas e editais <Badge variant="outline" className="ml-1">exclusivo Intensivo</Badge>.</li>
             <li>🎯 <strong>Contest Intelligence</strong> — análise de bancas e editais.</li>
             <li>🔁 <strong>Revisão espaçada avançada</strong> — algoritmo FSRS.</li>
-            <li>🤖 <strong>Correção de redação</strong> — com o Professor IA.</li>
+            <li>🤖 <strong>Correção de redação</strong> — disponível em{" "}
+              <Link href="/redacao" className="text-cyan-300 underline hover:text-cyan-200">
+                redação
+              </Link>.
+            </li>
           </ul>
         </CardContent>
       </Card>
