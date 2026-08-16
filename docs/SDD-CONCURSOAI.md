@@ -205,9 +205,9 @@ apostilas batch, documents review/preview/fonte, editais parse/apply, fontes, su
 import URL), `/api/ai/rag`, `/api/chat` (RAG por document_id).
 
 ## 27. Testes
-Vitest unitário (442 passed / 25 skipped) — destaque para `QuestionValidationService`,
-`QuestionImportService` (CSV/JSON/XLSX + dedup) e gate de revisão do
-`QuestionGenerationService`.
+Vitest unitário (457 passed / 25 skipped) — destaque para `QuestionValidationService`,
+`QuestionImportService` (CSV/JSON/XLSX + dedup), `ConsolidationService`, gate de revisão do
+`QuestionGenerationService` e FSRS (`fsrs.test.ts`).
 
 ## 28. E2E
 Playwright: baseline mantido (21 passed / 3 skipped). Fluxo completo apostila→questão é

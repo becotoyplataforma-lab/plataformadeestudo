@@ -40,5 +40,9 @@ timestamp, o que foi feito, resultado da validação (typecheck/lint/vitest/buil
 - **Feito:** `EssayCorrectionService` (DeepSeek "pro", critérios estilo ENEM, nota 0–1000 +
   feedback por critério), `POST /api/essay/correct` (respeita cota diária), página `/redacao`
   e link na seção "Em breve" das configurações.
-- **Validação:** (pendente nesta fase — typecheck/lint/vitest/build em execução).
+- **Validação:** typecheck 0 · lint 0 · vitest 457/25 · build 0. Commit `0f9390c`.
+
+## FASE 6 — Relatório final
+- Ver `docs/RELATORIO-NOTURNO.md` (resumo por fase, pendências, decisões e validação completa
+  incluindo E2E).
 
