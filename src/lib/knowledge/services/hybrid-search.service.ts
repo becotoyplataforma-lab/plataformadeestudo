@@ -12,7 +12,9 @@ import {
   documentChunks,
   documentSubjects,
   knowledgeSubjects,
+  embeddings,
 } from "@/db/schema/knowledge";
+import { embeddingClient } from "../embedding/client";
 
 // ============================================================
 // Tipos
@@ -65,6 +67,8 @@ export interface SearchOutput {
   results: SearchResultItem[];
   totalHits: number;
   queryTimeMs: number;
+  /** Indica se a busca vetorial (pgvector) foi usada nesta consulta. */
+  vectorSearchEnabled: boolean;
 }
 
 // ============================================================
@@ -105,7 +109,7 @@ export const HybridSearchService = {
 
     // Validação
     if (!query || query.trim().length === 0) {
-      return { results: [], totalHits: 0, queryTimeMs: 0 };
+      return { results: [], totalHits: 0, queryTimeMs: 0, vectorSearchEnabled: false };
     }
 
     // 1. Obter IDs de documentos do usuário (status prontos para busca textual:
@@ -128,7 +132,7 @@ export const HybridSearchService = {
 
     const userDocIds = userDocs.map((d) => d.id);
     if (userDocIds.length === 0) {
-      return { results: [], totalHits: 0, queryTimeMs: Date.now() - startedAt };
+      return { results: [], totalHits: 0, queryTimeMs: Date.now() - startedAt, vectorSearchEnabled: false };
     }
 
     // Aplicar filtros
@@ -148,7 +152,7 @@ export const HybridSearchService = {
     }
 
     if (filteredDocIds.length === 0) {
-      return { results: [], totalHits: 0, queryTimeMs: Date.now() - startedAt };
+      return { results: [], totalHits: 0, queryTimeMs: Date.now() - startedAt, vectorSearchEnabled: false };
     }
 
     // 2. Busca FTS (Full Text Search)
@@ -163,7 +167,7 @@ export const HybridSearchService = {
       .join(" | ");
 
     if (!ftsQuery) {
-      return { results: [], totalHits: 0, queryTimeMs: Date.now() - startedAt };
+      return { results: [], totalHits: 0, queryTimeMs: Date.now() - startedAt, vectorSearchEnabled: false };
     }
 
     const ftsSearch = sql`to_tsquery('portuguese', ${ftsQuery})`;
@@ -186,10 +190,68 @@ export const HybridSearchService = {
       .orderBy(desc(ftsRank))
       .limit(20);
 
-    // 3. Combinar resultados
-    // No MVP sem BAAI/bge-m3 real, a busca vetorial usa FTS como fallback
-    // V1.1: adicionar busca vetorial com embedding da query
+    // 3. Busca vetorial (pgvector) — quando embeddings existem para os documentos.
+    //    Se EMBEDDING_API_URL não estiver configurado OU não houver embeddings
+    //    para os documentos do usuário, cai automaticamente para FTS-only.
+    let vectorResults: { chunkId: string; documentId: string; score: number }[] = [];
+    let vectorSearchEnabled = false;
 
+    if (embeddingClient.isConfigured()) {
+      try {
+        // Verifica se há embeddings para os documentos filtrados.
+        const [hasEmbeddings] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(embeddings)
+          .innerJoin(
+            documentChunks,
+            eq(embeddings.chunkId, documentChunks.id)
+          )
+          .where(
+            and(
+              inArray(documentChunks.documentId, filteredDocIds),
+              isNull(documentChunks.deletedAt)
+            )
+          )
+          .limit(1);
+
+        if ((hasEmbeddings?.count ?? 0) > 0) {
+          // Embeda a query e busca por similaridade de cosseno (<=>).
+          const [queryVector] = await embeddingClient.embed([query]);
+          if (queryVector) {
+            vectorSearchEnabled = true;
+            const vectorLiteral = sql`${queryVector}::vector`;
+            const cosineDist = sql<number>`1 - (${embeddings.embedding} <=> ${vectorLiteral})`;
+
+            vectorResults = await db
+              .select({
+                chunkId: embeddings.chunkId,
+                documentId: documentChunks.documentId,
+                score: cosineDist,
+              })
+              .from(embeddings)
+              .innerJoin(
+                documentChunks,
+                eq(embeddings.chunkId, documentChunks.id)
+              )
+              .where(
+                and(
+                  inArray(documentChunks.documentId, filteredDocIds),
+                  isNull(documentChunks.deletedAt)
+                )
+              )
+              .orderBy(desc(cosineDist))
+              .limit(20);
+          }
+        }
+      } catch (error) {
+        // Falha na busca vetorial (ex.: serviço de embeddings indisponível)
+        // não deve quebrar a busca — cai para FTS-only.
+        console.warn("[hybrid-search] Busca vetorial indisponível, usando FTS:", error);
+        vectorSearchEnabled = false;
+      }
+    }
+
+    // 4. Combinar resultados (vetorial + FTS)
     const combined = new Map<string, {
       chunkId: string;
       documentId: string;
@@ -206,7 +268,21 @@ export const HybridSearchService = {
       });
     }
 
-    // 4. Construir resultados
+    for (const r of vectorResults) {
+      const existing = combined.get(r.chunkId);
+      if (existing) {
+        existing.vectorScore = r.score;
+      } else {
+        combined.set(r.chunkId, {
+          chunkId: r.chunkId,
+          documentId: r.documentId,
+          ftsScore: 0,
+          vectorScore: r.score,
+        });
+      }
+    }
+
+    // 5. Construir resultados
     const sorted = Array.from(combined.values())
       .map((c) => ({
         ...c,
@@ -262,6 +338,7 @@ export const HybridSearchService = {
       results,
       totalHits: combined.size,
       queryTimeMs: Date.now() - startedAt,
+      vectorSearchEnabled,
     };
   },
 };

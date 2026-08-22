@@ -17,6 +17,19 @@ vi.mock("@/lib/db/drizzle", () => ({
   },
 }));
 
+// Mock do embeddingClient com flag controlável por teste.
+// isConfigured() retorna `mockEmbeddingConfigured` (default false → FTS-only).
+const mockEmbed = vi.fn();
+let mockEmbeddingConfigured = false;
+vi.mock("@/lib/knowledge/embedding/client", () => ({
+  embeddingClient: {
+    isConfigured: () => mockEmbeddingConfigured,
+    embed: (...args: unknown[]) => mockEmbed(...args),
+    dimension: 1024,
+    model: "BAAI/bge-m3",
+  },
+}));
+
 import { HybridSearchService } from "../hybrid-search.service";
 
 /**
@@ -57,6 +70,8 @@ function renderSql(cond: unknown): string {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockEmbeddingConfigured = false;
+  mockEmbed.mockResolvedValue([new Array(1024).fill(0.1)]);
 });
 
 describe("HybridSearchService — escopo FTS por status", () => {
@@ -251,5 +266,52 @@ describe("HybridSearchService — isolamento por curso/cargo/edital", () => {
     const sqlText = whereSpy?.calls?.[0]?.[0] ? renderSql(whereSpy.calls[0][0]) : "";
     expect(sqlText).not.toContain("position_id");
     expect(sqlText).not.toContain("edital_id");
+  });
+});
+
+describe("HybridSearchService — busca vetorial (pgvector)", () => {
+  beforeEach(() => {
+    mockEmbeddingConfigured = true;
+  });
+
+  it("usa busca vetorial quando embeddings existem e EMBEDDING_API_URL configurado", async () => {
+    // Queries: userDocs → ftsResults → hasEmbeddings → vectorResults → chunk detail → subject
+    mockDbSelect
+      .mockReturnValueOnce(makeQuery([{ id: "doc-1", title: "Apostila.pdf" }]))
+      .mockReturnValueOnce(makeQuery([{ chunkId: "chunk-1", documentId: "doc-1", score: 0.3 }]))
+      .mockReturnValueOnce(makeQuery([{ count: 5 }])) // hasEmbeddings > 0
+      .mockReturnValueOnce(
+        makeQuery([{ chunkId: "chunk-1", documentId: "doc-1", score: 0.9 }])
+      )
+      .mockReturnValueOnce(
+        makeQuery([{ id: "chunk-1", content: "Conteúdo relevante.", metadata: {} }])
+      )
+      .mockReturnValueOnce(makeQuery([{ name: "Português" }]));
+
+    const out = await HybridSearchService.search({ query: "relevante", userId: "u1" });
+
+    expect(out.vectorSearchEnabled).toBe(true);
+    expect(out.results).toHaveLength(1);
+    expect(out.results[0].vectorScore).toBe(0.9);
+    expect(mockEmbed).toHaveBeenCalledTimes(1);
+  });
+
+  it("cai para FTS-only quando não há embeddings para os documentos", async () => {
+    // Queries: userDocs → ftsResults → hasEmbeddings (count 0)
+    mockDbSelect
+      .mockReturnValueOnce(makeQuery([{ id: "doc-1", title: "Apostila.pdf" }]))
+      .mockReturnValueOnce(makeQuery([{ chunkId: "chunk-1", documentId: "doc-1", score: 0.3 }]))
+      .mockReturnValueOnce(makeQuery([{ count: 0 }])) // hasEmbeddings = 0
+      .mockReturnValueOnce(
+        makeQuery([{ id: "chunk-1", content: "Conteúdo.", metadata: {} }])
+      )
+      .mockReturnValueOnce(makeQuery([{ name: "Português" }]));
+
+    const out = await HybridSearchService.search({ query: "conteúdo", userId: "u1" });
+
+    expect(out.vectorSearchEnabled).toBe(false);
+    expect(out.results).toHaveLength(1);
+    expect(out.results[0].vectorScore).toBe(0);
+    expect(mockEmbed).not.toHaveBeenCalled();
   });
 });
