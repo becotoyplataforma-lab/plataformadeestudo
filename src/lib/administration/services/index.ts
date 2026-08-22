@@ -19,3 +19,20 @@ export {
   ModerationService,
   ModerationError,
 } from "./moderation.service";
+export {
+  ContestService,
+  ContestError,
+  type ContestServiceCreateInput,
+  type ContestServiceUpdateInput,
+} from "./contest.service";
+export {
+  PositionService,
+  PositionError,
+  type PositionServiceCreateInput,
+  type PositionServiceUpdateInput,
+} from "./position.service";
+export {
+  OrganBoardService,
+  OrganBoardError,
+  type OrganBoardCreateInput,
+} from "./organ-board.service";
