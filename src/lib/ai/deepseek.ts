@@ -50,15 +50,20 @@ function apiUrl() {
   return `${env.DEEPSEEK_BASE_URL.replace(/\/$/, "")}/chat/completions`;
 }
 
+function apiKey() {
+  return process.env.DEEPSEEK_API_KEY?.trim() || env.DEEPSEEK_API_KEY;
+}
+
 async function postJson<T>(body: unknown, signal?: AbortSignal): Promise<T> {
-  if (!env.DEEPSEEK_API_KEY) {
+  const key = apiKey();
+  if (!key) {
     throw new Error("DEEPSEEK_API_KEY não configurada no servidor.");
   }
   const res = await fetch(apiUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify(body),
     signal,
@@ -106,7 +111,8 @@ export async function streamChatCompletion(
   req: ChatCompletionRequest,
   signal?: AbortSignal
 ): Promise<Response> {
-  if (!env.DEEPSEEK_API_KEY) {
+  const key = apiKey();
+  if (!key) {
     throw new Error("DEEPSEEK_API_KEY não configurada no servidor.");
   }
   const params = MODEL_PARAMS[req.model];
@@ -115,7 +121,7 @@ export async function streamChatCompletion(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
       model: MODEL_NAMES[req.model],
@@ -124,6 +130,7 @@ export async function streamChatCompletion(
       max_tokens: req.maxTokens ?? params.maxTokens,
       top_p: params.topP,
       stream: true,
+      stream_options: { include_usage: true },
     }),
     signal,
   });

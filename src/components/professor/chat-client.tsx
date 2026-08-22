@@ -323,16 +323,16 @@ export function ChatClient({
                   ) : (
                     <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                   )}
-                  {model === "flash" ? "V4 Flash" : "V4 Pro"}
+                  {model === "flash" ? "DeepSeek V4 Flash" : "DeepSeek V4 Pro"}
                   <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="border-white/10 bg-slate-950 text-slate-100">
                 <DropdownMenuItem onClick={() => setModel("flash")} className="text-slate-100 focus:bg-white/5">
-                  <Zap className="h-4 w-4 text-amber-400" /> V4 Flash — rápido
+                  <Zap className="h-4 w-4 text-amber-400" /> DeepSeek V4 Flash — rápido
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setModel("pro")} className="text-slate-100 focus:bg-white/5">
-                  <Sparkles className="h-4 w-4 text-violet-400" /> V4 Pro — raciocínio profundo
+                  <Sparkles className="h-4 w-4 text-violet-400" /> DeepSeek V4 Pro — raciocínio profundo
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

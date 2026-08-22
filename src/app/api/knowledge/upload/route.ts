@@ -17,6 +17,16 @@ import { DocumentPipelineService } from "@/lib/knowledge/services/document-pipel
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
 import { mapDocumentToDto } from "@/lib/dto/knowledge.dto";
+import { rateLimit } from "@/lib/security/rate-limit";
+import { EntitlementService } from "@/lib/billing/services/entitlement.service";
+
+// Rate limit por plano (uploads/hora): Free 10/h, Pro 50/h, Intensivo 100/h.
+const UPLOAD_WINDOW_MS = 60 * 60 * 1000;
+const UPLOAD_LIMITS: Record<string, number> = {
+  free: 10,
+  pro: 50,
+  intensivo: 100,
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +37,21 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id;
+
+    // 1b. Rate limit por plano (uploads/hora).
+    const entitlement = await EntitlementService.getCurrent(userId).catch(() => null);
+    const planCode = entitlement?.planCode ?? "free";
+    const uploadLimit = UPLOAD_LIMITS[planCode] ?? UPLOAD_LIMITS.free;
+    const rl = rateLimit("knowledge-upload", `user:${userId}`, uploadLimit, UPLOAD_WINDOW_MS);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMIT_EXCEEDED",
+          message: `Você atingiu o limite de uploads do seu plano (${uploadLimit}/hora). Tente novamente em 1 hora.`,
+        },
+        { status: 429 }
+      );
+    }
 
     // 2. Parse do form data
     const formData = await request.formData();
