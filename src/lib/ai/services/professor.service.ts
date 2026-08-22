@@ -26,6 +26,8 @@ import { ChatService } from "./chat.service";
 import { UsageService } from "./usage.service";
 import { ModelRouterService } from "./model-router.service";
 import { EntitlementService } from "@/lib/billing/services/entitlement.service";
+import { getProfile } from "@/lib/db/repositories/perfil";
+import { resolveCourseScope } from "@/lib/knowledge/security/course-scope";
 import { logger, now, elapsed } from "@/lib/observability";
 import type { AIModel } from "@/lib/ai/types";
 
@@ -85,6 +87,16 @@ export interface ProfessorDependencies {
   usage: Pick<typeof UsageService, "checkLimit" | "record" | "estimateCost">;
   router: Pick<typeof ModelRouterService, "route">;
   resolveIntent?: (ctx: ProfessorIntentContext) => ProfessorIntent;
+  /**
+   * Resolve o escopo de curso/cargo/edital do usuário autenticado a partir do
+   * perfil (fonte de verdade no backend). Retorna os filtros de isolamento a
+   * aplicar na busca RAG. Quando ausente (testes) ou quando o usuário não tem
+   * curso/cargo configurado, nenhum filtro é aplicado (comportamento atual).
+   */
+  resolveCourseScope?: (userId: string) => Promise<{
+    positionId?: string;
+    editalId?: string;
+  }>;
   /**
    * Billing (Entitlement) — dono dos limites (OPEN-004).
    * Quando presente, os limites vêm do plano do usuário; `limit` vira fallback.
@@ -214,6 +226,13 @@ export class ProfessorService {
     timeoutMs: number,
     startedAt: number
   ): Promise<ProfessorOutput> {
+    // Isolamento por curso/cargo/edital: resolve o escopo do usuário autenticado
+    // a partir do perfil (fonte de verdade no backend). O cliente NÃO determina
+    // o positionId/editalId — apenas o perfil autenticado define o escopo.
+    const scope = this.deps.resolveCourseScope
+      ? await this.deps.resolveCourseScope(input.userId)
+      : {};
+
     const out = await this.withTimeout(
       this.deps.rag.answer({
         question: input.message,
@@ -222,6 +241,8 @@ export class ProfessorService {
         documentIds: input.documentIds,
         topK: input.topK,
         model,
+        positionId: scope.positionId,
+        editalId: scope.editalId,
       }),
       timeoutMs
     );
@@ -326,6 +347,10 @@ export const professorService = new ProfessorService({
   usage: UsageService,
   router: ModelRouterService,
   resolveIntent: defaultResolveIntent,
+  // Isolamento por curso/cargo/edital: resolve o escopo do usuário autenticado
+  // a partir do perfil (fonte de verdade no backend).
+  resolveCourseScope: async (userId: string) =>
+    resolveCourseScope(await getProfile(userId).catch(() => null)),
   // OPEN-004: Billing é dono dos limites — o Professor consulta o entitlement.
   billing: EntitlementService,
 });

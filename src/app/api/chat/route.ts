@@ -16,6 +16,7 @@ import {
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { DocumentChunkRepository } from "@/lib/knowledge/repositories/chunk.repository";
+import { isDocInUserScope } from "@/lib/knowledge/security/course-scope";
 import type { AIModel, ChatMessage } from "@/lib/ai/types";
 
 export const runtime = "nodejs";
@@ -85,10 +86,13 @@ export async function POST(req: Request) {
   const history = await getRecentContext(userId, activeSessionId, 10);
 
   // RAG: se o aluno escolheu uma apostila, injeta o conteúdo como contexto.
+  // Isolamento por curso/cargo: o documento deve pertencer ao usuário E ao
+  // escopo de curso/cargo/edital do perfil autenticado (fonte de verdade no
+  // backend). Impede que um aluno injete material de outro curso/cargo.
   let contextoRag = "";
   if (document_id) {
     const doc = await DocumentRepository.findById(document_id).catch(() => null);
-    if (doc && doc.userId === userId) {
+    if (doc && doc.userId === userId && (await isDocInUserScope(doc, profile))) {
       const chunks = await DocumentChunkRepository.listByDocument(document_id).catch(() => []);
       if (chunks.length > 0) {
         contextoRag = `Conteúdo da apostila "${doc.title}":\n${chunks

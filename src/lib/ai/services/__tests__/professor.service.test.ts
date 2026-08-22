@@ -391,6 +391,70 @@ describe("ProfessorService — modelo", () => {
   });
 });
 
+describe("ProfessorService — isolamento por curso/cargo/edital", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    checkLimit.mockResolvedValue({ canSend: true });
+    route.mockReturnValue("flash");
+    estimateCost.mockReturnValue(0.01);
+    answer.mockResolvedValue(ragOut());
+  });
+
+  it("com position_id no perfil, RAG recebe positionId (filtro principal)", async () => {
+    const resolveCourseScope = vi.fn().mockResolvedValue({ positionId: "pos-Y" });
+    await makeService({ resolveCourseScope }).ask({
+      message: "q",
+      userId: "u1",
+      mode: "rag",
+    });
+
+    expect(resolveCourseScope).toHaveBeenCalledWith("u1");
+    expect(answer).toHaveBeenCalledWith(
+      expect.objectContaining({ positionId: "pos-Y" })
+    );
+  });
+
+  it("sem position_id mas com contest_id, RAG recebe editalId (fallback)", async () => {
+    const resolveCourseScope = vi.fn().mockResolvedValue({ editalId: "edital-X" });
+    await makeService({ resolveCourseScope }).ask({
+      message: "q",
+      userId: "u1",
+      mode: "rag",
+    });
+
+    expect(answer).toHaveBeenCalledWith(
+      expect.objectContaining({ editalId: "edital-X" })
+    );
+  });
+
+  it("sem contest_id nem position_id, NÃO inventa filtro (comportamento atual)", async () => {
+    const resolveCourseScope = vi.fn().mockResolvedValue({});
+    await makeService({ resolveCourseScope }).ask({
+      message: "q",
+      userId: "u1",
+      mode: "rag",
+    });
+
+    expect(answer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        positionId: undefined,
+        editalId: undefined,
+      })
+    );
+  });
+
+  it("sem resolveCourseScope injetado, NÃO aplica filtro (compatibilidade)", async () => {
+    await makeService().ask({ message: "q", userId: "u1", mode: "rag" });
+
+    expect(answer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        positionId: undefined,
+        editalId: undefined,
+      })
+    );
+  });
+});
+
 describe("ProfessorError", () => {
   it("carrega código e mensagem", () => {
     const err = new ProfessorError("TIMEOUT", "demorou");

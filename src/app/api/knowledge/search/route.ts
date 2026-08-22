@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { HybridSearchService } from "@/lib/knowledge/services/hybrid-search.service";
 import { SearchRequestDtoSchema } from "@/lib/dto/knowledge.dto";
+import { getProfile } from "@/lib/db/repositories/perfil";
+import { resolveCourseScope } from "@/lib/knowledge/security/course-scope";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +34,12 @@ export async function POST(request: NextRequest) {
 
     const { query, subject_id, topic_id, document_id, tags, top_k } = parsed.data;
 
+    // Isolamento por curso/cargo/edital: o escopo é resolvido no backend a
+    // partir do perfil autenticado (fonte de verdade). O cliente NÃO pode
+    // definir ou sobrescrever positionId/editalId.
+    const profile = await getProfile(userId).catch(() => null);
+    const courseScope = await resolveCourseScope(profile);
+
     // 3. Executar busca
     const result = await HybridSearchService.search({
       query,
@@ -41,6 +49,8 @@ export async function POST(request: NextRequest) {
         topicId: topic_id,
         documentId: document_id,
         tagIds: tags,
+        positionId: courseScope.positionId,
+        editalId: courseScope.editalId,
       },
       topK: top_k,
     });

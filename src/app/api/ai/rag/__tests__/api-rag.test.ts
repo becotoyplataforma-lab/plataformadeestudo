@@ -6,6 +6,8 @@ import { NextRequest } from "next/server";
 
 const mockAuth = vi.fn();
 const mockAnswer = vi.fn();
+const mockGetProfile = vi.fn();
+const mockResolveCourseScope = vi.fn();
 
 vi.mock("@/lib/auth/auth", () => ({
   auth: (...args: unknown[]) => mockAuth(...args),
@@ -18,6 +20,14 @@ vi.mock("@/lib/ai/services/rag.service", async (importOriginal) => {
     ragService: { answer: (...args: unknown[]) => mockAnswer(...args) },
   };
 });
+
+vi.mock("@/lib/db/repositories/perfil", () => ({
+  getProfile: (...args: unknown[]) => mockGetProfile(...args),
+}));
+
+vi.mock("@/lib/knowledge/security/course-scope", () => ({
+  resolveCourseScope: (...args: unknown[]) => mockResolveCourseScope(...args),
+}));
 
 import { POST } from "@/app/api/ai/rag/route";
 
@@ -32,7 +42,12 @@ function makeRequest(body: unknown): NextRequest {
 const UUID = "00000000-0000-0000-0000-000000000001";
 
 describe("POST /api/ai/rag", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Defaults: usuário sem curso → nenhum filtro inventado.
+    mockGetProfile.mockResolvedValue(null);
+    mockResolveCourseScope.mockResolvedValue({});
+  });
 
   it("retorna 401 sem autenticação", async () => {
     mockAuth.mockResolvedValue(null);
@@ -107,5 +122,81 @@ describe("POST /api/ai/rag", () => {
     const json = (await res.json()) as { chunks_used: number; confidence: number };
     expect(json.chunks_used).toBe(0);
     expect(json.confidence).toBe(0);
+  });
+
+  describe("isolamento por curso/cargo/edital", () => {
+    const baseAnswer = {
+      answer: "Resposta.",
+      citations: [],
+      documents: [],
+      chunksUsed: 0,
+      tokens: { in: 0, out: 0, total: 0 },
+      latencyMs: 10,
+      model: "flash" as const,
+      confidence: 0,
+    };
+
+    it("usuário com position_id recebe positionId no ragService.answer", async () => {
+      mockAuth.mockResolvedValue({ user: { id: "u1" } });
+      mockGetProfile.mockResolvedValue({ id: "u1", position_id: "pos-Y", contest_id: null });
+      mockResolveCourseScope.mockResolvedValue({ positionId: "pos-Y" });
+      mockAnswer.mockResolvedValue(baseAnswer);
+
+      const res = await POST(makeRequest({ question: "q" }));
+      expect(res.status).toBe(200);
+      expect(mockGetProfile).toHaveBeenCalledWith("u1");
+      expect(mockResolveCourseScope).toHaveBeenCalledWith(
+        expect.objectContaining({ position_id: "pos-Y" })
+      );
+      expect(mockAnswer).toHaveBeenCalledWith(
+        expect.objectContaining({ positionId: "pos-Y", editalId: undefined })
+      );
+    });
+
+    it("usuário sem position_id mas com contest_id recebe editalId", async () => {
+      mockAuth.mockResolvedValue({ user: { id: "u1" } });
+      mockGetProfile.mockResolvedValue({ id: "u1", position_id: null, contest_id: "contest-X" });
+      mockResolveCourseScope.mockResolvedValue({ editalId: "edital-X" });
+      mockAnswer.mockResolvedValue(baseAnswer);
+
+      const res = await POST(makeRequest({ question: "q" }));
+      expect(res.status).toBe(200);
+      expect(mockAnswer).toHaveBeenCalledWith(
+        expect.objectContaining({ editalId: "edital-X", positionId: undefined })
+      );
+    });
+
+    it("usuário sem curso não recebe filtro inventado", async () => {
+      mockAuth.mockResolvedValue({ user: { id: "u1" } });
+      mockGetProfile.mockResolvedValue({ id: "u1", position_id: null, contest_id: null });
+      mockResolveCourseScope.mockResolvedValue({});
+      mockAnswer.mockResolvedValue(baseAnswer);
+
+      const res = await POST(makeRequest({ question: "q" }));
+      expect(res.status).toBe(200);
+      expect(mockAnswer).toHaveBeenCalledWith(
+        expect.objectContaining({ positionId: undefined, editalId: undefined })
+      );
+    });
+
+    it("cliente NÃO pode sobrescrever o escopo via body", async () => {
+      mockAuth.mockResolvedValue({ user: { id: "u1" } });
+      mockGetProfile.mockResolvedValue({ id: "u1", position_id: "pos-Y", contest_id: null });
+      mockResolveCourseScope.mockResolvedValue({ positionId: "pos-Y" });
+      mockAnswer.mockResolvedValue(baseAnswer);
+
+      // O DTO ignora (strips) position_id/edital_id do cliente — a fonte de
+      // verdade do escopo é o backend (perfil autenticado), nunca o body.
+      const res = await POST(
+        makeRequest({ question: "q", position_id: "pos-HACK", edital_id: "edital-HACK" })
+      );
+      expect(res.status).toBe(200);
+      expect(mockAnswer).toHaveBeenCalledWith(
+        expect.objectContaining({ positionId: "pos-Y", editalId: undefined })
+      );
+      expect(mockAnswer).not.toHaveBeenCalledWith(
+        expect.objectContaining({ positionId: "pos-HACK" })
+      );
+    });
   });
 });

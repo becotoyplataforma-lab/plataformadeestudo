@@ -25,6 +25,18 @@ export interface SearchFilters {
   tagIds?: string[];
   dateFrom?: string;
   dateTo?: string;
+  /**
+   * Isolamento por curso/cargo: quando presente, restringe a busca a documentos
+   * vinculados a este cargo (documents.position_id). Resolvido no backend a
+   * partir do perfil autenticado — nunca aceito do cliente como autoridade.
+   */
+  positionId?: string;
+  /**
+   * Isolamento por edital: quando presente, restringe a busca a documentos
+   * vinculados a este edital (documents.edital_id). Usado como fallback quando
+   * o aluno não tem cargo selecionado (edital vigente do concurso).
+   */
+  editalId?: string;
 }
 
 export interface SearchInput {
@@ -56,6 +68,22 @@ export interface SearchOutput {
 }
 
 // ============================================================
+// Constantes
+// ============================================================
+
+/**
+ * Status de documento considerados "prontos para busca textual".
+ *
+ * O pipeline sem embeddings (EMBEDDING_API_URL ausente) termina em `chunked`
+ * (texto extraído + chunks + fts_vector prontos) — NÃO é falha. Com embeddings
+ * configurados, o status é `indexed`. Ambos são pesquisáveis via FTS.
+ *
+ * `pending`/`processing`/`processed`/`indexing` = ainda não finalizados.
+ * `failed` = erro no processamento (texto vazio, OCR ausente etc.).
+ */
+export const SEARCHABLE_DOCUMENT_STATUSES = ["chunked", "indexed"] as const;
+
+// ============================================================
 // Service
 // ============================================================
 
@@ -80,7 +108,8 @@ export const HybridSearchService = {
       return { results: [], totalHits: 0, queryTimeMs: 0 };
     }
 
-    // 1. Obter IDs de documentos do usuário
+    // 1. Obter IDs de documentos do usuário (status prontos para busca textual:
+    //    `chunked` quando não há embeddings configurados, `indexed` quando há)
     const userDocs = await db
       .select({ id: documents.id, title: documents.title })
       .from(documents)
@@ -88,7 +117,12 @@ export const HybridSearchService = {
         and(
           eq(documents.userId, userId),
           isNull(documents.deletedAt),
-          eq(documents.status, "indexed")
+          inArray(documents.status, [...SEARCHABLE_DOCUMENT_STATUSES]),
+          // Isolamento por curso/cargo/edital (resolvido no backend via perfil).
+          ...(filters.positionId
+            ? [eq(documents.positionId, filters.positionId)]
+            : []),
+          ...(filters.editalId ? [eq(documents.editalId, filters.editalId)] : [])
         )
       );
 

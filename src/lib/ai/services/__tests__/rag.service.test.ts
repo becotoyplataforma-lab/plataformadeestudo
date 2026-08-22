@@ -148,6 +148,55 @@ describe("RagService", () => {
     );
   });
 
+  it("repassa positionId como filtro de isolamento", async () => {
+    search.mockResolvedValue({ results: [chunk()], totalHits: 1, queryTimeMs: 10 });
+
+    await makeService().answer({
+      question: "q",
+      userId: "u1",
+      positionId: "pos-A",
+    });
+
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: expect.objectContaining({ positionId: "pos-A" }),
+      })
+    );
+  });
+
+  it("repassa editalId como filtro de isolamento", async () => {
+    search.mockResolvedValue({ results: [chunk()], totalHits: 1, queryTimeMs: 10 });
+
+    await makeService().answer({
+      question: "q",
+      userId: "u1",
+      editalId: "edital-1",
+    });
+
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: expect.objectContaining({ editalId: "edital-1" }),
+      })
+    );
+  });
+
+  it("não envia filtros de isolamento quando ausentes", async () => {
+    search.mockResolvedValue({ results: [chunk()], totalHits: 1, queryTimeMs: 10 });
+
+    await makeService().answer({ question: "q", userId: "u1" });
+
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: expect.not.objectContaining({ positionId: expect.anything() }),
+      })
+    );
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: expect.not.objectContaining({ editalId: expect.anything() }),
+      })
+    );
+  });
+
   it("propaga erro do provider", async () => {
     search.mockResolvedValue({ results: [chunk()], totalHits: 1, queryTimeMs: 10 });
     complete.mockRejectedValue(new Error("DeepSeek offline"));

@@ -39,6 +39,12 @@ export interface RagInput {
   topK?: number;
   model?: AIModel;
   timeoutMs?: number;
+  /**
+   * Isolamento por curso/cargo/edital. Resolvido no backend a partir do perfil
+   * autenticado (ProfessorService) — nunca aceito do cliente como autoridade.
+   */
+  positionId?: string;
+  editalId?: string;
 }
 
 export interface Citation {
@@ -118,6 +124,9 @@ export class RagService {
         ...(input.documentIds && input.documentIds.length > 0 && {
           documentId: input.documentIds[0],
         }),
+        // Isolamento por curso/cargo/edital (resolvido no backend via perfil).
+        ...(input.positionId && { positionId: input.positionId }),
+        ...(input.editalId && { editalId: input.editalId }),
       },
       topK,
     });
