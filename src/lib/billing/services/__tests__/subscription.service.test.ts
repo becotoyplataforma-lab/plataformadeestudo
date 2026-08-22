@@ -47,6 +47,7 @@ const ACTIVE_SUB = {
   userId: "u1",
   planId: "p-pro",
   status: "active",
+  preapprovalId: "pre-1",
   startsAt: new Date(),
   endsAt: null,
   createdAt: new Date(),
@@ -110,5 +111,39 @@ describe("SubscriptionService", () => {
   it("getCurrent retorna a assinatura ativa", async () => {
     mockFindActive.mockResolvedValue(ACTIVE_SUB);
     await expect(SubscriptionService.getCurrent("u1")).resolves.toEqual(ACTIVE_SUB);
+  });
+
+  it("renew estende endsAt em +1 mês quando há assinatura ativa", async () => {
+    mockFindByCode.mockResolvedValue(PRO_PLAN);
+    const base = new Date("2026-08-05T00:00:00.000Z");
+    mockFindActive.mockResolvedValue({ ...ACTIVE_SUB, endsAt: base });
+    mockUpdate.mockResolvedValue({ ...ACTIVE_SUB, endsAt: new Date("2026-09-05T00:00:00.000Z") });
+
+    const sub = await SubscriptionService.renew("u1", "pro");
+
+    expect(sub?.status).toBe("active");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      "s1",
+      expect.objectContaining({
+        status: "active",
+        preapprovalId: "pre-1",
+      })
+    );
+    // Não cria nova assinatura — apenas atualiza a existente.
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("renew cria nova assinatura quando não há ativa", async () => {
+    mockFindByCode.mockResolvedValue(PRO_PLAN);
+    mockFindActive.mockResolvedValue(null);
+    mockCancelActive.mockResolvedValue([]);
+    mockCreate.mockResolvedValue(ACTIVE_SUB);
+
+    const sub = await SubscriptionService.renew("u1", "pro", { preapprovalId: "pre-2" });
+
+    expect(sub?.status).toBe("active");
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1", planId: "p-pro", preapprovalId: "pre-2" })
+    );
   });
 });

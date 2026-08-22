@@ -96,6 +96,8 @@ export const subscriptions = pgTable(
       .notNull()
       .references(() => plans.id, { onDelete: "restrict" }),
     status: subscriptionStatus("status").notNull().default("active"),
+    /** ID da Preapproval (assinatura recorrente) no Mercado Pago — null p/ one-time. */
+    preapprovalId: text("preapproval_id"),
     startsAt: timestamp("starts_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

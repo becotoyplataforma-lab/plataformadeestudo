@@ -11,9 +11,14 @@
  */
 import "server-only";
 import { createHmac } from "node:crypto";
-import { getPayment, type PaymentNotification } from "@/lib/payments/mercadopago";
+import {
+  getPayment,
+  getPreapproval,
+  type PaymentNotification,
+} from "@/lib/payments/mercadopago";
 import { PaymentRepository } from "../repositories/payment.repository";
 import { PlanRepository } from "../repositories/plan.repository";
+import { SubscriptionRepository } from "../repositories/subscription.repository";
 import { SubscriptionService } from "./subscription.service";
 import type { PaymentStatus, WebhookResult } from "../types";
 
@@ -83,7 +88,11 @@ interface ConfirmedPayment {
 
 export const WebhookService = {
   /**
-   * Processa a notificação de pagamento.
+   * Processa a notificação do Mercado Pago.
+   * Suporta dois fluxos:
+   *  - `subscription_preapproval`: aprovação da assinatura recorrente → ativa.
+   *  - `payment` (one-time ou cobrança recorrente): pagamento aprovado →
+   *    ativa (1º ciclo) ou renova (ciclos seguintes).
    * Sempre resolve com 200-friendly (WebhookResult); lança apenas em falha
    * de validação de assinatura (rota responde 401 nesse caso).
    */
@@ -91,8 +100,8 @@ export const WebhookService = {
     notification: PaymentNotification,
     ctx: WebhookContext = {}
   ): Promise<WebhookResult> {
-    const paymentId = notification.data?.id ?? notification.id;
-    if (!paymentId) {
+    const eventId = notification.data?.id ?? notification.id;
+    if (!eventId) {
       return { received: true, processed: false, ignored: true, duplicate: false, status: null };
     }
 
@@ -102,44 +111,102 @@ export const WebhookService = {
         secret: ctx.secret,
         signature: ctx.xSignature ?? "",
         requestId: ctx.xRequestId ?? "",
-        dataId: paymentId,
+        dataId: eventId,
       });
       if (!valid) {
         throw new WebhookError("INVALID_SIGNATURE", "Assinatura do webhook inválida.");
       }
     }
 
-    // 2. Confirma o status no provedor (nunca confiar no payload).
-    const payment = (await getPayment(String(paymentId))) as ConfirmedPayment;
+    // 2. Roteia por tipo de evento.
+    const type = notification.type ?? notification.action;
+    if (type === "subscription_preapproval") {
+      return this.handlePreapproval(String(eventId));
+    }
+    return this.handlePayment(String(eventId));
+  },
+
+  /** Processa aprovação/cancelamento de uma Preapproval (assinatura recorrente). */
+  async handlePreapproval(preapprovalId: string): Promise<WebhookResult> {
+    // Confirma o status no provedor (nunca confiar no payload).
+    const preapproval = await getPreapproval(preapprovalId);
+    const status = preapproval.status; // pending, authorized, paused, cancelled, finished
+
+    // Idempotência: já existe assinatura com este preapproval_id?
+    const existing = await SubscriptionRepository.findByPreapprovalId(preapprovalId);
+    if (existing) {
+      return { received: true, processed: false, ignored: false, duplicate: true, status: null };
+    }
+
+    // Identifica usuário e plano pela external_reference "plano:userId".
+    const [planCode, userId] = (preapproval.external_reference ?? "").split(":");
+    if (!userId || !planCode) {
+      return { received: true, processed: false, ignored: true, duplicate: false, status: null };
+    }
+
+    const plan = await PlanRepository.findByCode(planCode);
+    if (!plan) {
+      return { received: true, processed: false, ignored: true, duplicate: false, status: null };
+    }
+
+    // Apenas "authorized" ativa a assinatura recorrente.
+    if (status !== "authorized") {
+      return { received: true, processed: false, ignored: true, duplicate: false, status: null };
+    }
+
+    await SubscriptionService.activate(userId, planCode, {
+      preapprovalId,
+    });
+
+    return {
+      received: true,
+      processed: true,
+      ignored: false,
+      duplicate: false,
+      status: "approved",
+    };
+  },
+
+  /** Processa um pagamento (one-time ou cobrança recorrente). */
+  async handlePayment(paymentId: string): Promise<WebhookResult> {
+    // Confirma o status no provedor (nunca confiar no payload).
+    const payment = (await getPayment(paymentId)) as ConfirmedPayment;
     const status = mapMpStatus(payment.status);
     const providerId = String(payment.id);
 
-    // 3. Idempotência: já processado? Não reaplica.
+    // Idempotência: já processado? Não reaplica.
     const existing = await PaymentRepository.findByProviderId(providerId);
     if (existing) {
       return { received: true, processed: false, ignored: false, duplicate: true, status: existing.status };
     }
 
-    // 4. Identifica usuário e plano pela external_reference "plano:userId".
+    // Identifica usuário e plano pela external_reference "plano:userId".
     const [planCode, userId] = (payment.external_reference ?? "").split(":");
     if (!userId || !planCode) {
       return { received: true, processed: false, ignored: true, duplicate: false, status };
     }
 
-    // 5. Plano válido?
     const plan = await PlanRepository.findByCode(planCode);
     if (!plan) {
       return { received: true, processed: false, ignored: true, duplicate: false, status };
     }
 
-    // 6. Atualiza a assinatura (approved → ativa; cancela ativas anteriores).
+    // Atualiza a assinatura:
+    //  - approved + já tem assinatura ativa → renova (estende ciclo).
+    //  - approved + sem assinatura ativa → ativa (1º ciclo).
     let subscriptionId: string | null = null;
     if (status === "approved") {
-      const sub = await SubscriptionService.activate(userId, planCode);
-      subscriptionId = sub?.id ?? null;
+      const active = await SubscriptionRepository.findActiveByUser(userId);
+      if (active) {
+        const renewed = await SubscriptionService.renew(userId, planCode);
+        subscriptionId = renewed?.id ?? active.id;
+      } else {
+        const sub = await SubscriptionService.activate(userId, planCode);
+        subscriptionId = sub?.id ?? null;
+      }
     }
 
-    // 7. Persiste o evento (pagamento) — imutável.
+    // Persiste o evento (pagamento) — imutável.
     const amountCents =
       payment.transaction_amount !== undefined
         ? Math.round(payment.transaction_amount * 100)

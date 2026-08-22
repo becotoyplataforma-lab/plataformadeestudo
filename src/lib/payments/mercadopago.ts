@@ -118,3 +118,62 @@ export async function getPayment(paymentId: string) {
     date_approved?: string;
   }>({ path: `/v1/payments/${paymentId}` });
 }
+
+// ============================================================
+// ASSINATURAS RECORRENTES (Preapproval)
+// ============================================================
+
+export interface Preapproval {
+  id: string;
+  status: string; // pending, authorized, paused, cancelled, finished
+  reason: string;
+  external_reference?: string | null;
+  init_point?: string;
+  sandbox_init_point?: string;
+  auto_recurring?: {
+    frequency: number;
+    frequency_type: string; // "months" | "days"
+    transaction_amount: number;
+    currency_id: string;
+  };
+}
+
+/**
+ * Cria uma Preapproval (assinatura recorrente) no Mercado Pago.
+ * - Cobrança automática mensal (auto_recurring.frequency = 1, months).
+ * - external_reference: "plano:userId" — usada no webhook para identificar.
+ */
+export async function createPreapproval(params: {
+  externalReference: string; // ex.: "pro:uuid-do-usuario"
+  reason: string;
+  unitPriceCents: number;
+  notificationUrl?: string;
+  successUrl?: string;
+  failureUrl?: string;
+}): Promise<Preapproval> {
+  const body = {
+    reason: params.reason,
+    external_reference: params.externalReference,
+    payer: undefined,
+    auto_recurring: {
+      frequency: 1,
+      frequency_type: "months",
+      transaction_amount: params.unitPriceCents / 100,
+      currency_id: "BRL",
+    },
+    notification_url:
+      params.notificationUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/api/billing/webhook`,
+    back_url: params.successUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?pagamento=sucesso`,
+  };
+
+  return request<Preapproval>({
+    method: "POST",
+    path: "/preapproval",
+    body,
+  });
+}
+
+/** Busca uma Preapproval por ID (para confirmar status no webhook). */
+export async function getPreapproval(preapprovalId: string) {
+  return request<Preapproval>({ path: `/preapproval/${preapprovalId}` });
+}

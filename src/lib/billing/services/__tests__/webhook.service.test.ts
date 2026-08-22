@@ -6,8 +6,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createHmac } from "node:crypto";
 
 const mockGetPayment = vi.fn();
+const mockGetPreapproval = vi.fn();
 vi.mock("@/lib/payments/mercadopago", () => ({
   getPayment: (...args: unknown[]) => mockGetPayment(...args),
+  getPreapproval: (...args: unknown[]) => mockGetPreapproval(...args),
 }));
 
 const mockFindByProviderId = vi.fn();
@@ -32,12 +34,16 @@ vi.mock("../../repositories/plan.repository", () => ({
 
 const mockCancelActive = vi.fn();
 const mockCreateSub = vi.fn();
+const mockFindActiveByUser = vi.fn();
+const mockFindByPreapprovalId = vi.fn();
+const mockUpdateSub = vi.fn();
 vi.mock("../../repositories/subscription.repository", () => ({
   SubscriptionRepository: {
-    findActiveByUser: vi.fn(),
+    findActiveByUser: (...args: unknown[]) => mockFindActiveByUser(...args),
     findById: vi.fn(),
+    findByPreapprovalId: (...args: unknown[]) => mockFindByPreapprovalId(...args),
     create: (...args: unknown[]) => mockCreateSub(...args),
-    update: vi.fn(),
+    update: (...args: unknown[]) => mockUpdateSub(...args),
     cancelActiveByUser: (...args: unknown[]) => mockCancelActive(...args),
   },
 }));
@@ -147,11 +153,20 @@ describe("WebhookService.handleNotification", () => {
       transaction_amount: 29.9,
       date_approved: "2026-08-05T00:00:00.000Z",
     });
+    mockGetPreapproval.mockResolvedValue({
+      id: "pre-1",
+      status: "authorized",
+      external_reference: "pro:u1",
+      reason: "Assinatura Pro — ConcursoAI",
+    });
     mockFindByProviderId.mockResolvedValue(null);
     mockFindByCode.mockResolvedValue(PRO_PLAN);
     mockCancelActive.mockResolvedValue([]);
     mockCreateSub.mockResolvedValue(ACTIVE_SUB);
     mockCreatePayment.mockResolvedValue({ id: "pay-1" });
+    mockFindActiveByUser.mockResolvedValue(null);
+    mockFindByPreapprovalId.mockResolvedValue(null);
+    mockUpdateSub.mockResolvedValue({ ...ACTIVE_SUB, endsAt: new Date() });
   });
 
   it("pagamento approved ativa a assinatura e persiste o evento", async () => {
@@ -257,5 +272,73 @@ describe("WebhookService.handleNotification", () => {
     await expect(
       WebhookService.handleNotification({ data: { id: 123 } })
     ).rejects.toThrow("MP offline");
+  });
+
+  it("subscription_preapproval authorized ativa assinatura recorrente", async () => {
+    const result = await WebhookService.handleNotification({
+      type: "subscription_preapproval",
+      action: "subscription_preapproval.created",
+      data: { id: "pre-1" },
+    });
+
+    expect(result).toMatchObject({ processed: true, status: "approved" });
+    expect(mockGetPreapproval).toHaveBeenCalledWith("pre-1");
+    expect(mockCreateSub).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1", planId: "p-pro", preapprovalId: "pre-1" })
+    );
+    expect(mockGetPayment).not.toHaveBeenCalled();
+  });
+
+  it("subscription_preapproval não autorizado é ignorado", async () => {
+    mockGetPreapproval.mockResolvedValue({
+      id: "pre-1",
+      status: "pending",
+      external_reference: "pro:u1",
+    });
+    const result = await WebhookService.handleNotification({
+      type: "subscription_preapproval",
+      data: { id: "pre-1" },
+    });
+    expect(result).toMatchObject({ ignored: true, processed: false });
+    expect(mockCreateSub).not.toHaveBeenCalled();
+  });
+
+  it("subscription_preapproval duplicado não reaplica", async () => {
+    mockFindByPreapprovalId.mockResolvedValue(ACTIVE_SUB);
+    const result = await WebhookService.handleNotification({
+      type: "subscription_preapproval",
+      data: { id: "pre-1" },
+    });
+    expect(result).toMatchObject({ duplicate: true, processed: false });
+    expect(mockCreateSub).not.toHaveBeenCalled();
+  });
+
+  it("pagamento recorrente com assinatura ativa RENOVA (estende ciclo)", async () => {
+    mockFindActiveByUser.mockResolvedValue(ACTIVE_SUB);
+    mockUpdateSub.mockResolvedValue({ ...ACTIVE_SUB, endsAt: new Date("2026-09-05") });
+
+    const result = await WebhookService.handleNotification({
+      type: "payment",
+      action: "payment.created",
+      data: { id: 123 },
+    });
+
+    expect(result).toMatchObject({ processed: true, status: "approved" });
+    // Renovação: não cria nova assinatura, apenas atualiza a existente.
+    expect(mockCreateSub).not.toHaveBeenCalled();
+    expect(mockUpdateSub).toHaveBeenCalled();
+    expect(mockCreatePayment).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1", subscriptionId: "s1", status: "approved" })
+    );
+  });
+
+  it("pagamento recorrente sem assinatura ativa ATIVA (1º ciclo)", async () => {
+    mockFindActiveByUser.mockResolvedValue(null);
+    const result = await WebhookService.handleNotification({
+      type: "payment",
+      data: { id: 123 },
+    });
+    expect(result).toMatchObject({ processed: true, status: "approved" });
+    expect(mockCreateSub).toHaveBeenCalled();
   });
 });

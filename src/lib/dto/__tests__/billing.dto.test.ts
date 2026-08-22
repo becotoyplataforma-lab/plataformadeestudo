@@ -40,6 +40,7 @@ const SUB_ROW = {
   userId: UUID,
   planId: UUID2,
   status: "active",
+  preapprovalId: null,
   startsAt: new Date(),
   endsAt: null,
   createdAt: new Date(),
@@ -137,6 +138,7 @@ describe("CheckoutDtoSchema", () => {
       plan: "pro",
       priceCents: 1990,
       promoApplied: true,
+      recurring: true,
     });
     const parsed = CheckoutDtoSchema.safeParse(dto);
     expect(parsed.success).toBe(true);

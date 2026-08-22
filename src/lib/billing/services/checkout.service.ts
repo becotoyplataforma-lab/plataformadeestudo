@@ -10,7 +10,7 @@
 import "server-only";
 import { PlanRepository } from "../repositories/plan.repository";
 import { SubscriptionRepository } from "../repositories/subscription.repository";
-import { createCheckoutPreference } from "@/lib/payments/mercadopago";
+import { createPreapproval } from "@/lib/payments/mercadopago";
 
 export class CheckoutError extends Error {
   code: string;
@@ -28,11 +28,14 @@ export interface CheckoutResult {
   plan: string;
   priceCents: number;
   promoApplied: boolean;
+  /** true quando a assinatura é recorrente (Preapproval) — renovação automática. */
+  recurring: boolean;
 }
 
 export const CheckoutService = {
-  /** Cria preferência de checkout (apenas planos pagos).
-   *  Preço promocional (1º ciclo) quando o usuário nunca teve assinatura. */
+  /** Cria a assinatura recorrente (Preapproval) para planos pagos.
+   *  Preço promocional (1º ciclo) quando o usuário nunca teve assinatura.
+   *  A renovação é automática (cobrança mensal recorrente no Mercado Pago). */
   async createCheckout(userId: string, planCode: string): Promise<CheckoutResult> {
     const plan = await PlanRepository.findByCode(planCode);
     if (!plan) {
@@ -50,20 +53,21 @@ export const CheckoutService = {
     // external_reference: "plano:userId" — usada no webhook para identificar.
     const externalReference = `${plan.code}:${userId}`;
 
-    const preference = await createCheckoutPreference({
+    // Assinatura recorrente (Preapproval) → renovação automática mensal.
+    const preapproval = await createPreapproval({
       externalReference,
-      title: `Plano ${plan.name} — ConcursoAI`,
-      description: `Assinatura ${plan.name} — ConcursoAI`,
+      reason: `Assinatura ${plan.name} — ConcursoAI`,
       unitPriceCents: priceCents,
     });
 
     return {
-      initPoint: preference.init_point,
-      sandboxInitPoint: preference.sandbox_init_point,
+      initPoint: preapproval.init_point ?? "",
+      sandboxInitPoint: preapproval.sandbox_init_point ?? "",
       externalReference,
       plan: plan.code,
       priceCents,
       promoApplied,
+      recurring: true,
     };
   },
 };

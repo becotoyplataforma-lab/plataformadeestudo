@@ -52,6 +52,21 @@ export const SubscriptionRepository = {
     return row ?? null;
   },
 
+  /** Buscar assinatura pelo ID da Preapproval (assinatura recorrente). */
+  async findByPreapprovalId(preapprovalId: string) {
+    const [row] = await db
+      .select()
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.preapprovalId, preapprovalId),
+          isNull(subscriptions.deletedAt)
+        )
+      )
+      .limit(1);
+    return row ?? null;
+  },
+
   /** Criar assinatura. */
   async create(input: typeof subscriptions.$inferInsert) {
     const [row] = await db.insert(subscriptions).values(input).returning();

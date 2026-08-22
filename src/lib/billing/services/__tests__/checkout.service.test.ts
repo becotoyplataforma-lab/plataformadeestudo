@@ -3,9 +3,9 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockCreatePreference = vi.fn();
+const mockCreatePreapproval = vi.fn();
 vi.mock("@/lib/payments/mercadopago", () => ({
-  createCheckoutPreference: (...args: unknown[]) => mockCreatePreference(...args),
+  createPreapproval: (...args: unknown[]) => mockCreatePreapproval(...args),
 }));
 
 const mockFindByCode = vi.fn();
@@ -55,14 +55,17 @@ const FREE_PLAN = {
 describe("CheckoutService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCreatePreference.mockResolvedValue({
-      id: "pref-1",
+    mockCreatePreapproval.mockResolvedValue({
+      id: "pre-1",
+      status: "pending",
       init_point: "https://init.mercadopago.com/x",
       sandbox_init_point: "https://sandbox.init.mercadopago.com/x",
+      external_reference: "pro:u1",
+      reason: "Assinatura Pro — ConcursoAI",
     });
   });
 
-  it("cria preferência de checkout para plano pago (reutiliza o gateway)", async () => {
+  it("cria assinatura recorrente (Preapproval) para plano pago", async () => {
     mockFindByCode.mockResolvedValue(PRO_PLAN);
     mockHasAnyByUser.mockResolvedValue(true); // já assinou antes → preço cheio
     const result = await CheckoutService.createCheckout("u1", "pro");
@@ -72,7 +75,8 @@ describe("CheckoutService", () => {
     expect(result.initPoint).toBe("https://init.mercadopago.com/x");
     expect(result.priceCents).toBe(1990);
     expect(result.promoApplied).toBe(false);
-    expect(mockCreatePreference).toHaveBeenCalledWith(
+    expect(result.recurring).toBe(true);
+    expect(mockCreatePreapproval).toHaveBeenCalledWith(
       expect.objectContaining({
         externalReference: "pro:u1",
         unitPriceCents: 1990,
@@ -87,7 +91,7 @@ describe("CheckoutService", () => {
 
     expect(result.priceCents).toBe(990);
     expect(result.promoApplied).toBe(true);
-    expect(mockCreatePreference).toHaveBeenCalledWith(
+    expect(mockCreatePreapproval).toHaveBeenCalledWith(
       expect.objectContaining({ unitPriceCents: 990 })
     );
   });
@@ -97,7 +101,7 @@ describe("CheckoutService", () => {
     await expect(
       CheckoutService.createCheckout("u1", "free")
     ).rejects.toMatchObject({ code: "FREE_PLAN" });
-    expect(mockCreatePreference).not.toHaveBeenCalled();
+    expect(mockCreatePreapproval).not.toHaveBeenCalled();
   });
 
   it("lança PLAN_NOT_FOUND quando o plano não existe", async () => {
@@ -109,7 +113,7 @@ describe("CheckoutService", () => {
 
   it("propaga erro do gateway", async () => {
     mockFindByCode.mockResolvedValue(PRO_PLAN);
-    mockCreatePreference.mockRejectedValue(new Error("MP offline"));
+    mockCreatePreapproval.mockRejectedValue(new Error("MP offline"));
     await expect(
       CheckoutService.createCheckout("u1", "pro")
     ).rejects.toThrow("MP offline");
