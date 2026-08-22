@@ -8,7 +8,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/administration/session";
 import { strictDto } from "@/lib/dto";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import {
   SystemSettingService,
   SettingError,
@@ -25,6 +28,7 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const { key } = await ctx.params;
     const row = await SystemSettingService.get(key, undefined);

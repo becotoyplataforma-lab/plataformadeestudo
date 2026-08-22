@@ -3,6 +3,10 @@
  */
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/administration/session";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 
 const HEADERS = [
   "enunciado",
@@ -44,6 +48,7 @@ export async function GET() {
     if (!admin) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+    await AdminGuardService.requireAdmin(admin);
 
     const csv = [
       HEADERS.join(";"),
@@ -58,7 +63,10 @@ export async function GET() {
         "Content-Disposition": 'attachment; filename="modelo-questoes.csv"',
       },
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof AdminError) {
+      return NextResponse.json({ error: error.code, message: error.message }, { status: 403 });
+    }
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

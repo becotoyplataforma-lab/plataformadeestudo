@@ -4,7 +4,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/administration/session";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import { KnowledgeSubjectRepository } from "@/lib/knowledge/repositories/subject.repository";
 
 const CreateSchema = z.object({
@@ -28,9 +31,13 @@ export async function GET() {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
     const subjects = await KnowledgeSubjectRepository.getAll();
     return NextResponse.json(subjects);
   } catch (error) {
+    if (error instanceof AdminError) {
+      return NextResponse.json({ error: error.code, message: error.message }, { status: 403 });
+    }
     console.error("[admin/subjects GET] Erro:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -40,6 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const body = await request.json().catch(() => null);
     const parsed = CreateSchema.safeParse(body ?? {});

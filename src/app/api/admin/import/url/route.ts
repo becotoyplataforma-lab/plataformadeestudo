@@ -4,7 +4,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/administration/session";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import { UrlImportService, UrlImportError } from "@/lib/knowledge/services/url-import.service";
 import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
@@ -20,6 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const body = await request.json().catch(() => null);
     const parsed = ImportSchema.safeParse(body ?? {});

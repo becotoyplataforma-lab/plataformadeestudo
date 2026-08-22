@@ -7,7 +7,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/administration/session";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import { IngestionService, IngestionError } from "@/lib/knowledge/services/ingestion.service";
 import { DocumentStorageService } from "@/lib/knowledge/storage.service";
 import { DocumentPipelineService } from "@/lib/knowledge/services/document-pipeline.service";
@@ -20,6 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const formData = await request.formData();
     const subjectId = (formData.get("subject_id") as string) || "";

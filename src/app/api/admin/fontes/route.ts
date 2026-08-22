@@ -3,13 +3,17 @@
  */
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/administration/session";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 
 export async function GET() {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const docs = await DocumentRepository.listExternalSources(200);
     return NextResponse.json(

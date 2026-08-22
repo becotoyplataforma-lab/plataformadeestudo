@@ -4,7 +4,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/administration/session";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import {
   ContestIntelligenceService,
   ContestIntelligenceError,
@@ -14,6 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const editalId = request.nextUrl.searchParams.get("edital_id");
     const parsed = z.string().uuid().safeParse(editalId ?? "");

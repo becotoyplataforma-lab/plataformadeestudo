@@ -9,6 +9,20 @@ vi.mock("@/lib/administration/session", () => ({
   getAdminSession: (...args: unknown[]) => mockGetSession(...args),
 }));
 
+const mockRequireAdmin = vi.fn();
+vi.mock("@/lib/administration/services/admin-guard.service", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("@/lib/administration/services/admin-guard.service")
+  >();
+  return {
+    ...actual,
+    AdminGuardService: {
+      ...actual.AdminGuardService,
+      requireAdmin: (...a: unknown[]) => mockRequireAdmin(...a),
+    },
+  };
+});
+
 const mockListSettings = vi.fn();
 const mockSetSetting = vi.fn();
 const mockRemoveSetting = vi.fn();
@@ -97,6 +111,7 @@ describe("API /api/admin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSession.mockResolvedValue(ADMIN_SESSION);
+    mockRequireAdmin.mockResolvedValue(undefined);
     mockListSettings.mockResolvedValue([SETTING_ROW]);
     mockSetSetting.mockResolvedValue(SETTING_ROW);
     mockRemoveSetting.mockResolvedValue(SETTING_ROW);

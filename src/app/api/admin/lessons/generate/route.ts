@@ -4,7 +4,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/administration/session";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import {
   LessonGenerationService,
   LessonGenerationError,
@@ -21,6 +24,7 @@ export async function POST(request: NextRequest) {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const body = await request.json().catch(() => null);
     const parsed = GenerateSchema.safeParse(body ?? {});

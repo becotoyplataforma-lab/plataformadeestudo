@@ -4,7 +4,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/administration/session";
-import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import {
+  AdminGuardService,
+  AdminError,
+} from "@/lib/administration/services/admin-guard.service";
 import { AvatarRepository } from "@/lib/ai/repositories/avatar.repository";
 
 const AvatarSchema = z.object({
@@ -20,11 +23,15 @@ export async function GET() {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
     const avatars = await AvatarRepository.listActive();
     return NextResponse.json(
       avatars.map((a) => ({ id: a.id, nome: a.nome, slug: a.slug }))
     );
   } catch (error) {
+    if (error instanceof AdminError) {
+      return NextResponse.json({ error: error.code, message: error.message }, { status: 403 });
+    }
     console.error("[admin/avatares GET] Erro:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
@@ -34,6 +41,7 @@ export async function POST(request: NextRequest) {
   try {
     const admin = await getAdminSession();
     if (!admin) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    await AdminGuardService.requireAdmin(admin);
 
     const body = await request.json().catch(() => null);
     const parsed = AvatarSchema.safeParse(body ?? {});
