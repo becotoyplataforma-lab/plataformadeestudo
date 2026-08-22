@@ -19,5 +19,4 @@ export const createSubjectSchema = z.object({
   carga_horaria_total: z.coerce.number().int().min(0).max(100000).default(0),
 });
 
-export type CreateTaskInput = z.infer<typeof createTaskSchema>;
-export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
+

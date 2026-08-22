@@ -8,10 +8,4 @@ export const sendMessageSchema = z.object({
   document_id: z.string().uuid().optional().nullable(),
 });
 
-export const newSessionSchema = z.object({
-  title: z.string().max(200).optional().default("Nova conversa"),
-  subject_id: z.string().uuid().optional().nullable(),
-  model: z.enum(["flash", "pro"]).default("flash"),
-});
 
-export type SendMessageInput = z.infer<typeof sendMessageSchema>;

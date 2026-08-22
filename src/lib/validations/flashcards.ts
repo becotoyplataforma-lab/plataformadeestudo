@@ -7,8 +7,6 @@ export const createFlashcardSchema = z.object({
   tags: z.array(z.string().max(30)).max(10).default([]),
 });
 
-export const updateFlashcardSchema = createFlashcardSchema.partial();
-
 export const reviewSchema = z.object({
   flashcard_id: z.string().uuid(),
   rating: z.enum(["facil", "medio", "dificil"]),

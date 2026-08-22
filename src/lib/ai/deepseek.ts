@@ -35,17 +35,6 @@ interface DeepSeekChatResponse {
   };
 }
 
-interface DeepSeekStreamChunk {
-  choices: Array<{
-    delta: {
-      content?: string;
-      reasoning_content?: string;
-    };
-    finish_reason: string | null;
-  }>;
-  usage?: { prompt_tokens: number; completion_tokens: number };
-}
-
 function apiUrl() {
   return `${env.DEEPSEEK_BASE_URL.replace(/\/$/, "")}/chat/completions`;
 }
@@ -144,28 +133,6 @@ export async function streamChatCompletion(
   }
 
   return upstream;
-}
-
-/** Parser de chunks SSE da DeepSeek em um callback de delta. */
-export function parseStreamChunk(
-  raw: string,
-  onDelta: (text: string) => void,
-  onReasoning: (text: string) => void
-): { done: boolean; usage?: { prompt_tokens: number; completion_tokens: number } } {
-  const dataLine = raw.trim();
-  if (!dataLine.startsWith("data:")) return { done: false };
-  const payload = dataLine.slice(5).trim();
-  if (payload === "[DONE]") return { done: true };
-
-  try {
-    const json = JSON.parse(payload) as DeepSeekStreamChunk;
-    const delta = json.choices?.[0]?.delta;
-    if (delta?.reasoning_content) onReasoning(delta.reasoning_content);
-    if (delta?.content) onDelta(delta.content);
-    return { done: json.choices?.[0]?.finish_reason === "stop", usage: json.usage };
-  } catch {
-    return { done: false };
-  }
 }
 
 /** Constrói um system prompt com placeholders substituídos. */

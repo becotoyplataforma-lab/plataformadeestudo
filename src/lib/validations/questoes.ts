@@ -14,5 +14,4 @@ export const questionFiltersSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
 
-export type AnswerQuestionInput = z.infer<typeof answerQuestionSchema>;
 export type QuestionFilters = z.infer<typeof questionFiltersSchema>;

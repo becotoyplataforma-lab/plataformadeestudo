@@ -43,63 +43,6 @@ async function request<T>({ method = "GET", path, body, headers }: MpRequestOpti
   return res.json() as Promise<T>;
 }
 
-export interface CheckoutItem {
-  id: string;
-  title: string;
-  quantity: number;
-  unit_price: number; // em centavos
-}
-
-export interface CheckoutPreference {
-  id: string;
-  init_point: string;
-  sandbox_init_point: string;
-}
-
-/**
- * Cria uma preferência de checkout (pagamento único ou Pix).
- * - unit_price em centavos (ex.: 2990 = R$ 29,90).
- */
-export async function createCheckoutPreference(params: {
-  externalReference: string; // ex.: "pro:uuid-do-usuario"
-  title: string;
-  unitPriceCents: number;
-  description?: string;
-  notificationUrl?: string;
-  successUrl?: string;
-  failureUrl?: string;
-}): Promise<CheckoutPreference> {
-  const body = {
-    items: [
-      {
-        id: params.externalReference,
-        title: params.title,
-        description: params.description ?? "Plano ConcursoAI",
-        quantity: 1,
-        unit_price: params.unitPriceCents,
-        currency_id: "BRL",
-      },
-    ],
-    payer: undefined,
-    external_reference: params.externalReference,
-    notification_url:
-      params.notificationUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/api/billing/webhook`,
-    back_urls: {
-      success: params.successUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?pagamento=sucesso`,
-      failure: params.failureUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?pagamento=falha`,
-      pending: `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes?pagamento=pendente`,
-    },
-    auto_return: "approved",
-    binary_mode: true,
-  };
-
-  return request<CheckoutPreference>({
-    method: "POST",
-    path: "/checkout/preferences",
-    body,
-  });
-}
-
 export interface PaymentNotification {
   id?: string | number;
   action?: string;

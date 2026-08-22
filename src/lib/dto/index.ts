@@ -43,33 +43,5 @@ export function strictDto<T extends z.ZodTypeAny>(
   return dto;
 }
 
-/** Type guard: verifica se `input` é um DTO válido. */
-export function isDto<T extends z.ZodTypeAny>(
-  schema: T,
-  input: unknown
-): input is z.infer<T> {
-  return schema.safeParse(input).success;
-}
-
 /** Tipo utilitário: infere o tipo de saída de um schema Zod (o DTO). */
 export type OutputOf<T extends z.ZodTypeAny> = z.infer<T>;
-
-/** Seleciona campos de um objeto (util para construir DTOs sem campos sensíveis). */
-export function pick<T extends Record<string, unknown>, K extends keyof T>(
-  obj: T,
-  keys: readonly K[]
-): Pick<T, K> {
-  const out = {} as Pick<T, K>;
-  for (const key of keys) out[key] = obj[key];
-  return out;
-}
-
-/** Omit sensíveis de um objeto (whitelist inversa). */
-export function omit<T extends Record<string, unknown>, K extends keyof T>(
-  obj: T,
-  keys: readonly K[]
-): Omit<T, K> {
-  const out = { ...obj } as Omit<T, K>;
-  for (const key of keys) delete (out as Record<string, unknown>)[key as string];
-  return out;
-}
