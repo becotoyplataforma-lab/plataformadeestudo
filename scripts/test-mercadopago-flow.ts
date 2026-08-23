@@ -198,21 +198,29 @@ async function modeCreatePreapproval(
   console.log(`    status=${preapproval.status}`);
   console.log(`    external_reference=${preapproval.external_reference}`);
 
-  // Estado inicial em subscriptions (ainda nao deve haver assinatura ativa,
-  // pois a Preapproval so ativa quando o usuario autoriza o pagamento).
+  // Estado atual em subscriptions. Nota: quando o usuario foi criado via
+  // scripts/create-mp-test-user.ts, ja existe uma assinatura Pro ativa
+  // (pre-ativada para o ciclo de teste). A Preapproval criada aqui e o
+  // vinculo recorrente no MP; a assinatura local ja existe.
   const active = await SubscriptionRepository.findActiveByUser(userId);
-  console.log("\nEstado inicial em subscriptions:");
+  console.log("\nEstado atual em subscriptions:");
   console.log(`    ${fmtSub(active)}`);
 
   // Persiste o id para os proximos modos.
   saveState({ userId, preapprovalId: preapproval.id, planCode: "pro" });
 
-  const ok = !active;
+  // O criterio de sucesso do MODO 1 e a criacao da Preapproval no MP com um
+  // status valido (pending/authorized) e o external_reference correto.
+  const validStatus = preapproval.status === "pending" || preapproval.status === "authorized";
+  const validRef = preapproval.external_reference === externalReference;
+  const ok = validStatus && validRef;
   console.log(
     ok
-      ? "\n[OK] PASSOU: assinatura criada com status " + preapproval.status +
-        " (nenhuma assinatura ativa ainda - aguardando autorizacao do pagamento)"
-      : "\n[ERRO] FALHOU: ja existia assinatura ativa antes da Preapproval ser autorizada."
+      ? "\n[OK] PASSOU: Preapproval criada com status " + preapproval.status +
+        " e external_reference correto (" + externalReference + ")"
+      : "\n[ERRO] FALHOU: Preapproval criada, mas status=" + preapproval.status +
+        " ou external_reference=" + preapproval.external_reference +
+        " (esperava " + externalReference + ")"
   );
   return ok;
 }

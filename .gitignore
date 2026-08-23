@@ -52,6 +52,10 @@ next-env.d.ts
 /visual-audit/
 /test-results/
 
+# estado de teste manual (não versionar)
+/.mp-test-user.json
+/.tmp-preapproval.json
+
 # materiais de estudo do usuário (não versionar)
 /materiais/
 
