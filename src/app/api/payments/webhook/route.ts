@@ -25,12 +25,16 @@ export async function POST(req: Request) {
     const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
     const xSignature = h.get("x-signature") ?? undefined;
     const xRequestId = h.get("x-request-id") ?? undefined;
+    // O Mercado Pago anexa `?data_id=...` à URL do webhook. A assinatura HMAC
+    // é calculada sobre esse valor (query string), NÃO sobre o `data.id` do body.
+    const dataId = new URL(req.url).searchParams.get("data_id") ?? undefined;
 
     const notification = (await req.json()) as PaymentNotification;
     const result = await WebhookService.handleNotification(notification, {
       secret,
       xSignature,
       xRequestId,
+      dataId,
     });
 
     return apiOk({

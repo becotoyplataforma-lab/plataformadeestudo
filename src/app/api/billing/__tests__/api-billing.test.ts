@@ -197,6 +197,28 @@ describe("POST /api/billing/webhook", () => {
     expect(json.status).toBe("approved");
   });
 
+  it("repassa o data_id da query string (?data_id=...) ao WebhookService", async () => {
+    mockHandleWebhook.mockResolvedValue({
+      received: true,
+      processed: true,
+      ignored: false,
+      duplicate: false,
+      status: "approved",
+    });
+    const res = await postWebhook(
+      new Request("http://localhost/api/billing/webhook?data_id=999", {
+        method: "POST",
+        body: JSON.stringify({ data: { id: 123 } }),
+      })
+    );
+    expect(res.status).toBe(200);
+    // O data_id da query string deve ser usado na validação da assinatura.
+    expect(mockHandleWebhook).toHaveBeenCalledWith(
+      { data: { id: 123 } },
+      expect.objectContaining({ dataId: "999" })
+    );
+  });
+
   it("retorna 401 quando a assinatura do webhook é inválida", async () => {
     mockHandleWebhook.mockRejectedValue(
       new WebhookError("INVALID_SIGNATURE", "Assinatura do webhook inválida.")

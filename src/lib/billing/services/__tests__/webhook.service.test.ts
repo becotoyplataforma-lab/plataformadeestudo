@@ -248,23 +248,111 @@ describe("WebhookService.handleNotification", () => {
       secret: "s3cr3t",
       xSignature: "ts=1700000000&v1=badbadbadbadbadbadbadbadbadbadbadbadbadb",
       xRequestId: "req-1",
+      dataId: 123,
     };
     await expect(
       WebhookService.handleNotification({ data: { id: 123 } }, ctx)
     ).rejects.toMatchObject({ code: "INVALID_SIGNATURE" });
   });
 
-  it("aceita webhook com assinatura válida", async () => {
+  it("aceita webhook com assinatura válida (Caso A)", async () => {
     const ctx = {
       secret: "s3cr3t",
       xSignature: sig("s3cr3t", 123, "req-1", "1700000000"),
       xRequestId: "req-1",
+      dataId: 123,
     };
     const result = await WebhookService.handleNotification(
       { data: { id: 123 } },
       ctx
     );
     expect(result.processed).toBe(true);
+  });
+
+  it("usa o data_id da query string (ctx.dataId), não o do body (Caso B)", async () => {
+    // O MP assina sobre o data_id da query string (?data_id=999), que difere do
+    // data.id do body (123). A validação deve usar o valor da query string.
+    const ctx = {
+      secret: "s3cr3t",
+      xSignature: sig("s3cr3t", 999, "req-1", "1700000000"),
+      xRequestId: "req-1",
+      dataId: 999,
+    };
+    const result = await WebhookService.handleNotification(
+      { data: { id: 123 } },
+      ctx
+    );
+    expect(result.processed).toBe(true);
+  });
+
+  it("rejeita assinatura calculada com o body data.id quando difere do query data_id (Caso C)", async () => {
+    // A assinatura foi calculada sobre o body data.id (123), mas o data_id da
+    // query é 999. Como a validação usa o data_id da query, deve falhar.
+    const ctx = {
+      secret: "s3cr3t",
+      xSignature: sig("s3cr3t", 123, "req-1", "1700000000"),
+      xRequestId: "req-1",
+      dataId: 999,
+    };
+    await expect(
+      WebhookService.handleNotification({ data: { id: 123 } }, ctx)
+    ).rejects.toMatchObject({ code: "INVALID_SIGNATURE" });
+  });
+
+  it("rejeita quando data_id da query string está ausente (Caso D)", async () => {
+    // Sem ctx.dataId, não há fallback para o body: a validação deve falhar.
+    const ctx = {
+      secret: "s3cr3t",
+      xSignature: sig("s3cr3t", 123, "req-1", "1700000000"),
+      xRequestId: "req-1",
+    };
+    await expect(
+      WebhookService.handleNotification({ data: { id: 123 } }, ctx)
+    ).rejects.toMatchObject({ code: "INVALID_SIGNATURE" });
+  });
+
+  it("rejeita assinatura inválida (Caso E)", async () => {
+    const ctx = {
+      secret: "s3cr3t",
+      xSignature: "ts=1700000000&v1=badbadbadbadbadbadbadbadbadbadbadbadbadb",
+      xRequestId: "req-1",
+      dataId: 123,
+    };
+    await expect(
+      WebhookService.handleNotification({ data: { id: 123 } }, ctx)
+    ).rejects.toMatchObject({ code: "INVALID_SIGNATURE" });
+  });
+
+  it("em produção, rejeita webhook com secret 'change-me' (não pula validação)", async () => {
+    const prev = process.env.NODE_ENV;
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    try {
+      const ctx = {
+        secret: "change-me",
+        // O MP assina com o secret REAL (s3cr3t). Como o servidor está com
+        // "change-me", a validação roda e o HMAC não confere → rejeita.
+        xSignature: sig("s3cr3t", 123, "req-1", "1700000000"),
+        xRequestId: "req-1",
+        dataId: 123,
+      };
+      await expect(
+        WebhookService.handleNotification({ data: { id: 123 } }, ctx)
+      ).rejects.toMatchObject({ code: "INVALID_SIGNATURE" });
+    } finally {
+      (process.env as Record<string, string | undefined>).NODE_ENV = prev;
+    }
+  });
+
+  it("em produção, rejeita webhook sem secret configurado", async () => {
+    const prev = process.env.NODE_ENV;
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    try {
+      await expect(
+        WebhookService.handleNotification({ data: { id: 123 } }, {})
+      ).rejects.toMatchObject({ code: "INVALID_SIGNATURE" });
+    } finally {
+      (process.env as Record<string, string | undefined>).NODE_ENV = prev;
+    }
   });
 
   it("erro do provedor propaga (getPayment falha)", async () => {

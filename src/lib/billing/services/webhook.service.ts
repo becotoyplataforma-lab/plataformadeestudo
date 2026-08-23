@@ -2,7 +2,8 @@
  * ConcursoAI — WebhookService (Billing)
  *
  * Processa notificações de pagamento do Mercado Pago com:
- * - validação (assinatura HMAC SHA-256 quando MERCADO_PAGO_WEBHOOK_SECRET setado)
+ * - validação (assinatura HMAC SHA-256 quando MERCADO_PAGO_WEBHOOK_SECRET setado;
+ *   o `data_id` da assinatura vem da query string `?data_id=...`, não do body)
  * - confirmação do status via API do provedor (nunca confia no payload)
  * - idempotência (provider_id único — evita duplicidade)
  * - persistência do evento (payments) e atualização da assinatura
@@ -76,6 +77,11 @@ export interface WebhookContext {
   secret?: string;
   xSignature?: string;
   xRequestId?: string;
+  /**
+   * `data_id` da query string (?data_id=...) enviada pelo Mercado Pago.
+   * Fonte oficial do valor usado na assinatura HMAC — NÃO o `data.id` do body.
+   */
+  dataId?: string | number;
 }
 
 interface ConfirmedPayment {
@@ -105,17 +111,34 @@ export const WebhookService = {
       return { received: true, processed: false, ignored: true, duplicate: false, status: null };
     }
 
-    // 1. Validação de assinatura (quando secret configurado).
-    if (ctx.secret && ctx.secret !== "change-me") {
+    // 1. Validação de assinatura.
+    // Em produção a validação é SEMPRE obrigatória: sem secret (ou com o
+    // placeholder "change-me") o webhook é rejeitado. Em dev, "change-me" pula
+    // a validação para facilitar testes locais.
+    const isProd = process.env.NODE_ENV === "production";
+    const skipValidation = !isProd && ctx.secret === "change-me";
+
+    if (ctx.secret && !skipValidation) {
+      // O data_id da assinatura vem da query string (?data_id=...) enviada pelo
+      // Mercado Pago — NÃO do body. Sem data_id na query, a validação falha.
+      if (ctx.dataId === undefined) {
+        throw new WebhookError("INVALID_SIGNATURE", "data_id ausente na query string.");
+      }
       const valid = verifyMpSignature({
         secret: ctx.secret,
         signature: ctx.xSignature ?? "",
         requestId: ctx.xRequestId ?? "",
-        dataId: eventId,
+        dataId: ctx.dataId,
       });
       if (!valid) {
         throw new WebhookError("INVALID_SIGNATURE", "Assinatura do webhook inválida.");
       }
+    } else if (isProd && !ctx.secret) {
+      // Produção sem secret: nunca aceita webhook sem validação.
+      throw new WebhookError(
+        "INVALID_SIGNATURE",
+        "MERCADO_PAGO_WEBHOOK_SECRET não configurado."
+      );
     }
 
     // 2. Roteia por tipo de evento.
