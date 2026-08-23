@@ -146,7 +146,7 @@ describe("POST /api/billing/checkout", () => {
   });
 
   it("retorna 200 com checkout válido", async () => {
-    mockAuth.mockResolvedValue({ user: { id: "u1" } });
+    mockAuth.mockResolvedValue({ user: { id: "u1", email: "user@example.com" } });
     mockCreateCheckout.mockResolvedValue({
       initPoint: "https://init.mercadopago.com/x",
       sandboxInitPoint: "https://sandbox.mercadopago.com/x",
@@ -159,7 +159,9 @@ describe("POST /api/billing/checkout", () => {
     const json = (await res.json()) as { plan: string; price_cents: number };
     expect(json.plan).toBe("pro");
     expect(json.price_cents).toBe(2990);
-    expect(mockCreateCheckout).toHaveBeenCalledWith("u1", "pro");
+    // A rota repassa o e-mail do usuário logado como payerEmail (3º arg)
+    // para o createCheckout (necessário na Preapproval do Mercado Pago).
+    expect(mockCreateCheckout).toHaveBeenCalledWith("u1", "pro", "user@example.com");
   });
 
   it("retorna 404 quando o plano não existe", async () => {
