@@ -90,6 +90,7 @@ export async function createPreapproval(params: {
   externalReference: string; // ex.: "pro:uuid-do-usuario"
   reason: string;
   unitPriceCents: number;
+  payerEmail?: string; // obrigatório no MP para criar preapproval
   notificationUrl?: string;
   successUrl?: string;
   failureUrl?: string;
@@ -97,7 +98,9 @@ export async function createPreapproval(params: {
   const body = {
     reason: params.reason,
     external_reference: params.externalReference,
-    payer: undefined,
+    // A API de preapproval do MP espera `payer_email` no topo do body
+    // (NAO aninhado em `payer.email`).
+    payer_email: params.payerEmail,
     auto_recurring: {
       frequency: 1,
       frequency_type: "months",

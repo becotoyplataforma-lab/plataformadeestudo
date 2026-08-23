@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
 
     const result = await CheckoutService.createCheckout(
       session.user.id,
-      parsed.data.plan
+      parsed.data.plan,
+      session.user.email ?? undefined
     );
 
     return NextResponse.json(mapCheckoutToDto(result));

@@ -36,7 +36,11 @@ export const CheckoutService = {
   /** Cria a assinatura recorrente (Preapproval) para planos pagos.
    *  Preço promocional (1º ciclo) quando o usuário nunca teve assinatura.
    *  A renovação é automática (cobrança mensal recorrente no Mercado Pago). */
-  async createCheckout(userId: string, planCode: string): Promise<CheckoutResult> {
+  async createCheckout(
+    userId: string,
+    planCode: string,
+    payerEmail?: string
+  ): Promise<CheckoutResult> {
     const plan = await PlanRepository.findByCode(planCode);
     if (!plan) {
       throw new CheckoutError("PLAN_NOT_FOUND", `Plano não encontrado: ${planCode}`);
@@ -58,6 +62,7 @@ export const CheckoutService = {
       externalReference,
       reason: `Assinatura ${plan.name} — ConcursoAI`,
       unitPriceCents: priceCents,
+      payerEmail,
     });
 
     return {
