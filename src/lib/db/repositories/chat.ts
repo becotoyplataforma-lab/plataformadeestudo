@@ -2,6 +2,7 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import { chatSessions, chatMessages } from "@/db/schema/ai";
 import type { ChatMessage, ChatSession } from "@/types";
+import type { AIModel } from "@/lib/ai/types";
 
 type SessionRow = typeof chatSessions.$inferSelect;
 type MessageRow = typeof chatMessages.$inferSelect;
@@ -69,7 +70,7 @@ export async function createSession(
     title?: string;
     subject_id?: string | null;
     knowledge_subject_id?: string | null;
-    model?: "flash" | "pro";
+    model?: AIModel;
   }
 ): Promise<ChatSession> {
   const knowledgeSubjectId = input.knowledge_subject_id ?? input.subject_id ?? null;
@@ -157,7 +158,7 @@ export async function insertMessage(msg: {
   user_id: string;
   role: "system" | "user" | "assistant";
   content: string;
-  model?: "flash" | "pro" | null;
+  model?: AIModel | null;
   tokens_in?: number;
   tokens_out?: number;
 }): Promise<ChatMessage> {

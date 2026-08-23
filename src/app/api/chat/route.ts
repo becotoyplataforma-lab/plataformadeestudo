@@ -3,6 +3,7 @@ import { sendMessageSchema } from "@/lib/validations/chat";
 import { apiError } from "@/lib/api/helpers";
 import { prompts, interpolate } from "@/lib/ai/prompts";
 import { buildMessages, streamChatCompletion } from "@/lib/ai/deepseek";
+import { KimiService } from "@/lib/ai/kimi";
 import { getAiUsage, registerUsage } from "@/lib/ai/limits";
 import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
 import {
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
     const created = await createSession(userId, {
       title: message.slice(0, 60),
       subject_id,
-      model,
+      model: model as AIModel,
     });
     activeSessionId = created.id;
   } else {
@@ -126,13 +127,15 @@ export async function POST(req: Request) {
     user_id: userId,
     role: "user",
     content: message,
-    model,
+    model: model as AIModel,
   });
 
   // --- Stream da DeepSeek ---
   let upstream: Response;
   try {
-    upstream = await streamChatCompletion({ model: model as AIModel, messages, stream: true });
+    upstream = model === "kimi"
+      ? await KimiService.streamChatCompletion({ model, messages, stream: true })
+      : await streamChatCompletion({ model: model as AIModel, messages, stream: true });
   } catch (err) {
     console.error("[chat] DeepSeek falhou:", err);
     return apiError(
@@ -212,7 +215,7 @@ export async function POST(req: Request) {
             user_id: userId,
             role: "assistant",
             content: finalContent,
-            model,
+            model: model as AIModel,
             tokens_in: tokensIn,
             tokens_out: tokensOut,
           });

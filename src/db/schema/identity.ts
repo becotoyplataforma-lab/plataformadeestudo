@@ -48,7 +48,7 @@ export const userLevel = pgEnum("user_level", [
 ]);
 
 /** Modelo de IA utilizado (ai_model). */
-export const aiModel = pgEnum("ai_model", ["flash", "pro"]);
+export const aiModel = pgEnum("ai_model", ["flash", "pro", "kimi"]);
 
 // ============================================================
 // AUTH.USERS — referência externa (Supabase Auth)

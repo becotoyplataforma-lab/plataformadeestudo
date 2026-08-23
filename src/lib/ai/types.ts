@@ -2,7 +2,7 @@
  * Tipos compartilhados para o módulo de IA.
  */
 
-export type AIModel = "flash" | "pro";
+export type AIModel = "flash" | "pro" | "kimi";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -32,10 +32,12 @@ export const MODEL_PARAMS: Record<
 > = {
   flash: { temperature: 0.5, maxTokens: 2048, topP: 0.9 },
   pro: { temperature: 0.3, maxTokens: 4096, topP: 0.8 },
+  kimi: { temperature: 0.5, maxTokens: 4096, topP: 0.9 },
 };
 
 /** Nomes de modelo no provedor DeepSeek */
 export const MODEL_NAMES: Record<AIModel, string> = {
   flash: process.env.DEEPSEEK_MODEL_FLASH ?? "deepseek-chat",
   pro: process.env.DEEPSEEK_MODEL_PRO ?? "deepseek-reasoner",
+  kimi: process.env.KIMI_MODEL ?? "kimi-k2-turbo-preview",
 };

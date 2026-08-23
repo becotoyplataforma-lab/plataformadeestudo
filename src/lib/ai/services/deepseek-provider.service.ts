@@ -6,6 +6,7 @@
  */
 import "server-only";
 import { chatCompletion } from "@/lib/ai/deepseek";
+import { KimiService } from "@/lib/ai/kimi";
 import { logger, now, elapsed } from "@/lib/observability";
 import type { AIModel, ChatMessage as PromptMessage } from "@/lib/ai/types";
 
@@ -40,12 +41,19 @@ export const DeepSeekProvider = {
   async complete(req: ProviderRequest): Promise<ProviderResult> {
     const startedAt = now();
     try {
-      const result = await chatCompletion({
-        model: req.model,
-        messages: req.messages,
-        temperature: req.temperature,
-        maxTokens: req.maxTokens,
-      });
+      const result = req.model === "kimi"
+        ? await KimiService.complete({
+            model: req.model,
+            messages: req.messages,
+            temperature: req.temperature,
+            maxTokens: req.maxTokens,
+          })
+        : await chatCompletion({
+            model: req.model,
+            messages: req.messages,
+            temperature: req.temperature,
+            maxTokens: req.maxTokens,
+          });
 
       logger.info("deepseek", "resposta completada", {
         model: req.model,

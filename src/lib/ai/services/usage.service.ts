@@ -22,6 +22,7 @@ export class UsageError extends Error {
 const COST_PER_MILLION: Record<AIModel, { input: number; output: number }> = {
   flash: { input: 0.27, output: 1.1 },
   pro: { input: 0.55, output: 2.19 },
+  kimi: { input: 0.5, output: 2.0 },
 };
 
 export const USD_TO_BRL = 5.0;

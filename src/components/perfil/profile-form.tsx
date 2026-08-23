@@ -163,6 +163,7 @@ export function ProfileForm({
               <SelectContent>
                 <SelectItem value="flash">V4 Flash — rápido e econômico</SelectItem>
                 <SelectItem value="pro">V4 Pro — raciocínio profundo</SelectItem>
+                <SelectItem value="kimi">Kimi — Moonshot</SelectItem>
               </SelectContent>
             </Select>
           </div>

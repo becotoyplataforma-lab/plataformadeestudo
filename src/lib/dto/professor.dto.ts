@@ -24,7 +24,7 @@ export const ProfessorRequestDtoSchema = z.object({
   subject_id: z.string().uuid().optional(),
   document_ids: z.array(z.string().uuid()).max(20).optional(),
   top_k: z.number().int().min(1).max(20).optional(),
-  model: z.enum(["flash", "pro"]).optional(),
+  model: z.enum(["flash", "pro", "kimi"]).optional(),
 });
 export type ProfessorRequestDto = OutputOf<typeof ProfessorRequestDtoSchema>;
 
@@ -35,7 +35,7 @@ export type ProfessorRequestDto = OutputOf<typeof ProfessorRequestDtoSchema>;
 export const ProfessorResponseDtoSchema = z.object({
   answer: z.string(),
   mode: z.enum(["chat", "rag"]),
-  model: z.enum(["flash", "pro"]),
+  model: z.enum(["flash", "pro", "kimi"]),
   citations: z.array(CitationDtoSchema),
   documents: z.array(z.string().uuid()),
   chunks_used: z.number().int().nonnegative(),

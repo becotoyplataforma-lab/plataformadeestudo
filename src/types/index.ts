@@ -8,7 +8,7 @@ export type TaskStatus = "pendente" | "concluida" | "adiada";
 export type QuestionLevel = "facil" | "medio" | "dificil";
 export type AttemptMode = "estudo" | "simulado" | "revisao";
 export type ReviewRating = "facil" | "medio" | "dificil";
-export type AIModel = "flash" | "pro";
+export type AIModel = "flash" | "pro" | "kimi";
 
 export interface Profile {
   id: string;

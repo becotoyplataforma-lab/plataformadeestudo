@@ -41,7 +41,7 @@ interface Props {
   profileLevel?: string | null;
   profileBanca?: string | null;
   profileConcurso?: string | null;
-  defaultModel: "flash" | "pro";
+  defaultModel: "flash" | "pro" | "kimi";
   usage: { used: number; max: number; canSend: boolean };
   subjects: { id: string; name: string }[];
   documents?: { id: string; title: string }[];
@@ -69,7 +69,7 @@ export function ChatClient({
   const [activeSessionId, setActiveSessionId] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<LocalMessage[]>([]);
   const [input, setInput] = React.useState("");
-  const [model, setModel] = React.useState<"flash" | "pro">(defaultModel);
+  const [model, setModel] = React.useState<"flash" | "pro" | "kimi">(defaultModel);
   const [subjectId, setSubjectId] = React.useState("none");
   const [documentId, setDocumentId] = React.useState("none");
   const [sending, setSending] = React.useState(false);
@@ -320,10 +320,12 @@ export function ChatClient({
                 <Button variant="outline" size="sm" className="border-white/10 bg-white/5 text-slate-100 hover:bg-white/10">
                   {model === "flash" ? (
                     <Zap className="h-3.5 w-3.5 text-amber-400" />
-                  ) : (
+                  ) : model === "pro" ? (
                     <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                  ) : (
+                    <Bot className="h-3.5 w-3.5 text-cyan-400" />
                   )}
-                  {model === "flash" ? "DeepSeek V4 Flash" : "DeepSeek V4 Pro"}
+                  {model === "flash" ? "DeepSeek V4 Flash" : model === "pro" ? "DeepSeek V4 Pro" : "Kimi"}
                   <ChevronDown className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -333,6 +335,9 @@ export function ChatClient({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setModel("pro")} className="text-slate-100 focus:bg-white/5">
                   <Sparkles className="h-4 w-4 text-violet-400" /> DeepSeek V4 Pro — raciocínio profundo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setModel("kimi")} className="text-slate-100 focus:bg-white/5">
+                  <Bot className="h-4 w-4 text-cyan-400" /> Kimi — Moonshot
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

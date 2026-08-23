@@ -17,7 +17,7 @@ export const ChatRequestDtoSchema = z.object({
   message: z.string().min(1).max(4000),
   session_id: z.string().uuid().optional(),
   subject_id: z.string().uuid().optional(),
-  model: z.enum(["flash", "pro"]).optional(),
+  model: z.enum(["flash", "pro", "kimi"]).optional(),
 });
 export type ChatRequestDto = OutputOf<typeof ChatRequestDtoSchema>;
 
@@ -25,7 +25,7 @@ export const ChatResponseDtoSchema = z.object({
   session_id: z.string().uuid(),
   message_id: z.string().uuid(),
   response: z.string(),
-  model: z.enum(["flash", "pro"]),
+  model: z.enum(["flash", "pro", "kimi"]),
   tokens_in: z.number().int().nonnegative(),
   tokens_out: z.number().int().nonnegative(),
   total_tokens: z.number().int().nonnegative(),
@@ -43,7 +43,7 @@ export const ChatSessionDtoSchema = z.object({
   user_id: z.string().uuid(),
   title: z.string(),
   subject_id: z.string().uuid().nullable(),
-  model: z.enum(["flash", "pro"]),
+  model: z.enum(["flash", "pro", "kimi"]),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -58,7 +58,7 @@ export const ChatMessageDtoSchema = z.object({
   session_id: z.string().uuid(),
   role: z.enum(["system", "user", "assistant"]),
   content: z.string(),
-  model: z.enum(["flash", "pro"]).nullable(),
+  model: z.enum(["flash", "pro", "kimi"]).nullable(),
   tokens_in: z.number().int().nonnegative(),
   tokens_out: z.number().int().nonnegative(),
   created_at: z.string(),

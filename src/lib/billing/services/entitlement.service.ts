@@ -75,7 +75,7 @@ export const EntitlementService = {
   /** Verifica se o plano do usuário permite o modelo solicitado. */
   async canUseModel(userId: string, model: AIModel): Promise<boolean> {
     const entitlement = await this.getCurrent(userId);
-    if (model === "flash") return true;
+    if (model === "flash" || model === "kimi") return true;
     return entitlement.limits.allowPro === true;
   },
 };

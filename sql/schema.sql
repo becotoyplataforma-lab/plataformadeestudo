@@ -37,7 +37,7 @@ BEGIN
     CREATE TYPE chat_role AS ENUM ('system', 'user', 'assistant');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_model') THEN
-    CREATE TYPE ai_model AS ENUM ('flash', 'pro');
+    CREATE TYPE ai_model AS ENUM ('flash', 'pro', 'kimi');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'doc_type') THEN
     CREATE TYPE doc_type AS ENUM ('pdf', 'audio', 'video', 'law', 'edital', 'apostila');

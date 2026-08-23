@@ -14,7 +14,7 @@ const profileSchema = z.object({
   contest_id: z.string().uuid().nullable().optional(),
   position_id: z.string().uuid().nullable().optional(),
   meta_diaria_min: z.coerce.number().int().min(15).max(720),
-  modelo_ia_padrao: z.enum(["flash", "pro"]),
+  modelo_ia_padrao: z.enum(["flash", "pro", "kimi"]),
 });
 
 type ActionResult = { success: boolean; message: string };
