@@ -12,7 +12,9 @@ import { ragService, RagError } from "@/lib/ai/services/rag.service";
 import { RagRequestDtoSchema, mapRagOutputToDto } from "@/lib/dto/rag.dto";
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { resolveCourseScope } from "@/lib/knowledge/security/course-scope";
+import { rateLimit } from "@/lib/security/rate-limit";
 
+// TODO: migrar rate limiter para Redis/Upstash quando escalar para múltiplas réplicas
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -20,6 +22,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
     const userId = session.user.id;
+
+    // Rate limit de curto prazo (anti-abuso): 30 consultas/minuto por usuário.
+    const burstRl = rateLimit("rag-burst", `user:${userId}`, 30, 60 * 1000);
+    if (!burstRl.allowed) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Muitas consultas em sequência. Aguarde alguns segundos e tente novamente.",
+        },
+        { status: 429 }
+      );
+    }
 
     const body = await request.json();
     const parsed = RagRequestDtoSchema.safeParse(body);

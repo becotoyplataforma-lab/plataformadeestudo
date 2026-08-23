@@ -7,6 +7,7 @@ import "./globals.css";
 const manrope = Manrope({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(publicEnv.appUrl),
   title: {
     default: "ConcursoAI — Estudos com IA para concursos públicos",
     template: "%s · ConcursoAI",
@@ -22,6 +23,23 @@ export const metadata: Metadata = {
     "flashcards",
   ],
   authors: [{ name: "ConcursoAI" }],
+  creator: "ConcursoAI",
+  publisher: "ConcursoAI",
+  applicationName: "ConcursoAI",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.png",
+  },
   openGraph: {
     title: "ConcursoAI — Estudos com IA para concursos públicos",
     description:
@@ -30,6 +48,21 @@ export const metadata: Metadata = {
     siteName: "ConcursoAI",
     locale: "pt_BR",
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ConcursoAI — Estudos com IA para concursos públicos",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ConcursoAI — Estudos com IA para concursos públicos",
+    description:
+      "Cronograma inteligente, banco de questões, flashcards e Professor IA para você passar no concurso.",
+    images: ["/opengraph-image.png"],
   },
 };
 

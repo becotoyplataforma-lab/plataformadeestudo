@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
 
   reactStrictMode: true,
+  // Remove o header "X-Powered-By: Next.js" (reduz fingerprinting do servidor).
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {

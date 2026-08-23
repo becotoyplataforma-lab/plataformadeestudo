@@ -4,10 +4,24 @@ import { z } from "zod";
  * Validação de variáveis de ambiente (fail-fast em build).
  * Importe apenas em módulos de servidor.
  */
+
+/**
+ * Converte string vazia em `undefined` para que variáveis opcionais
+ * presentes mas vazias no .env não quebrem a validação (ex.: EMBEDDING_API_URL).
+ */
+const emptyToUndefined = (v: unknown) =>
+  typeof v === "string" && v.trim() === "" ? undefined : v;
+
 const serverEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_APP_NAME: z.string().default("ConcursoAI"),
-  AUTH_SECRET: z.string().min(1).default("dev-secret-change-me"),
+  // AUTH_SECRET: em produção é OBRIGATÓRIO e com mínimo de 32 chars (fail-fast).
+  // Em dev/teste, um default local permite rodar sem configurar. Nunca use o
+  // default em produção — o refinamento abaixo força o crash na startup.
+  AUTH_SECRET: z
+    .string()
+    .min(32, "AUTH_SECRET deve ter pelo menos 32 caracteres")
+    .default("dev-secret-change-me-please-set-a-real-secret-32chars"),
 
   // Placeholders permitem rodar/build local antes de configurar o Supabase.
   // Preencha o .env.local antes de usar de verdade.
@@ -30,7 +44,7 @@ const serverEnvSchema = z.object({
 
   // Serviço de embeddings (BAAI/bge-m3 — self-hosted ou API).
   // Obrigatório em produção para ativar a busca vetorial (docs/10-EMBEDDING-STANDARD).
-  EMBEDDING_API_URL: z.string().url().optional(),
+  EMBEDDING_API_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   EMBEDDING_API_KEY: z.string().optional(),
   EMBEDDING_MODEL: z.string().default("BAAI/bge-m3"),
   EMBEDDING_DIMENSION: z.coerce.number().int().default(1024),
@@ -40,7 +54,7 @@ const serverEnvSchema = z.object({
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
-  R2_ENDPOINT: z.string().url().optional(),
+  R2_ENDPOINT: z.preprocess(emptyToUndefined, z.string().url().optional()),
 });
 
 const result = serverEnvSchema.safeParse(process.env);
@@ -54,6 +68,21 @@ if (!result.success) {
   if (process.env.NODE_ENV === "production") {
     throw new Error("Configuração de ambiente inválida.");
   }
+}
+
+// Fail-fast de segurança: em produção, AUTH_SECRET NUNCA pode ser o default
+// de desenvolvimento. Se não foi definido explicitamente no ambiente, o app
+// deve crashar na startup em vez de rodar com uma chave de assinatura pública.
+if (
+  process.env.NODE_ENV === "production" &&
+  (!process.env.AUTH_SECRET ||
+    process.env.AUTH_SECRET === "dev-secret-change-me" ||
+    process.env.AUTH_SECRET ===
+      "dev-secret-change-me-please-set-a-real-secret-32chars")
+) {
+  throw new Error(
+    "AUTH_SECRET is required in production. Defina uma chave forte (>= 32 chars) no .env.production."
+  );
 }
 
 // Todas as chaves têm default/opcional → env sempre definido em runtime.

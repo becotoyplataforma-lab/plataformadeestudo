@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getAdminSession } from "@/lib/administration/session";
+import { AdminGuardService } from "@/lib/administration/services/admin-guard.service";
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { getCurrentEditalByContest } from "@/lib/db/repositories/edital";
 import { IngestionService, IngestionError } from "@/lib/knowledge/services/ingestion.service";
@@ -37,6 +38,18 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id;
+
+    // 1a. REGRA DE NEGÓCIO: upload de apostilas é EXCLUSIVO de admin.
+    // Alunos NUNCA enviam apostilas — apenas visualizam e estudam.
+    const isAdmin = await AdminGuardService.isAdminEmail(session.user.email).catch(
+      () => false
+    );
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "FORBIDDEN", message: "Apenas administradores podem enviar apostilas." },
+        { status: 403 }
+      );
+    }
 
     // 1b. Rate limit por plano (uploads/hora).
     const entitlement = await EntitlementService.getCurrent(userId).catch(() => null);
@@ -80,11 +93,14 @@ export async function POST(request: NextRequest) {
     });
 
     // 4. Armazenamento físico (Supabase Storage, bucket privado)
+    // Usa o nome sanitizado do storagePath (gerado pelo IngestionService)
+    // para evitar path traversal e inconsistência com o registro no banco.
     const buffer = Buffer.from(await file.arrayBuffer());
+    const safeFileName = result.storagePath.split("/").pop() ?? file.name;
     await DocumentStorageService.upload({
       userId,
       documentId: result.documentId,
-      fileName: file.name,
+      fileName: safeFileName,
       buffer,
       mimeType: result.mimeType,
     });
@@ -163,6 +179,7 @@ export async function POST(request: NextRequest) {
         DUPLICATE_FILE: 409,
         QUOTA_EXCEEDED: 413,
         INVALID_TYPE: 400,
+        INVALID_CONTENT: 400,
         FILE_TOO_LARGE: 413,
         UPLOAD_FAILED: 500,
       };

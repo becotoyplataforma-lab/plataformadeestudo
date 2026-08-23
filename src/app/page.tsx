@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import {
   ArrowRight,
   Bot,
@@ -12,6 +13,22 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+export const metadata: Metadata = {
+  title: "ConcursoAI — Estudos com IA para concursos públicos",
+  description:
+    "Cronograma inteligente, banco de questões, flashcards e Professor IA para você passar no concurso público. Estude com inteligência artificial.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "ConcursoAI — Estudos com IA para concursos públicos",
+    description:
+      "Cronograma inteligente, banco de questões, flashcards e Professor IA para você passar no concurso.",
+    url: "/",
+    type: "website",
+  },
+};
 
 const features = [
   {

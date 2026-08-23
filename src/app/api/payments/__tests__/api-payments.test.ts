@@ -94,6 +94,14 @@ describe("POST /api/payments/webhook", () => {
     expect(res.status).toBe(401);
   });
 
+  it("retorna 500 quando o processamento falha", async () => {
+    mockHandleWebhook.mockRejectedValue(new Error("boom"));
+
+    const res = await postWebhook(webhookReq({ data: { id: 1 } }));
+
+    expect(res.status).toBe(500);
+  });
+
   it("retorna 200 em duplicidade (idempotência)", async () => {
     mockHandleWebhook.mockResolvedValue({
       received: true,

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth/auth";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
@@ -11,6 +12,11 @@ import {
   SidebarStreak,
 } from "@/components/layout/app-sidebar";
 import { computeStreak, distinctActivityDates, todayISO } from "@/lib/analytics/streak";
+
+// Área autenticada: não deve ser indexada por buscadores.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * Layout do grupo (dashboard) — shell autenticado com sidebar.

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
-import { ApostilaUpload } from "@/components/apostilas/apostila-upload";
 import { ApostilasList, type ApostilaListItem } from "@/components/apostilas/apostilas-list";
 
 export const metadata: Metadata = { title: "Apostilas" };
@@ -41,18 +40,16 @@ export default async function ApostilasPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Apostilas</h1>
         <p className="text-sm text-slate-400">
-          Envie suas apostilas e o ConcursoAI as transforma em conteúdo inteligente. Selecione
-          várias da mesma matéria para gerar um resumo consolidado.
+          Visualize as apostilas disponibilizadas pela equipe e estude com o Professor IA.
         </p>
       </div>
-
-      <ApostilaUpload />
 
       {docs.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center">
           <p className="text-slate-400">Você ainda não tem apostilas.</p>
           <p className="mt-2 text-sm text-slate-500">
-            Envie sua apostila e o ConcursoAI a transforma em aulas, questões e revisões.
+            As apostilas são disponibilizadas pela equipe. Estude com o Professor IA e gere
+            questões a partir do conteúdo.
           </p>
         </div>
       ) : (

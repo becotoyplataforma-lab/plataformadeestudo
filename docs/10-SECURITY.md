@@ -73,6 +73,22 @@ Strict-Transport-Security: max-age=63072000
 - **Migrations revisadas** (SQL Review em PRs).
 - **Backups diários** + restauração testada trimestralmente.
 - Conexão via pooler com SSL (`sslmode=require`).
+- **`embedding_cache` (tabela de sistema):** RLS habilitado com **deny-by-default** — nenhuma política permissiva é criada, então clientes autenticados/anon não acessam. Acesso exclusivo via `service_role`/`BYPASSRLS` (aplicação/Drizzle). Ver `database/knowledge/rls.sql`.
+
+### RLS em `ai_usage`
+
+- A tabela `ai_usage` tem RLS ativo.
+- Usuário autenticado só pode consultar e inserir registros cujo `user_id = auth.uid()`.
+- Atualização e exclusão não são permitidas para o papel `authenticated`.
+- O `service_role` server-side acessa todos os registros para registrar consumo e gerar relatórios.
+
+### Webhooks de pagamento
+
+- Assinaturas inválidas retornam HTTP 401 e não são processadas.
+- Falhas de processamento retornam HTTP 500 para permitir retry do provedor.
+- Eventos processados ou duplicados retornam HTTP 200.
+- A assinatura Mercado Pago usa HMAC-SHA256 e comparação constant-time com `timingSafeEqual`.
+- Eventos estruturados são emitidos como `webhook.invalid_signature`, `webhook.processing_failed`, `webhook.unexpected_error` e `webhook.processed`.
 
 ## 8. Storage (R2/Supabase)
 

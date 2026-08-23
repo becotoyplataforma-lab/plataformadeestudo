@@ -4,7 +4,10 @@ import { auth } from "@/lib/auth/auth";
 import { AdminGuardService } from "@/lib/administration/services/admin-guard.service";
 import { AdminShell } from "@/components/admin/admin-shell";
 
-export const metadata: Metadata = { title: "Admin · ConcursoAI" };
+export const metadata: Metadata = {
+  title: "Admin · ConcursoAI",
+  robots: { index: false, follow: false },
+};
 
 /**
  * Layout da área administrativa — exige admin (allowlist).

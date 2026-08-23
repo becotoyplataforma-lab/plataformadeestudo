@@ -232,7 +232,7 @@ describe("POST /api/billing/webhook", () => {
     expect(res.status).toBe(401);
   });
 
-  it("erro interno sempre responde 200 (evita retry infinito)", async () => {
+  it("retorna 500 quando o processamento falha", async () => {
     mockHandleWebhook.mockRejectedValue(new Error("boom"));
     const res = await postWebhook(
       new Request("http://localhost/api/billing/webhook", {
@@ -240,7 +240,7 @@ describe("POST /api/billing/webhook", () => {
         body: JSON.stringify({ data: { id: 123 } }),
       })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
   });
 });
 

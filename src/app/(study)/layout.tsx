@@ -1,5 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowLeft, BrainCircuit } from "lucide-react";
+
+// Área autenticada: não deve ser indexada por buscadores.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * Layout do grupo (study) — modo foco, sem sidebar.

@@ -196,7 +196,7 @@ service role; RLS em tabelas novas; Zod; ownership por `user_id`. Nenhum aluno a
 de outro, publica questão ou acessa admin.
 
 ## 25. Banco de dados
-Ver `database/migrations/2026-08-15-concursoai-e2e.sql` (idempotente, não destrutiva) e
+Ver o histórico `database/legacy/2026-08-15-concursoai-e2e.sql` (idempotente, não destrutivo) e
 schemas Drizzle em `src/db/schema/`.
 
 ## 26. APIs
@@ -223,7 +223,7 @@ validável localmente com `DEEPSEEK_API_KEY`/`EMBEDDING_API_URL` (bloqueados por
 usa Supabase Storage). (Valores NUNCA versionados.)
 
 ## 30. Migrations
-`database/migrations/2026-08-15-concursoai-e2e.sql` — aplicada (idempotente) via
+`database/legacy/2026-08-15-concursoai-e2e.sql` — aplicada (idempotente) via
 `node scripts/apply-migration.mjs`. Também aplicadas: `2026-08-15-admin-content.sql`
 (revisão de conteúdo), `2026-08-15-consolidation.sql` (consolidação) e
 `2026-08-15-pme-rj-seed.sql` (seed PME-RJ).
@@ -253,7 +253,7 @@ Ver `docs/IMPLEMENTATION-REPORT.md` (commits locais, sem push).
 
 ## 34. Como operar o sistema
 `npm run dev` (dev), `npm run build && npm start` (prod). Migrações:
-`node scripts/apply-migration.mjs database/migrations/<arquivo>.sql`.
+`node scripts/apply-migration.mjs database/legacy/<arquivo>.sql` (somente referência histórica).
 
 ## 35. Como colocar uma apostila no sistema
 1. Login como admin (allowlist `ADMIN_EMAILS`).

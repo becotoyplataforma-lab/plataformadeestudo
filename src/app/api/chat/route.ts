@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth/auth";
 import { sendMessageSchema } from "@/lib/validations/chat";
 import { apiError } from "@/lib/api/helpers";
+import { rateLimit } from "@/lib/security/rate-limit";
 import { prompts, interpolate } from "@/lib/ai/prompts";
 import { buildMessages, streamChatCompletion } from "@/lib/ai/deepseek";
 import { KimiService } from "@/lib/ai/kimi";
@@ -20,6 +21,7 @@ import { DocumentChunkRepository } from "@/lib/knowledge/repositories/chunk.repo
 import { isDocInUserScope } from "@/lib/knowledge/security/course-scope";
 import type { AIModel, ChatMessage } from "@/lib/ai/types";
 
+// TODO: migrar rate limiter para Redis/Upstash quando escalar para múltiplas réplicas
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -49,6 +51,16 @@ export async function POST(req: Request) {
   }
 
   const { session_id, message, model, subject_id, document_id } = parsed.data;
+
+  // --- Rate limit de curto prazo (anti-abuso de requisições rápidas) ---
+  // Complementa a cota diária de IA: 30 mensagens/minuto por usuário.
+  const burstRl = rateLimit("chat-burst", `user:${userId}`, 30, 60 * 1000);
+  if (!burstRl.allowed) {
+    return apiError(
+      429,
+      "Muitas mensagens em sequência. Aguarde alguns segundos e tente novamente."
+    );
+  }
 
   // --- Cotas de IA (limites resolvidos pelo Billing — OPEN-004) ---
   const usage = await getAiUsage(userId, await resolveUserLimits(userId));

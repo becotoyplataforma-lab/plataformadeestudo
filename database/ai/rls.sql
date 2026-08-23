@@ -57,9 +57,23 @@ CREATE POLICY chat_messages_insert_own ON public.chat_messages
   );
 
 -- ============================================================
--- AI_USAGE — sistema (sem política de cliente)
--- Acesso SOMENTE via service_role / função SECURITY DEFINER.
--- Nenhuma política permissiva é criada; RLS deny-by-default protege.
+-- AI_USAGE — o usuário só acessa o próprio consumo.
+DROP POLICY IF EXISTS ai_usage_select_own ON public.ai_usage;
+CREATE POLICY ai_usage_select_own ON public.ai_usage
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS ai_usage_insert_own ON public.ai_usage;
+CREATE POLICY ai_usage_insert_own ON public.ai_usage
+  FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+-- O servidor usa service_role/BYPASSRLS para atualizar o consumo agregado.
+DROP POLICY IF EXISTS ai_usage_service_all ON public.ai_usage;
+CREATE POLICY ai_usage_service_all ON public.ai_usage
+  FOR ALL TO service_role
+  USING (true)
+  WITH CHECK (true);
 -- ============================================================
 
 -- ============================================================

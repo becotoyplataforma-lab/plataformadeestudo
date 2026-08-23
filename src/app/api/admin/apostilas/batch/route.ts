@@ -77,10 +77,11 @@ export async function POST(request: NextRequest) {
         });
 
         const buffer = Buffer.from(await file.arrayBuffer());
+        const safeFileName = result.storagePath.split("/").pop() ?? file.name;
         await DocumentStorageService.upload({
           userId: admin.userId,
           documentId: result.documentId,
-          fileName: file.name,
+          fileName: safeFileName,
           buffer,
           mimeType: result.mimeType,
         });

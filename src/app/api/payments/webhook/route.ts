@@ -5,6 +5,7 @@ import {
   WebhookService,
   WebhookError,
 } from "@/lib/billing/services/webhook.service";
+import { logger } from "@/lib/observability";
 
 export const runtime = "nodejs";
 
@@ -37,6 +38,12 @@ export async function POST(req: Request) {
       dataId,
     });
 
+    logger.info("webhook", "webhook processado", {
+      event: "webhook.processed",
+      path: "/api/payments/webhook",
+      status: result.status,
+      duplicate: result.duplicate,
+    });
     return apiOk({
       received: true,
       status: result.status,
@@ -44,10 +51,20 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     if (error instanceof WebhookError && error.code === "INVALID_SIGNATURE") {
+      logger.warn("webhook", "assinatura inválida", {
+        event: "webhook.invalid_signature",
+        path: "/api/payments/webhook",
+      });
       return new Response("Não autorizado", { status: 401 });
     }
-    // Sempre responde 200 para evitar retries infinitos do Mercado Pago.
-    console.error("[payments/webhook]", error);
-    return apiOk({ received: true, error: "erro_interno" });
+    logger.error("webhook", "falha no processamento", {
+      event:
+        error instanceof WebhookError
+          ? "webhook.processing_failed"
+          : "webhook.unexpected_error",
+      path: "/api/payments/webhook",
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return apiOk({ error: "Falha no processamento" }, 500);
   }
 }

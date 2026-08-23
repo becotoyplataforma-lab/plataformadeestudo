@@ -97,5 +97,169 @@ describe("IngestionService", () => {
       expect(result.status).toBe("pending");
       expect(mockCreate).toHaveBeenCalledTimes(1);
     });
+
+    it("sanitiza filename com path traversal no storagePath", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      mockCreate.mockImplementation((input: { storagePath: string }) => ({
+        id: "new-doc",
+        userId: "user-1",
+        type: "txt",
+        title: "arquivo",
+        storagePath: input.storagePath,
+        status: "pending",
+        fileSize: 100,
+        mimeType: "text/plain",
+        sourceType: "upload",
+        fileHash: "abc123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+      const file = new File(["conteudo"], "../../../etc/passwd.txt", {
+        type: "text/plain",
+      });
+
+      const result = await IngestionService.ingest({ userId: "user-1", file });
+
+      // O storagePath não deve conter ".." nem separadores de diretório extras.
+      expect(result.storagePath).not.toContain("..");
+      expect(result.storagePath.split("/")).toHaveLength(3); // userId/docId/nome
+      expect(result.storagePath.endsWith("passwd.txt")).toBe(true);
+    });
+
+    it("rejeita PDF com magic bytes inválidos (conteúdo não é PDF)", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      const fakePdf = new File(["isto não é um pdf"], "falso.pdf", {
+        type: "application/pdf",
+      });
+
+      await expect(
+        IngestionService.ingest({ userId: "user-1", file: fakePdf })
+      ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
+    });
+
+    it("aceita PDF com magic bytes válidos (%PDF-)", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      mockCreate.mockResolvedValue({
+        id: "new-doc",
+        userId: "user-1",
+        type: "pdf",
+        title: "apostila",
+        storagePath: "user-1/new-doc/apostila.pdf",
+        status: "pending",
+        fileSize: 100,
+        mimeType: "application/pdf",
+        sourceType: "upload",
+        fileHash: "abc123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]); // %PDF-1.4
+      const file = new File([pdfBytes], "apostila.pdf", {
+        type: "application/pdf",
+      });
+
+      const result = await IngestionService.ingest({ userId: "user-1", file });
+      expect(result.documentId).toBe("new-doc");
+    });
+
+    it("rejeita binário disfarçado de texto (bytes nulos)", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      const binary = new Uint8Array([0x00, 0x01, 0x02, 0x03]);
+      const file = new File([binary], "falso.txt", { type: "text/plain" });
+
+      await expect(
+        IngestionService.ingest({ userId: "user-1", file })
+      ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
+    });
+
+    it("rejeita texto com menos de 95% de caracteres imprimíveis", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      // 50% de bytes não imprimíveis (0x80-0xFF) → deve ser rejeitado.
+      const bytes = new Uint8Array(200);
+      for (let i = 0; i < 200; i++) {
+        bytes[i] = i % 2 === 0 ? 0x41 : 0x80; // alterna 'A' e byte não imprimível
+      }
+      const file = new File([bytes], "binario.txt", { type: "text/plain" });
+
+      await expect(
+        IngestionService.ingest({ userId: "user-1", file })
+      ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
+    });
+
+    it("aceita texto com ≥95% de caracteres imprimíveis", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      mockCreate.mockResolvedValue({
+        id: "new-doc",
+        userId: "user-1",
+        type: "txt",
+        title: "texto",
+        storagePath: "user-1/new-doc/texto.txt",
+        status: "pending",
+        fileSize: 100,
+        mimeType: "text/plain",
+        sourceType: "upload",
+        fileHash: "abc123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // 99% imprimível, 1% não imprimível → deve passar.
+      const bytes = new Uint8Array(200);
+      for (let i = 0; i < 200; i++) {
+        bytes[i] = i === 199 ? 0x80 : 0x41; // um único byte não imprimível
+      }
+      const file = new File([bytes], "texto.txt", { type: "text/plain" });
+
+      const result = await IngestionService.ingest({ userId: "user-1", file });
+      expect(result.documentId).toBe("new-doc");
+    });
+
+    it("rejeita DOCX com ZIP que não contém estrutura word/", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      // ZIP header válido (PK\x03\x04) mas conteúdo sem "word/" → não é DOCX.
+      const zipHeader = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00]);
+      const fakeContent = new Uint8Array([0x41, 0x42, 0x43, 0x44]); // "ABCD"
+      const combined = new Uint8Array(zipHeader.length + fakeContent.length);
+      combined.set(zipHeader, 0);
+      combined.set(fakeContent, zipHeader.length);
+      const file = new File([combined], "falso.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      await expect(
+        IngestionService.ingest({ userId: "user-1", file })
+      ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
+    });
+
+    it("aceita DOCX com ZIP contendo estrutura word/", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      mockCreate.mockResolvedValue({
+        id: "new-doc",
+        userId: "user-1",
+        type: "docx",
+        title: "apostila",
+        storagePath: "user-1/new-doc/apostila.docx",
+        status: "pending",
+        fileSize: 100,
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        sourceType: "upload",
+        fileHash: "abc123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // ZIP header + conteúdo contendo "word/" (simula diretório central do ZIP).
+      const zipHeader = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00]);
+      const wordContent = Buffer.from("word/document.xml");
+      const combined = Buffer.concat([Buffer.from(zipHeader), wordContent]);
+      const file = new File([combined], "apostila.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      const result = await IngestionService.ingest({ userId: "user-1", file });
+      expect(result.documentId).toBe("new-doc");
+    });
   });
 });

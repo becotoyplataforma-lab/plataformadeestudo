@@ -7,12 +7,14 @@ import { z } from "zod";
 import { auth } from "@/lib/auth/auth";
 import { getAiUsage, registerUsage } from "@/lib/ai/limits";
 import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
+import { rateLimit } from "@/lib/security/rate-limit";
 import {
   EssayCorrectionService,
   EssayCorrectionError,
 } from "@/lib/ai/services/essay-correction.service";
 import { ProviderError } from "@/lib/ai/services/deepseek-provider.service";
 
+// TODO: migrar rate limiter para Redis/Upstash quando escalar para múltiplas réplicas
 const EssaySchema = z.object({
   text: z.string().min(1).max(15000),
 });
@@ -24,6 +26,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
     const userId = session.user.id;
+
+    // Rate limit de curto prazo (anti-abuso): 10 correções/minuto por usuário.
+    const burstRl = rateLimit("essay-burst", `user:${userId}`, 10, 60 * 1000);
+    if (!burstRl.allowed) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Muitas correções em sequência. Aguarde alguns segundos e tente novamente.",
+        },
+        { status: 429 }
+      );
+    }
 
     const body = await request.json().catch(() => null);
     const parsed = EssaySchema.safeParse(body ?? {});

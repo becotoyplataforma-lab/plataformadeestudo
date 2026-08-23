@@ -12,6 +12,8 @@ import {
 export const metadata: Metadata = {
   title: "Recuperar senha",
   description: "Recupere o acesso à sua conta ConcursoAI.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/recuperar-senha" },
 };
 
 export default function ForgotPasswordPage() {

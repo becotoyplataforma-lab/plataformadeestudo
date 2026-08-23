@@ -40,5 +40,4 @@ UPLOAD → STORAGE → DOCUMENT → EXTRAÇÃO → NORMALIZAÇÃO → CHUNKING �
 reinserção). Em erro, grava `status=failed` + `processing_error`.
 
 ## Migration
-`database/migrations/2026-08-15-concursoai-e2e.sql` (idempotente) — aplicar com
-`node scripts/apply-migration.mjs database/migrations/2026-08-15-concursoai-e2e.sql`.
+`database/legacy/2026-08-15-concursoai-e2e.sql` (histórico, não usar para novas alterações).

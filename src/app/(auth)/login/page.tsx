@@ -12,6 +12,8 @@ import {
 export const metadata: Metadata = {
   title: "Entrar",
   description: "Acesse sua conta na ConcursoAI.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/login" },
 };
 
 export default async function LoginPage({

@@ -6,7 +6,8 @@
  * do evento (payments) → atualização da assinatura.
  *
  * Toda a lógica está no WebhookService (nenhuma regra na rota).
- * Sempre responde 200 para evitar retries infinitos (exceto assinatura inválida).
+ * Responde 401 para assinatura inválida, 500 para falha de processamento e
+ * 200 para eventos processados ou duplicados.
  */
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
@@ -16,6 +17,7 @@ import {
   WebhookError,
 } from "@/lib/billing/services/webhook.service";
 import { mapWebhookResultToDto } from "@/lib/dto/billing.dto";
+import { logger } from "@/lib/observability";
 
 export const runtime = "nodejs";
 
@@ -37,16 +39,32 @@ export async function POST(request: Request) {
       dataId,
     });
 
+    logger.info("webhook", "webhook processado", {
+      event: "webhook.processed",
+      path: "/api/billing/webhook",
+      status: result.status,
+      duplicate: result.duplicate,
+    });
     return NextResponse.json(mapWebhookResultToDto(result), { status: 200 });
   } catch (error) {
     if (error instanceof WebhookError && error.code === "INVALID_SIGNATURE") {
+      logger.warn("webhook", "assinatura inválida", {
+        event: "webhook.invalid_signature",
+        path: "/api/billing/webhook",
+      });
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
-    console.error("[billing/webhook] Erro:", error);
-    // Sempre 200 para evitar retries infinitos do Mercado Pago.
+    logger.error("webhook", "falha no processamento", {
+      event:
+        error instanceof WebhookError
+          ? "webhook.processing_failed"
+          : "webhook.unexpected_error",
+      path: "/api/billing/webhook",
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
-      { received: true, processed: false, ignored: true, duplicate: false, status: null },
-      { status: 200 }
+      { error: "Falha no processamento" },
+      { status: 500 }
     );
   }
 }

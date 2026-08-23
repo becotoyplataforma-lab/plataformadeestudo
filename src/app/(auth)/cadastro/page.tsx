@@ -12,6 +12,8 @@ import {
 export const metadata: Metadata = {
   title: "Criar conta",
   description: "Crie sua conta gratuita na ConcursoAI.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/cadastro" },
 };
 
 export default function RegisterPage() {

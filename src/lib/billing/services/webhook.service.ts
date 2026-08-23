@@ -11,7 +11,7 @@
  * REUTILIZA a integração existente (getPayment de src/lib/payments/mercadopago.ts).
  */
 import "server-only";
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   getPayment,
   getPreapproval,
@@ -69,7 +69,10 @@ export function verifyMpSignature(params: {
   const expected = createHmac("sha256", params.secret)
     .update(template)
     .digest("hex");
-  return v1 === expected;
+  if (!/^[0-9a-f]+$/i.test(v1) || v1.length !== expected.length) return false;
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const actualBuffer = Buffer.from(v1, "hex");
+  return timingSafeEqual(expectedBuffer, actualBuffer);
 }
 
 export interface WebhookContext {

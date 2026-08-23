@@ -5,7 +5,7 @@ Implementação end-to-end do fluxo apostila → conteúdo → IA → aulas → 
 desempenho → reforço, com área administrativa completa. **Nenhum push/deploy; `.env` intocado.**
 
 ## Arquivos criados (novos)
-- **Migração**: `database/migrations/2026-08-15-concursoai-e2e.sql`
+- **Migração histórica**: `database/legacy/2026-08-15-concursoai-e2e.sql`
 - **Script ops**: `scripts/apply-migration.mjs`
 - **Pipeline**: `src/lib/knowledge/storage.service.ts`,
   `services/extraction.service.ts`, `services/document-pipeline.service.ts`

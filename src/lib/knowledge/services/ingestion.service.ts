@@ -61,6 +61,85 @@ function computeHash(buffer: Buffer): string {
   return createHash("sha256").update(buffer).digest("hex");
 }
 
+/**
+ * Sanitiza o nome do arquivo para uso seguro como storage path.
+ * Remove path traversal (../, ..\), separadores de diretório e caracteres
+ * de controle/especiais. Limita a 255 chars e garante um nome não vazio.
+ */
+function sanitizeFilename(filename: string): string {
+  // Remove qualquer prefixo de diretório (Windows e POSIX).
+  let name = filename.replace(/^.*[\\/]/, "");
+  // Remove caracteres de controle e não imprimíveis.
+  name = name.replace(/[\u0000-\u001f\u007f]/g, "");
+  // Remove caracteres perigosos para storage/URL.
+  name = name.replace(/[<>:"|?*]/g, "_");
+  // Remove tentativas de path traversal remanescentes.
+  name = name.replace(/\.\.+/g, ".");
+  // Remove espaços/underscores duplicados e pontuação inicial.
+  name = name.replace(/\s+/g, " ").trim();
+  name = name.replace(/^[._]+/, "");
+  // Limita o tamanho total (mantendo a extensão).
+  if (name.length > 255) {
+    const ext = name.match(/\.[a-zA-Z0-9]+$/)?.[0] ?? "";
+    name = name.slice(0, 255 - ext.length) + ext;
+  }
+  // Garante nome não vazio.
+  if (!name) {
+    name = `documento-${Date.now()}`;
+  }
+  return name;
+}
+
+/**
+ * Verifica se um byte é um caractere ASCII imprimível (32-126) ou
+ * tab/newline/carriage-return. Usado para validar conteúdo de texto.
+ */
+function isPrintableASCII(byte: number): boolean {
+  return (byte >= 32 && byte <= 126) || byte === 0x09 || byte === 0x0a || byte === 0x0d;
+}
+
+/**
+ * Valida os "magic bytes" do arquivo contra o MIME declarado.
+ * Impede upload de arquivos com extensão/MIME falsos (ex.: executável
+ * renomeado para .pdf). Retorna true se o conteúdo é consistente.
+ */
+function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
+  const head = buffer.subarray(0, 8);
+  switch (mimeType) {
+    case "application/pdf":
+      // %PDF-
+      return head.subarray(0, 4).toString("latin1") === "%PDF";
+    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      // DOCX é um ZIP (PK\x03\x04). Além do header, verifica se o conteúdo
+      // ZIP contém a estrutura interna de um DOCX real (word/). O diretório
+      // central do ZIP lista os nomes dos arquivos internos, então "word/"
+      // aparece mesmo no conteúdo compactado. Impede que qualquer ZIP
+      // (ex.: malware.zip renomeado para .docx) passe como DOCX.
+      if (!(head[0] === 0x50 && head[1] === 0x4b && (head[2] === 0x03 || head[2] === 0x05 || head[2] === 0x07))) {
+        return false;
+      }
+      // Procura "word/" nos primeiros 8KB (cobre o diretório central do ZIP).
+      return buffer.subarray(0, 8192).includes(Buffer.from("word/", "latin1"));
+    case "text/plain":
+    case "text/markdown":
+      // Texto: rejeita bytes nulos (indicam binário disfarçado de texto)
+      // e exige que ≥95% dos bytes sejam caracteres imprimíveis (evita
+      // scripts shell/executáveis pequenos passarem como .txt).
+      if (buffer.subarray(0, 1024).includes(0x00)) return false;
+      if (buffer.length === 0) return false;
+      const printableCount = buffer.reduce(
+        (count, byte) => count + (isPrintableASCII(byte) ? 1 : 0),
+        0
+      );
+      return printableCount / buffer.length >= 0.95;
+    case "text/html":
+      // Texto: rejeita bytes nulos (indicam binário disfarçado de texto).
+      return !buffer.subarray(0, 1024).includes(0x00);
+    default:
+      return true;
+  }
+}
+
 function deriveTitle(filename: string): string {
   return filename.replace(/\.[^.]+$/, "").replace(/[_-]/g, " ").trim();
 }
@@ -99,6 +178,14 @@ export const IngestionService = {
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileHash = computeHash(buffer);
 
+    // 3.1 Validar magic bytes (conteúdo consistente com o MIME declarado).
+    if (!validateMagicBytes(buffer, file.type)) {
+      throw new IngestionError(
+        "INVALID_CONTENT",
+        "O conteúdo do arquivo não corresponde ao tipo declarado. Verifique o arquivo e tente novamente."
+      );
+    }
+
     // 4. Verificar duplicação
     const existing = await DocumentRepository.findByHash(userId, fileHash);
     if (existing) {
@@ -109,9 +196,10 @@ export const IngestionService = {
       );
     }
 
-    // 5. Storage path no R2
+    // 5. Storage path no R2 (nome sanitizado contra path traversal).
     const docId = crypto.randomUUID();
-    const storagePath = `${userId}/${docId}/${file.name}`;
+    const safeName = sanitizeFilename(file.name);
+    const storagePath = `${userId}/${docId}/${safeName}`;
 
     // 6. Upload para R2 (delegado ao API route; aqui apenas registramos)
     // O upload real para R2 é feito via Supabase Storage no API handler.
@@ -122,7 +210,7 @@ export const IngestionService = {
       id: docId,
       userId,
       type: mapMimeToType(file.type),
-      title: deriveTitle(file.name),
+      title: deriveTitle(safeName),
       storagePath,
       status: "pending",
       fileSize: file.size,

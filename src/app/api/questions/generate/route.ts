@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth/auth";
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { getEditalSubjectWeight } from "@/lib/db/repositories/edital";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
+import { rateLimit } from "@/lib/security/rate-limit";
 import {
   QuestionGenerationService,
   GenerationServiceError,
@@ -17,6 +18,7 @@ import {
 import { QuestionGenerationError } from "@/lib/ai/generation/question-generation.provider";
 import { ProviderError } from "@/lib/ai/services/deepseek-provider.service";
 
+// TODO: migrar rate limiter para Redis/Upstash quando escalar para múltiplas réplicas
 const GenerateSchema = z.object({
   document_id: z.string().uuid(),
   subject_id: z.string().uuid(),
@@ -31,6 +33,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
     const userId = session.user.id;
+
+    // Rate limit de curto prazo (anti-abuso): 10 gerações/minuto por usuário.
+    const burstRl = rateLimit("questions-burst", `user:${userId}`, 10, 60 * 1000);
+    if (!burstRl.allowed) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Muitas gerações em sequência. Aguarde alguns segundos e tente novamente.",
+        },
+        { status: 429 }
+      );
+    }
 
     const body = await request.json().catch(() => null);
     const parsed = GenerateSchema.safeParse(body ?? {});

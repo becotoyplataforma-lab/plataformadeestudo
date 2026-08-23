@@ -9,12 +9,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { ChatService, ChatError } from "@/lib/ai/services/chat.service";
 import { ChatRequestDtoSchema } from "@/lib/dto/ai.dto";
+import { rateLimit } from "@/lib/security/rate-limit";
 
+// TODO: migrar rate limiter para Redis/Upstash quando escalar para múltiplas réplicas
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+    const userId = session.user.id;
+
+    // Rate limit de curto prazo (anti-abuso): 30 mensagens/minuto por usuário.
+    const burstRl = rateLimit("ai-chat-burst", `user:${userId}`, 30, 60 * 1000);
+    if (!burstRl.allowed) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Muitas mensagens em sequência. Aguarde alguns segundos e tente novamente.",
+        },
+        { status: 429 }
+      );
     }
 
     const body = await request.json();

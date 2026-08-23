@@ -1,5 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { BrainCircuit } from "lucide-react";
+
+// Páginas de autenticação não devem ser indexadas por buscadores.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * Layout do grupo (auth) — telas de autenticação com layout centrado.

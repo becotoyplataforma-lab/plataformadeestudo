@@ -83,7 +83,7 @@ export const UrlImportService = {
     await DocumentStorageService.upload({
       userId: input.userId,
       documentId: result.documentId,
-      fileName,
+      fileName: result.storagePath.split("/").pop() ?? fileName,
       buffer: bytes,
       mimeType: mime,
     });

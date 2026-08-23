@@ -45,6 +45,9 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      - name: Check Drizzle Schema
+        run: npm run db:check
+
       - name: Lint
         run: npm run lint
 

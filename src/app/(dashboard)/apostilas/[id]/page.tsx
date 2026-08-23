@@ -9,7 +9,19 @@ import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction
 import { questions } from "@/db/schema/study";
 import { GerarQuestoes } from "@/components/apostilas/gerar-questoes";
 
-export const metadata: Metadata = { title: "Apostila" };
+// Metadata dinâmica: título da apostila no <title> (área autenticada, noindex).
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const doc = await DocumentRepository.findById(id).catch(() => null);
+  return {
+    title: doc ? doc.title : "Apostila",
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function ApostilaDetailPage({
   params,
