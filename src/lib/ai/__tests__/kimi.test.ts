@@ -11,7 +11,8 @@ describe("KimiService", () => {
   });
 
   it("lista e ordena os modelos retornados pela API Kimi", async () => {
-    process.env.KIMI_API_KEY = "kimi-test-key";
+    const testKey = "kimi-test-key";
+    process.env.KIMI_API_KEY = testKey;
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ data: [{ id: "kimi-k2" }, { id: "moonshot-v1" }] }), {
         status: 200,
@@ -21,7 +22,7 @@ describe("KimiService", () => {
     await expect(KimiService.listModels()).resolves.toEqual(["kimi-k2", "moonshot-v1"]);
     expect(fetch).toHaveBeenCalledWith(
       "https://api.moonshot.ai/v1/models",
-      expect.objectContaining({ headers: { Authorization: "Bearer kimi-test-key" } })
+      expect.objectContaining({ headers: { Authorization: `Bearer ${testKey}` } })
     );
   });
 
