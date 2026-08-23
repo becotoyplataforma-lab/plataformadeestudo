@@ -219,7 +219,11 @@ export const HybridSearchService = {
           const [queryVector] = await embeddingClient.embed([query]);
           if (queryVector) {
             vectorSearchEnabled = true;
-            const vectorLiteral = sql`${queryVector}::vector`;
+            // IMPORTANTE: pgvector espera um literal '[v1,v2,...]' como um ÚNICO
+            // parâmetro. Interpolar um number[] direto no sql faz o Drizzle
+            // expandir em N parâmetros ($1..$1024), quebrando a query. Por isso
+            // serializamos o vetor em string antes de passar como parâmetro.
+            const vectorLiteral = sql`${`[${queryVector.join(",")}]`}::vector`;
             const cosineDist = sql<number>`1 - (${embeddings.embedding} <=> ${vectorLiteral})`;
 
             vectorResults = await db

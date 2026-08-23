@@ -34,20 +34,20 @@
  *      FTS-only (imprime qual modo foi usado).
  * -----------------------------------------------------------------------------
  */
-import { embeddingClient } from "@/lib/knowledge/embedding/client";
-import { HybridSearchService } from "@/lib/knowledge/services/hybrid-search.service";
-import { db } from "@/lib/db/drizzle";
-import { authUsers } from "@/db/schema/identity";
-import { documents } from "@/db/schema/knowledge";
-import { and, eq, isNull, inArray } from "drizzle-orm";
-
-// Carrega o .env (DATABASE_URL, EMBEDDING_API_URL, etc.) fora do contexto
-// Next.js. Node >= 20.6 suporta process.loadEnvFile().
+// IMPORTANTE: os modulos de knowledge importam `server-only` e leem `env`
+// (src/lib/env.ts) no momento da importacao. Como `import` estatico e hoisted,
+// ele rodaria ANTES de process.loadEnvFile() e capturaria EMBEDDING_API_URL
+// como undefined. Por isso carregamos o .env primeiro e usamos import dinamico
+// dentro de main(), garantindo que o env.ts leia o process.env ja populado.
 try {
   process.loadEnvFile();
 } catch {
   // .env ausente: deixa o env.ts reportar o que falta.
 }
+
+// Forca este arquivo a ser um modulo (nao script global), evitando colisao de
+// nomes (parseArgs/main) com outros scripts no mesmo compilacao tsc.
+export {};
 
 // Dimensao esperada da coluna `embeddings.embedding` (src/db/schema/knowledge.ts).
 const EXPECTED_DIMENSION = 1024;
@@ -76,6 +76,8 @@ function parseArgs(): Record<string, string> {
 
 async function resolveUserId(explicit?: string): Promise<string> {
   if (explicit) return explicit;
+  const { db } = await import("@/lib/db/drizzle");
+  const { authUsers } = await import("@/db/schema/identity");
   const [user] = await db
     .select({ id: authUsers.id, email: authUsers.email })
     .from(authUsers)
@@ -93,6 +95,16 @@ async function main() {
   const args = parseArgs();
   const userId = await resolveUserId(args["user-id"]);
   const query = args["query"] ?? TEST_TEXT;
+
+  // Import dinamico APOS process.loadEnvFile() para que o env.ts (src/lib/env.ts)
+  // leia o process.env ja populado com EMBEDDING_API_URL/KEY.
+  const { embeddingClient } = await import("@/lib/knowledge/embedding/client");
+  const { HybridSearchService } = await import(
+    "@/lib/knowledge/services/hybrid-search.service"
+  );
+  const { db } = await import("@/lib/db/drizzle");
+  const { documents } = await import("@/db/schema/knowledge");
+  const { and, eq, isNull, inArray } = await import("drizzle-orm");
 
   console.log("\n=== 1. Chamada real ao servico de embeddings ===");
   console.log(`[INFO] EMBEDDING_API_URL configurado: ${embeddingClient.isConfigured()}`);

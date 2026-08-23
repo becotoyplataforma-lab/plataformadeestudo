@@ -9,8 +9,17 @@
  * - OPENAI não é utilizado para embeddings
  *
  * Endpoint esperado: POST {EMBEDDING_API_URL}
- *   Request:  { "texts": ["...", "..."], "model": "BAAI/bge-m3" }
- *   Response: { "embeddings": [[...], [...]], "model": "BAAI/bge-m3", "dimension": 1024 }
+ *
+ * Suporta dois formatos:
+ *  1) OpenAI-compatible (padrão Cloudflare Workers AI /v1/embeddings):
+ *       Request:  { "model": "@cf/baai/bge-m3", "input": ["...", "..."] }
+ *       Response: { "data": [{ "embedding": [...], "index": 0 }], "model": "...", "usage": {...} }
+ *  2) Formato nativo ConcursoAI (self-hosted BAAI/bge-m3):
+ *       Request:  { "texts": ["...", "..."], "model": "BAAI/bge-m3" }
+ *       Response: { "embeddings": [[...], [...]], "model": "BAAI/bge-m3", "dimension": 1024 }
+ *
+ * O cliente envia o formato OpenAI-compatible e aceita ambos os formatos de
+ * resposta, para ser compatível com Cloudflare Workers AI e self-hosted.
  */
 import { env } from "@/lib/env";
 
@@ -66,7 +75,7 @@ export const embeddingClient: EmbeddingClient = {
     const response = await fetch(endpoint, {
       method: "POST",
       headers,
-      body: JSON.stringify({ texts, model: MODEL }),
+      body: JSON.stringify({ model: MODEL, input: texts }),
       signal: AbortSignal.timeout(30_000),
     });
 
@@ -77,18 +86,36 @@ export const embeddingClient: EmbeddingClient = {
     }
 
     const data = (await response.json()) as {
+      // Formato OpenAI-compatible (Cloudflare Workers AI /v1/embeddings).
+      data?: Array<{ embedding?: number[]; index?: number }>;
+      // Formato nativo ConcursoAI (self-hosted BAAI/bge-m3).
       embeddings?: unknown;
       dimension?: number;
       model?: string;
     };
 
-    if (!Array.isArray(data.embeddings) || data.embeddings.length !== texts.length) {
+    let vectors: number[][];
+
+    if (Array.isArray(data.data)) {
+      // OpenAI-compatible: data[].embedding
+      vectors = data.data.map((item) => item.embedding ?? []);
+    } else if (Array.isArray(data.embeddings)) {
+      // Nativo: embeddings: number[][]
+      vectors = data.embeddings as number[][];
+    } else {
       throw new EmbeddingClientError(
-        "Resposta inválida do serviço de embeddings (esperado array 'embeddings')."
+        "Resposta inválida do serviço de embeddings (esperado 'data[].embedding' " +
+          "ou array 'embeddings')."
       );
     }
 
-    const vectors = data.embeddings as number[][];
+    if (vectors.length !== texts.length) {
+      throw new EmbeddingClientError(
+        "Resposta inválida do serviço de embeddings (número de vetores não " +
+          "corresponde ao número de textos enviados)."
+      );
+    }
+
     for (const v of vectors) {
       if (!Array.isArray(v) || v.length !== EMBEDDING_DIMENSION) {
         throw new EmbeddingClientError(
