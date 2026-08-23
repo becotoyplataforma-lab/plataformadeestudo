@@ -24,6 +24,10 @@ const serverEnvSchema = z.object({
   DEEPSEEK_MODEL_FLASH: z.string().default("deepseek-chat"),
   DEEPSEEK_MODEL_PRO: z.string().default("deepseek-reasoner"),
 
+  // Kimi / Moonshot (API compatível com OpenAI).
+  KIMI_API_KEY: z.string().optional(),
+  KIMI_BASE_URL: z.string().url().default("https://api.moonshot.ai/v1"),
+
   // Serviço de embeddings (BAAI/bge-m3 — self-hosted ou API).
   // Obrigatório em produção para ativar a busca vetorial (docs/10-EMBEDDING-STANDARD).
   EMBEDDING_API_URL: z.string().url().optional(),

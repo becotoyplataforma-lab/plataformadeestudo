@@ -28,6 +28,8 @@ Copie `infra/.env.production.example` → `.env.production` (na RAIZ do projeto)
 | `DEEPSEEK_BASE_URL` | ✅ | `https://api.deepseek.com` |
 | `DEEPSEEK_MODEL_FLASH` | ✅ | `deepseek-chat` |
 | `DEEPSEEK_MODEL_PRO` | ✅ | `deepseek-reasoner` |
+| `KIMI_API_KEY` | ⬜ | Chave Moonshot para descoberta de modelos |
+| `KIMI_BASE_URL` | ✅ | `https://api.moonshot.ai/v1` |
 | `EMBEDDING_API_URL` | ✅ | Ativa busca vetorial (RAG) |
 | `EMBEDDING_API_KEY` | ⬜ | Se o serviço exigir Bearer |
 | `EMBEDDING_MODEL` | ✅ | `BAAI/bge-m3` |
