@@ -73,8 +73,12 @@ if (!result.success) {
 // Fail-fast de segurança: em produção, AUTH_SECRET NUNCA pode ser o default
 // de desenvolvimento. Se não foi definido explicitamente no ambiente, o app
 // deve crashar na startup em vez de rodar com uma chave de assinatura pública.
+const isNextProductionBuild =
+  process.env.NEXT_PHASE === "phase-production-build";
+
 if (
   process.env.NODE_ENV === "production" &&
+  !isNextProductionBuild &&
   (!process.env.AUTH_SECRET ||
     process.env.AUTH_SECRET === "dev-secret-change-me" ||
     process.env.AUTH_SECRET ===
