@@ -17,18 +17,19 @@ export function AdminSidebar({
     <aside
       className={cn(
         "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-white/10 bg-[#0b1120]/95 backdrop-blur transition-[width] duration-200 ease-in-out lg:flex",
+        "bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.06),transparent_45%),#0b1120]",
         collapsed ? "w-16" : "w-64"
       )}
     >
       {/* Logo / título */}
       <div
         className={cn(
-          "flex h-14 shrink-0 items-center gap-2.5 border-b border-white/10 px-3",
-          collapsed ? "justify-center" : "px-4"
+          "flex h-14 shrink-0 items-center gap-2.5 border-b border-white/10",
+          collapsed ? "justify-center px-3" : "px-4"
         )}
       >
         <Link href="/admin" className="flex items-center gap-2.5 overflow-hidden">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/15 text-sm font-black text-cyan-300 ring-1 ring-inset ring-cyan-400/30">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400/25 to-blue-500/25 text-sm font-black text-cyan-300 ring-1 ring-inset ring-cyan-400/30">
             C
           </span>
           {!collapsed && (

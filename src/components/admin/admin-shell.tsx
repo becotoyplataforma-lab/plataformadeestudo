@@ -80,7 +80,7 @@ export function AdminShell({
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-[#0b1120] p-0 text-slate-200">
               <div className="flex h-14 items-center gap-2.5 border-b border-white/10 px-4">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 text-sm font-black text-cyan-300 ring-1 ring-inset ring-cyan-400/30">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400/25 to-blue-500/25 text-sm font-black text-cyan-300 ring-1 ring-inset ring-cyan-400/30">
                   C
                 </span>
                 <span className="flex min-w-0 flex-col leading-tight">

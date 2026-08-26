@@ -98,10 +98,13 @@ export function AdminNavContent({
 
   return (
     <nav className="flex-1 overflow-y-auto px-2 py-3">
-      {ADMIN_NAV_GROUPS.map((group) => (
-        <div key={group.label} className="mb-4">
+      {ADMIN_NAV_GROUPS.map((group, groupIndex) => (
+        <div
+          key={group.label}
+          className={cn(groupIndex > 0 && !collapsed && "mt-5 border-t border-white/5 pt-4")}
+        >
           {!collapsed && (
-            <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+            <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
               {group.label}
             </p>
           )}
@@ -119,17 +122,27 @@ export function AdminNavContent({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     active
-                      ? "bg-cyan-500/15 text-cyan-200 ring-1 ring-inset ring-cyan-400/30"
+                      ? "bg-cyan-500/15 text-cyan-200"
                       : "text-slate-400 hover:bg-white/5 hover:text-slate-200",
                     collapsed && "justify-center px-2"
                   )}
                 >
+                  {!collapsed && (
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-cyan-400 transition-opacity",
+                        active ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  )}
                   <Icon
                     className={cn(
-                      "h-4 w-4 shrink-0",
-                      active ? "text-cyan-300" : "text-slate-500 group-hover:text-slate-300"
+                      "h-4 w-4 shrink-0 transition-colors",
+                      active
+                        ? "text-cyan-300"
+                        : "text-slate-500 group-hover:text-slate-300"
                     )}
                   />
                   {!collapsed && <span className="truncate">{item.label}</span>}
