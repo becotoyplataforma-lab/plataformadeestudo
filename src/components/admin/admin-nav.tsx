@@ -76,7 +76,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   },
   {
     label: "Sistema",
-    items: [{ href: "/admin/ia", label: "IA", icon: Cpu }],
+    items: [
+      { href: "/admin/ia", label: "IA", icon: Cpu },
+      { href: "/admin/admins", label: "Administradores", icon: ShieldCheck },
+    ],
   },
 ];
 

@@ -19,6 +19,7 @@ describe("AdminGuardService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.ADMIN_EMAILS;
+    delete process.env.SUPERADMIN_EMAILS;
     mockFindByKey.mockResolvedValue(null);
   });
 
@@ -60,6 +61,67 @@ describe("AdminGuardService", () => {
     process.env.ADMIN_EMAILS = "a@x.com";
     await expect(
       AdminGuardService.requireAdmin({ userId: "u1", email: "a@x.com" })
+    ).resolves.toBeUndefined();
+  });
+
+  // ===== SUPERADMIN =====
+
+  it("isSuperadminEmail aceita e-mail da allowlist de ambiente", async () => {
+    process.env.SUPERADMIN_EMAILS = "root@x.com";
+    await expect(
+      AdminGuardService.isSuperadminEmail("ROOT@x.com")
+    ).resolves.toBe(true);
+  });
+
+  it("isSuperadminEmail aceita e-mail de system_settings", async () => {
+    mockFindByKey.mockResolvedValue({
+      id: "1",
+      key: "superadmin.emails",
+      value: ["root@x.com"],
+      description: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await expect(
+      AdminGuardService.isSuperadminEmail("root@x.com")
+    ).resolves.toBe(true);
+  });
+
+  it("isSuperadminEmail rejeita e-mail fora da allowlist", async () => {
+    process.env.SUPERADMIN_EMAILS = "root@x.com";
+    await expect(
+      AdminGuardService.isSuperadminEmail("outro@x.com")
+    ).resolves.toBe(false);
+  });
+
+  it("isAdminOrSuperadmin aceita superadmin mesmo sem ser admin", async () => {
+    process.env.SUPERADMIN_EMAILS = "root@x.com";
+    delete process.env.ADMIN_EMAILS;
+    await expect(
+      AdminGuardService.isAdminOrSuperadmin("root@x.com")
+    ).resolves.toBe(true);
+  });
+
+  it("isAdminOrSuperadmin aceita admin comum", async () => {
+    process.env.ADMIN_EMAILS = "a@x.com";
+    delete process.env.SUPERADMIN_EMAILS;
+    await expect(
+      AdminGuardService.isAdminOrSuperadmin("a@x.com")
+    ).resolves.toBe(true);
+  });
+
+  it("requireSuperadmin lança FORBIDDEN para não-superadmin", async () => {
+    process.env.ADMIN_EMAILS = "a@x.com";
+    delete process.env.SUPERADMIN_EMAILS;
+    await expect(
+      AdminGuardService.requireSuperadmin({ userId: "u1", email: "a@x.com" })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("requireSuperadmin passa para superadmin", async () => {
+    process.env.SUPERADMIN_EMAILS = "root@x.com";
+    await expect(
+      AdminGuardService.requireSuperadmin({ userId: "u1", email: "root@x.com" })
     ).resolves.toBeUndefined();
   });
 });

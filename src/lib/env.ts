@@ -61,6 +61,11 @@ const serverEnvSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
   R2_ENDPOINT: z.preprocess(emptyToUndefined, z.string().url().optional()),
+
+  // Superadmin — nível administrativo máximo (docs/15 §2).
+  // Lista separada por vírgula de e-mails com acesso total (gerenciar admins,
+  // configurações do sistema, auditoria). Fallback: system_settings['superadmin.emails'].
+  SUPERADMIN_EMAILS: z.string().optional(),
 });
 
 const result = serverEnvSchema.safeParse(process.env);

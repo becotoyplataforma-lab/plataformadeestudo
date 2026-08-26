@@ -21,7 +21,9 @@ export default async function AdminLayout({
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const isAdmin = await AdminGuardService.isAdminEmail(session.user.email ?? null);
+  const isAdmin = await AdminGuardService.isAdminOrSuperadmin(
+    session.user.email ?? null
+  );
   if (!isAdmin) redirect("/dashboard");
 
   return (
