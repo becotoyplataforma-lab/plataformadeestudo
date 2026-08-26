@@ -13,6 +13,7 @@ import type { AIModel } from "@/lib/ai/types";
 import { DocumentRepository } from "../repositories/document.repository";
 import { DocumentChunkRepository } from "../repositories/chunk.repository";
 import { DocumentStorageService } from "../storage.service";
+import { storageBackend } from "../storage/backend";
 import { DocumentPipelineService } from "./document-pipeline.service";
 import { DocumentSubjectRepository } from "../repositories/junction.repository";
 import { KnowledgeSubjectRepository } from "../repositories/subject.repository";
@@ -161,6 +162,7 @@ export const ConsolidationService = {
       type: "markdown",
       title,
       storagePath: `${input.userId}/${id}/${fileName}`,
+      storageBackend: storageBackend(),
       status: "pending",
       fileSize: buffer.byteLength,
       mimeType: "text/markdown",

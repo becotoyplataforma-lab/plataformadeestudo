@@ -217,4 +217,37 @@ export const DocumentRepository = {
       .orderBy(sql`${documents.createdAt} DESC`)
       .limit(limit);
   },
+
+  /**
+   * Listar documentos com storage_backend específico (migração).
+   * @param backend "supabase" | "r2"
+   * @param limit/offset paginação
+   */
+  async listByStorageBackend(backend: string, limit = 100, offset = 0) {
+    return db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.storageBackend, backend),
+          isNull(documents.deletedAt)
+        )
+      )
+      .orderBy(sql`${documents.createdAt} ASC`)
+      .limit(limit)
+      .offset(offset);
+  },
+
+  /**
+   * Marcar documento como migrado para o backend informado.
+   * Usado pela rotina de migração R2 após validar o objeto no destino.
+   */
+  async updateStorageBackend(id: string, backend: "r2" | "supabase") {
+    const [row] = await db
+      .update(documents)
+      .set({ storageBackend: backend, updatedAt: new Date() })
+      .where(eq(documents.id, id))
+      .returning();
+    return row ?? null;
+  },
 };

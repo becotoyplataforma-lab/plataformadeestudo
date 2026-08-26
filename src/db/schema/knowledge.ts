@@ -92,6 +92,7 @@ export const documents = pgTable(
     type: documentTypeEnum("type").notNull(),
     title: text("title").notNull(),
     storagePath: text("storage_path").notNull(),
+    storageBackend: text("storage_backend").notNull().default("supabase"),
     status: documentStatusEnum("status").notNull().default("pending"),
     fileSize: integer("file_size"),
     mimeType: text("mime_type"),
@@ -135,6 +136,9 @@ export const documents = pgTable(
       .where(sql`${t.deletedAt} is null`),
     index("idx_documents_review_status")
       .on(t.reviewStatus)
+      .where(sql`${t.deletedAt} is null`),
+    index("idx_documents_storage_backend")
+      .on(t.storageBackend)
       .where(sql`${t.deletedAt} is null`),
   ]
 );

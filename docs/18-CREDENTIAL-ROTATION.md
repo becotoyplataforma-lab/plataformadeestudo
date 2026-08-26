@@ -7,6 +7,12 @@
 > **Contexto:** credenciais foram expostas durante o processo de deploy (chat/terminal).
 > Antes de qualquer acesso público amplo, rotacionar TODAS as chaves abaixo.
 
+## ⚠️ Exposição registrada — 2026-08-26
+
+- **Senha do PostgreSQL** (`DATABASE_URL`) foi compartilhada em texto puro no chat durante a correção do bloqueador de conexão.
+- **Ação pendente:** rotacionar a senha do banco (item 1 abaixo) **antes do uso público amplo**.
+- A senha atual foi usada apenas para restaurar a conexão; **não é mais considerada segura**.
+
 ## Regras de segurança
 
 - **Nunca** colar chaves/senhas no chat ou em logs.

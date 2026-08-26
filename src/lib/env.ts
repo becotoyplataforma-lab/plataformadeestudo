@@ -49,7 +49,13 @@ const serverEnvSchema = z.object({
   EMBEDDING_MODEL: z.string().default("BAAI/bge-m3"),
   EMBEDDING_DIMENSION: z.coerce.number().int().default(1024),
 
-  // Cloudflare R2 (storage S3-compatível). Opcional: sem config, usa Supabase Storage.
+  // Cloudflare R2 (storage S3-compatível).
+  // STORAGE_BACKEND decide o backend de forma EXPLÍCITA (sem fallback automático):
+  //   "r2"        → somente Cloudflare R2 (falha se R2 não configurado)
+  //   "supabase"  → somente Supabase Storage
+  //   ausente     → fail-fast em produção (dev/teste assume "supabase")
+  STORAGE_BACKEND: z
+    .preprocess(emptyToUndefined, z.enum(["r2", "supabase"]).optional()),
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),

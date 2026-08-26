@@ -15,6 +15,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   HeadBucketCommand,
+  HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 
 const DEFAULT_BUCKET = "documents";
@@ -45,6 +46,8 @@ function client(): S3Client | null {
     region: "auto",
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
+    // Retry razoável para falhas transitórias de rede (default AWS é 3).
+    maxAttempts: 3,
   });
 }
 
@@ -103,6 +106,56 @@ export const R2StorageService = {
       throw new R2StorageError("DOWNLOAD_FAILED", "Arquivo não encontrado no R2.");
     }
     return Buffer.from(bytes);
+  },
+
+  /**
+   * Verifica se o objeto existe no R2 (HeadObject).
+   * Retorna true se encontrado; false se não existe (404).
+   * Lança R2StorageError para outros erros (credenciais, rede, etc.).
+   */
+  async exists(storagePath: string): Promise<boolean> {
+    const c = client();
+    if (!c) throw new R2StorageError("NOT_CONFIGURED", "R2 não configurado.");
+    try {
+      await c.send(new HeadObjectCommand({ Bucket: bucket(), Key: storagePath }));
+      return true;
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "name" in error &&
+        (error as { name?: string }).name === "NotFound"
+      ) {
+        return false;
+      }
+      throw new R2StorageError(
+        "HEAD_FAILED",
+        error instanceof Error ? error.message : "Falha ao consultar objeto no R2."
+      );
+    }
+  },
+
+  /**
+   * Retorna metadados do objeto (ContentLength e ContentType).
+   * Lança R2StorageError se o objeto não existir.
+   */
+  async head(storagePath: string): Promise<{ contentLength: number; contentType: string }> {
+    const c = client();
+    if (!c) throw new R2StorageError("NOT_CONFIGURED", "R2 não configurado.");
+    try {
+      const res = await c.send(
+        new HeadObjectCommand({ Bucket: bucket(), Key: storagePath })
+      );
+      return {
+        contentLength: res.ContentLength ?? 0,
+        contentType: res.ContentType ?? "application/octet-stream",
+      };
+    } catch (error) {
+      throw new R2StorageError(
+        "HEAD_FAILED",
+        error instanceof Error ? error.message : "Falha ao consultar objeto no R2."
+      );
+    }
   },
 
   async remove(storagePath: string): Promise<void> {

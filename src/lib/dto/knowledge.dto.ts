@@ -22,6 +22,9 @@ export const DocumentDtoSchema = z.object({
   type: z.enum(["pdf", "docx", "txt", "markdown", "html", "edital", "apostila"]),
   title: z.string(),
   storage_path: z.string(),
+  // storage_backend é opcional no DTO para manter compatibilidade com
+  // respostas/consumidores existentes durante a transição de storage.
+  storage_backend: z.enum(["r2", "supabase"]).optional().default("supabase"),
   status: z.enum(["pending", "processing", "processed", "chunked", "indexing", "indexed", "failed"]),
   file_size: z.number().int().nonnegative().nullable(),
   mime_type: z.string().nullable(),
@@ -153,6 +156,7 @@ export function mapDocumentToDto(row: DocumentRow): DocumentDto {
     type: row.type,
     title: row.title,
     storage_path: row.storagePath,
+    storage_backend: (row.storageBackend as "r2" | "supabase" | undefined) ?? "supabase",
     status: row.status,
     file_size: row.fileSize,
     mime_type: row.mimeType,

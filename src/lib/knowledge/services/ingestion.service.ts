@@ -8,6 +8,7 @@
  */
 import { createHash } from "crypto";
 import { DocumentRepository } from "../repositories/document.repository";
+import { storageBackend } from "../storage/backend";
 
 // ============================================================
 // Tipos
@@ -24,6 +25,7 @@ export interface IngestionInput {
 export interface IngestionOutput {
   documentId: string;
   storagePath: string;
+  storageBackend: string;
   fileHash: string;
   fileSize: number;
   mimeType: string;
@@ -201,9 +203,8 @@ export const IngestionService = {
     const safeName = sanitizeFilename(file.name);
     const storagePath = `${userId}/${docId}/${safeName}`;
 
-    // 6. Upload para R2 (delegado ao API route; aqui apenas registramos)
-    // O upload real para R2 é feito via Supabase Storage no API handler.
-    // O Service registra a intenção; o handler faz o upload físico.
+    // 6. Registrar storage_backend explícito (definido por STORAGE_BACKEND).
+    // O upload físico é delegado ao API handler (DocumentStorageService.upload).
 
     // 7. Criar documento no banco
     const document = await DocumentRepository.create({
@@ -212,6 +213,7 @@ export const IngestionService = {
       type: mapMimeToType(file.type),
       title: deriveTitle(safeName),
       storagePath,
+      storageBackend: storageBackend(),
       status: "pending",
       fileSize: file.size,
       mimeType: file.type,
@@ -225,6 +227,7 @@ export const IngestionService = {
     return {
       documentId: document.id,
       storagePath: document.storagePath,
+      storageBackend: document.storageBackend ?? "supabase",
       fileHash: document.fileHash ?? "",
       fileSize: document.fileSize ?? 0,
       mimeType: document.mimeType ?? "",

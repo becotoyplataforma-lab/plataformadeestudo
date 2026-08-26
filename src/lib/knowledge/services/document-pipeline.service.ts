@@ -59,7 +59,10 @@ export const DocumentPipelineService = {
     });
 
     try {
-      const buffer = await DocumentStorageService.download(doc.storagePath);
+      const buffer = await DocumentStorageService.download(
+        doc.storagePath,
+        doc.storageBackend as "r2" | "supabase" | undefined
+      );
       const { text, pageCount } = await DocumentExtractionService.extract(
         buffer,
         doc.mimeType ?? "",
