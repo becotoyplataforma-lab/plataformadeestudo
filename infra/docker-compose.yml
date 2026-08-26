@@ -11,7 +11,7 @@ services:
   app:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: infra/Dockerfile
       # Estágio de runtime (servidor Next.js standalone). O estágio `migrator`
       # é usado apenas pelo docker-compose.migrate.yml (job one-off).
       target: runner
