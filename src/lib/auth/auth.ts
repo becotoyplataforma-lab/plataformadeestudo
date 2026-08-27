@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
@@ -7,6 +8,9 @@ import type { JWT } from "next-auth/jwt";
 /**
  * Configuração NextAuth (Auth.js v5).
  * - Credenciais validam contra o Supabase Auth (admin client).
+ * - Google OAuth: o usuário é sincronizado com o Supabase Auth (fonte de
+ *   verdade) no callback `signIn` — se o e-mail ainda não existir, é criado
+ *   via admin.createUser; se existir, apenas vincula o id.
  * - A sessão (JWT) carrega o user_id do Supabase para uso no banco.
  */
 
@@ -50,8 +54,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } as User;
       },
     }),
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // Sincroniza usuários do Google com o Supabase Auth (fonte de verdade).
+      if (account?.provider === "google" && user.email) {
+        const supabase = createAdminClient();
+        const { data: existing, error: listError } =
+          await supabase.auth.admin.listUsers();
+
+        if (listError || !existing) {
+          console.error("[auth/google] Falha ao consultar usuários:", listError?.message);
+          return false;
+        }
+
+        const found = existing.users.find(
+          (u: { email?: string | null }) =>
+            u.email?.toLowerCase() === user.email!.toLowerCase()
+        );
+
+        if (found) {
+          // Já existe no Supabase — usa o id do Supabase como id da sessão.
+          user.id = found.id;
+        } else {
+          // Cria no Supabase para manter a fonte de verdade consistente.
+          const { data: created, error: createError } =
+            await supabase.auth.admin.createUser({
+              email: user.email,
+              email_confirm: true,
+              user_metadata: {
+                full_name: user.name ?? user.email,
+                avatar_url: user.image ?? null,
+              },
+            });
+
+          if (createError || !created.user) {
+            console.error("[auth/google] Falha ao criar usuário:", createError?.message);
+            return false;
+          }
+          user.id = created.user.id;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
