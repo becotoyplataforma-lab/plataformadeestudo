@@ -21,6 +21,9 @@ import {
   Database,
   Upload,
   BarChart3,
+  DollarSign,
+  CreditCard,
+  Banknote,
   type LucideIcon,
 } from "lucide-react";
 
@@ -44,6 +47,14 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   {
     label: "Pessoas",
     items: [{ href: "/admin/alunos", label: "Alunos", icon: Users }],
+  },
+  {
+    label: "Financeiro",
+    items: [
+      { href: "/admin/financeiro", label: "Visão geral", icon: DollarSign, exact: true },
+      { href: "/admin/financeiro/assinaturas", label: "Assinaturas", icon: CreditCard },
+      { href: "/admin/financeiro/pagamentos", label: "Pagamentos", icon: Banknote },
+    ],
   },
   {
     label: "Concursos",

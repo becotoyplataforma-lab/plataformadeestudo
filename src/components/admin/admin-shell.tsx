@@ -24,6 +24,9 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   aulas: "Aulas",
   avatares: "Avatares",
   ia: "IA",
+  financeiro: "Financeiro",
+  assinaturas: "Assinaturas",
+  pagamentos: "Pagamentos",
 };
 
 const FULL_PATH_LABELS: Record<string, string> = {

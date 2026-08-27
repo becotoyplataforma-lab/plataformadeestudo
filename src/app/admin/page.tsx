@@ -44,6 +44,7 @@ export default async function AdminPage() {
   const financialCards: {
     label: string;
     value: string;
+    href?: string;
     icon: LucideIcon;
     iconClassName: string;
     trend?: { direction: "up" | "down" | "neutral"; text: string };
@@ -51,6 +52,7 @@ export default async function AdminPage() {
     {
       label: "MRR",
       value: formatBRL(stats.mrrCents),
+      href: "/admin/financeiro",
       icon: TrendingUp,
       iconClassName: "text-cyan-300",
       trend: { direction: "up", text: "Receita recorrente mensal" },
@@ -58,6 +60,7 @@ export default async function AdminPage() {
     {
       label: "Receita do mês",
       value: formatBRL(stats.monthRevenueCents),
+      href: "/admin/financeiro",
       icon: Banknote,
       iconClassName: "text-emerald-300",
       trend: { direction: "up", text: "Pagamentos aprovados" },
@@ -65,12 +68,14 @@ export default async function AdminPage() {
     {
       label: "Assinaturas ativas",
       value: formatInt(stats.activeSubscriptions),
+      href: "/admin/financeiro",
       icon: Users,
       iconClassName: "text-blue-300",
     },
     {
       label: "Inadimplência",
       value: formatInt(stats.pastDueSubscriptions + stats.pendingPaymentsMonth),
+      href: "/admin/financeiro",
       icon: AlertTriangle,
       iconClassName: "text-amber-300",
       trend: {
@@ -81,6 +86,7 @@ export default async function AdminPage() {
     {
       label: "Churn do mês",
       value: formatInt(stats.churnMonth),
+      href: "/admin/financeiro",
       icon: UserMinus,
       iconClassName: "text-rose-300",
       trend: {
@@ -91,6 +97,7 @@ export default async function AdminPage() {
     {
       label: "Novos pagamentos",
       value: formatInt(stats.newPaymentsMonth),
+      href: "/admin/financeiro",
       icon: CreditCard,
       iconClassName: "text-violet-300",
       trend: { direction: "up", text: "Aprovados no mês" },
@@ -171,6 +178,7 @@ export default async function AdminPage() {
               key={c.label}
               label={c.label}
               value={c.value}
+              href={c.href}
               icon={c.icon}
               iconClassName={c.iconClassName}
               trend={c.trend}
