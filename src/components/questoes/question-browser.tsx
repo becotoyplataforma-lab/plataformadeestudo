@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,10 +34,13 @@ export function QuestionBrowser({
   subjects,
   userId,
 }: Props) {
+  const searchParams = useSearchParams();
+  const initialSubjectId = searchParams.get("subject_id") ?? "all";
+
   const [questions, setQuestions] = React.useState<Question[]>(initialQuestions);
   const [total, setTotal] = React.useState(initialTotal);
   const [page, setPage] = React.useState(1);
-  const [subjectId, setSubjectId] = React.useState("all");
+  const [subjectId, setSubjectId] = React.useState(initialSubjectId);
   const [banca, setBanca] = React.useState("all");
   const [nivel, setNivel] = React.useState("all");
   const [search, setSearch] = React.useState("");
