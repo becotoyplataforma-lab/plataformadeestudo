@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { LandingLogo } from "@/components/landing/landing-logo";
 
 export const metadata: Metadata = {
   title: "ConcursoAI — Estudos com IA para concursos públicos",
@@ -110,14 +111,7 @@ export default function LandingPage() {
       {/* ============ NAVBAR ============ */}
       <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-black/60 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 text-white">
-              <BrainCircuit className="h-5 w-5" />
-            </span>
-            <span>
-              Concurso<span className="text-cyan-400">AI</span>
-            </span>
-          </Link>
+          <LandingLogo />
 
           <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-300 md:flex">
             <a href="#recursos" className="hover:text-white transition-colors">FUNCIONALIDADES</a>
@@ -200,6 +194,12 @@ export default function LandingPage() {
                 <span className="rounded-full bg-slate-800 border border-white/5 px-2.5 py-0.5 text-xs font-semibold text-slate-200">PRF 2026</span>
                 <span className="rounded-full bg-slate-800 border border-white/5 px-2.5 py-0.5 text-xs font-semibold text-slate-200">INSS</span>
                 <span className="rounded-full bg-slate-800 border border-white/5 px-2.5 py-0.5 text-xs font-semibold text-slate-200">Petrobrás</span>
+              </div>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-cyan-300">
+                  <LineChart className="h-3 w-3" />
+                  Prévia do seu dashboard
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="rounded-2xl bg-slate-800/60 border border-white/5 p-4">
