@@ -205,6 +205,7 @@ import { POST as postBatch } from "@/app/api/admin/apostilas/batch/route";
 import { GET as getSubjects, POST as postSubjects } from "@/app/api/admin/subjects/route";
 import { GET as getSetting } from "@/app/api/admin/settings/[key]/route";
 import { AdminError } from "@/lib/administration/services/admin-guard.service";
+import { IngestionError } from "@/lib/knowledge/services/ingestion.service";
 
 const ADMIN = { userId: "a1", email: "admin@x.com" };
 const UUID = "00000000-0000-0000-0000-000000000001";
@@ -404,6 +405,34 @@ describe("Autorização admin nas APIs corrigidas", () => {
   describe("apostilas/batch", () => {
     it("POST sem sessão → 401", () => expectUnauthorized(() => postBatch(formReq())));
     it("POST não-admin → 403", () => expectForbidden(() => postBatch(formReq())));
+
+    it("POST admin → arquivo com conteúdo inválido é reportado como falha (INVALID_CONTENT)", async () => {
+      // Simula o IngestionService rejeitando um arquivo cujo binário não
+      // corresponde à extensão (ex.: executável renomeado para .pdf).
+      mockIngest.mockRejectedValue(
+        new IngestionError(
+          "INVALID_CONTENT",
+          "O conteúdo do arquivo não corresponde ao tipo declarado."
+        )
+      );
+      const res = await postBatch(formReq());
+      expect(res.status).toBe(207);
+      const body = await res.json();
+      expect(body.okCount).toBe(0);
+      expect(body.failCount).toBe(1);
+      expect(body.results[0].status).toBe("failed");
+      expect(body.results[0].code).toBe("INVALID_CONTENT");
+    });
+
+    it("POST admin → arquivo com tipo não permitido é reportado como falha (INVALID_TYPE)", async () => {
+      mockIngest.mockRejectedValue(
+        new IngestionError("INVALID_TYPE", "Tipo de arquivo não permitido.")
+      );
+      const res = await postBatch(formReq());
+      expect(res.status).toBe(207);
+      const body = await res.json();
+      expect(body.results[0].code).toBe("INVALID_TYPE");
+    });
   });
 
   describe("subjects", () => {

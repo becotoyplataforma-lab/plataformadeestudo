@@ -124,9 +124,10 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
       return buffer.subarray(0, 8192).includes(Buffer.from("word/", "latin1"));
     case "text/plain":
     case "text/markdown":
+    case "text/html":
       // Texto: rejeita bytes nulos (indicam binário disfarçado de texto)
       // e exige que ≥95% dos bytes sejam caracteres imprimíveis (evita
-      // scripts shell/executáveis pequenos passarem como .txt).
+      // scripts shell/executáveis pequenos passarem como .txt/.html).
       if (buffer.subarray(0, 1024).includes(0x00)) return false;
       if (buffer.length === 0) return false;
       const printableCount = buffer.reduce(
@@ -134,9 +135,6 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
         0
       );
       return printableCount / buffer.length >= 0.95;
-    case "text/html":
-      // Texto: rejeita bytes nulos (indicam binário disfarçado de texto).
-      return !buffer.subarray(0, 1024).includes(0x00);
     default:
       return true;
   }

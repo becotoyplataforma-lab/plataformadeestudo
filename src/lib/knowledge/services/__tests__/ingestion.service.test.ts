@@ -174,6 +174,88 @@ describe("IngestionService", () => {
       ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
     });
 
+    it("rejeita binário disfarçado de HTML (bytes nulos)", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      const binary = new Uint8Array([0x3c, 0x68, 0x74, 0x6d, 0x6c, 0x00, 0x01]); // "<html" + nulos
+      const file = new File([binary], "falso.html", { type: "text/html" });
+
+      await expect(
+        IngestionService.ingest({ userId: "user-1", file })
+      ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
+    });
+
+    it("rejeita HTML com menos de 95% de caracteres imprimíveis", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      // 50% de bytes não imprimíveis (0x80-0xFF) → deve ser rejeitado.
+      const bytes = new Uint8Array(200);
+      for (let i = 0; i < 200; i++) {
+        bytes[i] = i % 2 === 0 ? 0x41 : 0x80; // alterna 'A' e byte não imprimível
+      }
+      const file = new File([bytes], "binario.html", { type: "text/html" });
+
+      await expect(
+        IngestionService.ingest({ userId: "user-1", file })
+      ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
+    });
+
+    it("aceita HTML com ≥95% de caracteres imprimíveis", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      mockCreate.mockResolvedValue({
+        id: "new-doc",
+        userId: "user-1",
+        type: "html",
+        title: "pagina",
+        storagePath: "user-1/new-doc/pagina.html",
+        status: "pending",
+        fileSize: 100,
+        mimeType: "text/html",
+        sourceType: "upload",
+        fileHash: "abc123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const html = "<html><body><h1>Conteúdo</h1></body></html>";
+      const file = new File([html], "pagina.html", { type: "text/html" });
+
+      const result = await IngestionService.ingest({ userId: "user-1", file });
+      expect(result.documentId).toBe("new-doc");
+    });
+
+    it("rejeita binário disfarçado de Markdown (bytes nulos)", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      const binary = new Uint8Array([0x23, 0x20, 0x54, 0x69, 0x74, 0x00]); // "# Tit" + nulo
+      const file = new File([binary], "falso.md", { type: "text/markdown" });
+
+      await expect(
+        IngestionService.ingest({ userId: "user-1", file })
+      ).rejects.toMatchObject({ code: "INVALID_CONTENT" });
+    });
+
+    it("aceita Markdown com conteúdo imprimível", async () => {
+      mockFindByHash.mockResolvedValue(null);
+      mockCreate.mockResolvedValue({
+        id: "new-doc",
+        userId: "user-1",
+        type: "markdown",
+        title: "notas",
+        storagePath: "user-1/new-doc/notas.md",
+        status: "pending",
+        fileSize: 100,
+        mimeType: "text/markdown",
+        sourceType: "upload",
+        fileHash: "abc123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const md = "# Notas\n\nConteúdo de estudo em markdown.";
+      const file = new File([md], "notas.md", { type: "text/markdown" });
+
+      const result = await IngestionService.ingest({ userId: "user-1", file });
+      expect(result.documentId).toBe("new-doc");
+    });
+
     it("rejeita texto com menos de 95% de caracteres imprimíveis", async () => {
       mockFindByHash.mockResolvedValue(null);
       // 50% de bytes não imprimíveis (0x80-0xFF) → deve ser rejeitado.

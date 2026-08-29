@@ -41,18 +41,18 @@ vi.mock("@/lib/db/repositories/perfil", () => ({
 vi.mock("@/lib/db/repositories/edital", () => ({
   getCurrentEditalByContest: () => Promise.resolve(null),
 }));
+const mockIngest = vi.fn();
 vi.mock("@/lib/knowledge/services/ingestion.service", () => ({
   IngestionService: {
-    ingest: () =>
-      Promise.resolve({
-        documentId: "doc-123",
-        storagePath: "user/doc-123/file.txt",
-        mimeType: "text/plain",
-        fileSize: 10,
-        createdAt: new Date().toISOString(),
-      }),
+    ingest: (...args: unknown[]) => mockIngest(...args),
   },
-  IngestionError: class IngestionError extends Error {},
+  IngestionError: class IngestionError extends Error {
+    code: string;
+    constructor(code: string, message: string) {
+      super(message);
+      this.code = code;
+    }
+  },
 }));
 vi.mock("@/lib/knowledge/storage.service", () => ({
   DocumentStorageService: { upload: () => Promise.resolve() },
@@ -80,6 +80,7 @@ vi.mock("@/lib/billing/services/entitlement.service", () => ({
 }));
 
 import { POST } from "@/app/api/knowledge/upload/route";
+import { IngestionError } from "@/lib/knowledge/services/ingestion.service";
 
 function formReq(): NextRequest {
   const fd = new FormData();
@@ -98,6 +99,13 @@ function formReq(): NextRequest {
 describe("POST /api/knowledge/upload — regra de negócio (admin apenas)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIngest.mockResolvedValue({
+      documentId: "doc-123",
+      storagePath: "user/doc-123/file.txt",
+      mimeType: "text/plain",
+      fileSize: 10,
+      createdAt: new Date().toISOString(),
+    });
   });
 
   it("sem sessão → 401", async () => {
@@ -124,5 +132,37 @@ describe("POST /api/knowledge/upload — regra de negócio (admin apenas)", () =
     mockIsAdminEmail.mockResolvedValue(true);
     const res = await POST(formReq());
     expect(res.status).toBe(201);
+  });
+
+  it("admin → upload rejeitado quando binário não bate a extensão (INVALID_CONTENT → 400)", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com" },
+    });
+    mockIsAdminEmail.mockResolvedValue(true);
+    // Simula o IngestionService rejeitando um arquivo cujo conteúdo não
+    // corresponde ao MIME declarado (ex.: executável renomeado para .pdf).
+    mockIngest.mockRejectedValue(
+      new IngestionError("INVALID_CONTENT", "O conteúdo do arquivo não corresponde ao tipo declarado.")
+    );
+
+    const res = await POST(formReq());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("INVALID_CONTENT");
+  });
+
+  it("admin → upload rejeitado quando tipo não permitido (INVALID_TYPE → 400)", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com" },
+    });
+    mockIsAdminEmail.mockResolvedValue(true);
+    mockIngest.mockRejectedValue(
+      new IngestionError("INVALID_TYPE", "Tipo de arquivo não permitido.")
+    );
+
+    const res = await POST(formReq());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("INVALID_TYPE");
   });
 });
