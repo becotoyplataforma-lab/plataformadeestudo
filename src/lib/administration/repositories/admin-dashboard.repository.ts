@@ -18,29 +18,32 @@ function monthStart(): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 }
 
+/**
+ * Executa um array de queries em lotes de `batchSize`, preservando a ordem.
+ * Limita a concorrência no pool de conexões (o cliente usa max: 10) — disparar
+ * todas as queries de uma vez (Promise.all único) estoura o pool e causa
+ * timeout no Supabase pooler.
+ */
+async function runBatched<T extends readonly unknown[]>(
+  queries: T,
+  batchSize: number
+): Promise<T> {
+  const results: unknown[] = [];
+  for (let i = 0; i < queries.length; i += batchSize) {
+    const batch = await Promise.all(queries.slice(i, i + batchSize));
+    results.push(...batch);
+  }
+  return results as unknown as T;
+}
+
 export const AdminDashboardRepository = {
   async stats() {
-    const [
-      users,
-      contestRows,
-      editalRows,
-      docRows,
-      docFailRows,
-      qRows,
-      pendingRows,
-      lessonRows,
-      avatarRows,
-      aiRows,
-      aiTokensRows,
-      // --- KPIs financeiros ---
-      mrrRows,
-      monthRevenueRows,
-      activeSubsRows,
-      pastDueRows,
-      pendingPaymentsRows,
-      churnRows,
-      newPaymentsRows,
-    ] = await Promise.all([
+    // As 18 queries são construídas em ordem fixa (contrato dos testes) e
+    // executadas em lotes de 5 para não estourar o pool de conexões (max: 10).
+    // Disparar 18 queries concorrentes de uma vez (Promise.all único) excede o
+    // pool e causa timeout no Supabase pooler. Lotes de 5 mantêm o pico de
+    // concorrência bem abaixo do limite.
+    const queries = [
       db.select({ n: count() }).from(authUsers),
       db.select({ n: count() }).from(contests).where(isNull(contests.deletedAt)),
       db.select({ n: count() }).from(editais).where(isNull(editais.deletedAt)),
@@ -136,7 +139,52 @@ export const AdminDashboardRepository = {
             gte(payments.paidAt, monthStart())
           )
         ),
-    ]);
+    ];
+
+    // Executa em lotes de 5 para limitar a concorrência no pool de conexões.
+    const BATCH = 5;
+    const results = (await runBatched(queries, BATCH)) as unknown as [
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { total: number }[],
+      { total: number }[],
+      { total: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+      { n: number }[],
+    ];
+
+    const [
+      users,
+      contestRows,
+      editalRows,
+      docRows,
+      docFailRows,
+      qRows,
+      pendingRows,
+      lessonRows,
+      avatarRows,
+      aiRows,
+      aiTokensRows,
+      // --- KPIs financeiros ---
+      mrrRows,
+      monthRevenueRows,
+      activeSubsRows,
+      pastDueRows,
+      pendingPaymentsRows,
+      churnRows,
+      newPaymentsRows,
+    ] = results;
 
     return {
       totalUsers: Number(users[0]?.n ?? 0),
