@@ -62,8 +62,9 @@ next-env.d.ts
 # supabase
 supabase/.temp
 
-# drizzle
-drizzle/
+# drizzle — migrations versionadas (fonte de verdade do schema p/ banco novo)
+# (removido do gitignore em 2026-08-22 — Fase 1: consolidar schema)
+# drizzle/
 
 # IDE
 .vscode/*

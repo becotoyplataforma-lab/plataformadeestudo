@@ -1,0 +1,2 @@
+ALTER TABLE "documents" ADD COLUMN "storage_backend" text DEFAULT 'supabase' NOT NULL;--> statement-breakpoint
+CREATE INDEX "idx_documents_storage_backend" ON "documents" USING btree ("storage_backend") WHERE "documents"."deleted_at" is null;
