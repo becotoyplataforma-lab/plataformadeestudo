@@ -10,7 +10,7 @@ services:
   migrate:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: infra/Dockerfile
       target: migrator
     image: concursoai-migrator:latest
     env_file:
