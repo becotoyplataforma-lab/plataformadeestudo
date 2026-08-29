@@ -168,4 +168,40 @@ describe("QuestionImportService.importQuestions", () => {
     expect(created.nivel).toBe("dificil");
     expect(created.gabarito).toBe("A");
   });
+
+  it("importa XLSX válido (SheetJS 0.20.x)", async () => {
+    // Gera um XLSX real usando a própria lib (valida a compatibilidade da
+    // versão 0.20.3 instalada via CDN SheetJS com o código existente).
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.aoa_to_sheet([
+      ["enunciado", "a", "b", "c", "gabarito"],
+      ["Capital do Brasil?", "Rio", "SP", "Brasília", "C"],
+      ["Maior planeta?", "Terra", "Júpiter", "Marte", "B"],
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Questões");
+    const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+    const result = await QuestionImportService.importQuestions({
+      adminUserId: "u1",
+      file: new File([buffer], "questoes.xlsx", {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      subjectId: "aaaaaaaa-0000-4000-8000-000000000001",
+    });
+
+    expect(result.imported).toBe(2);
+    expect(result.skipped).toBe(0);
+    expect(QuestionWriteRepository.createQuestion).toHaveBeenCalledTimes(2);
+    const first = (QuestionWriteRepository.createQuestion as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(first.gabarito).toBe("C");
+    expect(first.enunciado).toBe("Capital do Brasil?");
+    // As alternativas são gravadas via createOptions (não no createQuestion).
+    expect(QuestionWriteRepository.createOptions).toHaveBeenCalledTimes(2);
+    const opts = (QuestionWriteRepository.createOptions as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(opts).toHaveLength(3);
+    expect(opts.find((o: { letter: string }) => o.letter === "C").isCorrect).toBe(true);
+  });
 });
