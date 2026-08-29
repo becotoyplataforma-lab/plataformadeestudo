@@ -23,3 +23,10 @@
 ## Autorização
 Admin = allowlist de e-mails (env `ADMIN_EMAILS`, separados por vírgula) + `system_settings`.
 Nenhuma coluna `is_admin` é exigida.
+
+## Papel de Professor
+Professor = allowlist de e-mails (env `PROFESSOR_EMAILS`, separados por vírgula) + `system_settings['professor.emails']` (mesmo padrão do admin).
+Professores podem:
+- Enviar apostilas em `/professor-apostilas` (upload + transformação automática com IA, layout em fases + marca DeepSeek).
+- Usar a API de upload (`POST /api/knowledge/upload`) — mesmas permissões de admin para apostilas.
+- NÃO acessam `/admin` (requer `isAdminOrSuperadmin`).

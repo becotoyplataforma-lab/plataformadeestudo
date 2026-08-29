@@ -6,6 +6,7 @@ import {
   BrainCircuit,
   CalendarCheck2,
   FileQuestion,
+  FileText,
   Flame,
   Layers,
   LayoutDashboard,
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/questoes", label: "Questões", icon: FileQuestion },
   { href: "/flashcards", label: "Flashcards", icon: Layers },
   { href: "/professor", label: "Professor IA", icon: MessagesSquare },
+  { href: "/professor-apostilas", label: "Apostilas (Professor)", icon: FileText },
   { href: "/analises", label: "Analíticas", icon: LineChart },
 ];
 

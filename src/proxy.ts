@@ -10,7 +10,13 @@ import { auth } from "@/lib/auth/auth";
  * 2. Atualiza a sessão do Supabase (cookies).
  */
 
-const PUBLIC_PATHS = ["/", "/login", "/cadastro", "/recuperar-senha"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/cadastro",
+  "/recuperar-senha",
+  "/deepseek-icons",
+];
 
 function isPublic(pathname: string): boolean {
   return (

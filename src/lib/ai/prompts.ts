@@ -39,4 +39,5 @@ export const prompts = {
   flashcardsGerar: () => loadPrompt("flashcards/gerar.md"),
   etlExplicarQuestao: () => loadPrompt("etl/explicar-questao.md"),
   diagnostico: () => loadPrompt("analytics/diagnostico.md"),
+  apostilaTransformar: () => loadPrompt("apostila/transformar.md"),
 };

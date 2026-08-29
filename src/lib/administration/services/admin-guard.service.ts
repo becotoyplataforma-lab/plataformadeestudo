@@ -10,6 +10,12 @@
  * - Configuração `system_settings['superadmin.emails']` (gerenciável por superadmin).
  * - Superadmin herda todas as permissões de admin + gestão da allowlist de admins.
  *
+ * PAPEL PROFESSOR (extensão para upload de apostilas):
+ * - Variável de ambiente PROFESSOR_EMAILS (lista separada por vírgula).
+ * - Configuração `system_settings['professor.emails']` (gerenciável por admin).
+ * - Professor PODE enviar apostilas (transformadas em fases), mas NÃO entra
+ *   na área administrativa (não vê /admin).
+ *
  * docs/15 (V1.1) prevê `profiles.is_admin`; como o PROFILE físico (docs/08)
  * não possui esse campo, o MVP usa a allowlist (camada extra prevista no docs/15).
  */
@@ -47,6 +53,14 @@ function envSuperadminEmails(): string[] {
     .filter(Boolean);
 }
 
+function envProfessorEmails(): string[] {
+  const raw = process.env.PROFESSOR_EMAILS ?? "";
+  return raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 /** Lê a lista de e-mails de uma chave de system_settings (array de strings). */
 async function settingEmailList(key: string): Promise<string[]> {
   const setting = await SystemSettingRepository.findByKey(key);
@@ -75,6 +89,21 @@ export const AdminGuardService = {
     return list.includes(normalized);
   },
 
+  /** true se o e-mail for professor (env + system_settings). */
+  async isProfessorEmail(email: string | null | undefined): Promise<boolean> {
+    if (!email) return false;
+    const normalized = email.trim().toLowerCase();
+    if (envProfessorEmails().includes(normalized)) return true;
+    const list = await settingEmailList("professor.emails");
+    return list.includes(normalized);
+  },
+
+  /** true se o e-mail for professor OU admin/superadmin (pode enviar apostilas). */
+  async isProfessorOrAdmin(email: string | null | undefined): Promise<boolean> {
+    if (await this.isAdminOrSuperadmin(email)) return true;
+    return this.isProfessorEmail(email);
+  },
+
   /** true se o e-mail for admin OU superadmin (superadmin herda admin). */
   async isAdminOrSuperadmin(email: string | null | undefined): Promise<boolean> {
     if (await this.isSuperadminEmail(email)) return true;
@@ -85,6 +114,16 @@ export const AdminGuardService = {
   async requireAdmin(session: AdminSession): Promise<void> {
     if (!(await this.isAdminOrSuperadmin(session.email))) {
       throw new AdminError("FORBIDDEN", "Acesso restrito a administradores.");
+    }
+  },
+
+  /** Lança AdminError FORBIDDEN se a sessão não for professor ou admin. */
+  async requireProfessorOrAdmin(session: AdminSession): Promise<void> {
+    if (!(await this.isProfessorOrAdmin(session.email))) {
+      throw new AdminError(
+        "FORBIDDEN",
+        "Acesso restrito a professores e administradores."
+      );
     }
   },
 

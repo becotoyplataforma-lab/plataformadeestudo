@@ -15,6 +15,7 @@ import { getCurrentEditalByContest } from "@/lib/db/repositories/edital";
 import { IngestionService, IngestionError } from "@/lib/knowledge/services/ingestion.service";
 import { DocumentStorageService } from "@/lib/knowledge/storage.service";
 import { DocumentPipelineService } from "@/lib/knowledge/services/document-pipeline.service";
+import { ApostilaTransformService } from "@/lib/knowledge/services/apostila-transform.service";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
 import { mapDocumentToDto } from "@/lib/dto/knowledge.dto";
@@ -39,14 +40,18 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // 1a. REGRA DE NEGÓCIO: upload de apostilas é EXCLUSIVO de admin.
-    // Alunos NUNCA enviam apostilas — apenas visualizam e estudam.
-    const isAdmin = await AdminGuardService.isAdminEmail(session.user.email).catch(
-      () => false
-    );
-    if (!isAdmin) {
+    // 1a. REGRA DE NEGÓCIO: upload de apostilas é EXCLUSIVO de admin e
+    // professor (allowlist PROFESSOR_EMAILS). Alunos NUNCA enviam apostilas
+    // — apenas visualizam e estudam.
+    const canUpload = await AdminGuardService.isProfessorOrAdmin(
+      session.user.email
+    ).catch(() => false);
+    if (!canUpload) {
       return NextResponse.json(
-        { error: "FORBIDDEN", message: "Apenas administradores podem enviar apostilas." },
+        {
+          error: "FORBIDDEN",
+          message: "Apenas administradores e professores podem enviar apostilas.",
+        },
         { status: 403 }
       );
     }
@@ -75,6 +80,9 @@ export async function POST(request: NextRequest) {
     const subjectId = formData.get("subject_id") as string | null;
     const editalId = formData.get("edital_id") as string | null;
     const positionId = formData.get("position_id") as string | null;
+    // Flag opcional: transformar a apostila no layout em fases com a marca
+    // DeepSeek (padrão: false). A IA reconstrói o conteúdo preservando tudo.
+    const transformar = formData.get("transformar") === "true";
 
     if (!file) {
       return NextResponse.json(
@@ -111,6 +119,21 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       // O pipeline já marca o documento como failed; segue para a resposta.
       console.error("[knowledge/upload] Processamento falhou:", error);
+    }
+
+    // 5a. Transformação automática (layout em fases + marca DeepSeek).
+    // Admin/professor pode optar por não transformar; alunos nunca passam
+    // por aqui (403 acima). A transformação NUNCA quebra o upload: se a IA
+    // falhar, o documento continua processado normalmente.
+    if (transformar) {
+      try {
+        await ApostilaTransformService.transformDocument({
+          documentId: result.documentId,
+          saveHtml: true,
+        });
+      } catch (error) {
+        console.error("[knowledge/upload] Transformação IA falhou:", error);
+      }
     }
 
     // 5b. Associação (matéria/edital/cargo)

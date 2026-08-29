@@ -16,6 +16,7 @@ export function ApostilaUploadForm() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [subjectId, setSubjectId] = useState("");
+  const [transformar, setTransformar] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export function ApostilaUploadForm() {
         const fd = new FormData();
         fd.append("file", file);
         if (subjectId) fd.append("subject_id", subjectId);
+        fd.append("transformar", transformar ? "true" : "false");
         const res = await fetch("/api/knowledge/upload", { method: "POST", body: fd });
         const data = await res.json();
         if (!res.ok) {
@@ -45,7 +47,9 @@ export function ApostilaUploadForm() {
           return;
         }
         setMessage(
-          `Apostila enviada e processada (status: ${data?.document?.status ?? "?"}).`
+          transformar
+            ? `Apostila enviada, processada e transformada no layout em fases (status: ${data?.document?.status ?? "?"}).`
+            : `Apostila enviada e processada (status: ${data?.document?.status ?? "?"}).`
         );
         setFile(null);
         router.refresh();
@@ -55,7 +59,7 @@ export function ApostilaUploadForm() {
         setBusy(false);
       }
     },
-    [file, subjectId, router]
+    [file, subjectId, transformar, router]
   );
 
   return (
@@ -83,6 +87,20 @@ export function ApostilaUploadForm() {
               </option>
             ))}
           </select>
+          <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={transformar}
+              onChange={(e) => setTransformar(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-cyan-500"
+            />
+            <span>
+              Transformar com IA — <strong>layout em fases</strong> + marca DeepSeek
+              <span className="block text-xs text-slate-500">
+                A IA reorganiza o conteúdo em fases de estudo, mantendo todo o texto técnico.
+              </span>
+            </span>
+          </label>
           <Button type="submit" disabled={busy || !file}>
             {busy ? "Processando..." : "Enviar e processar"}
           </Button>

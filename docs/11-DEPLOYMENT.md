@@ -68,7 +68,8 @@ flowchart LR
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 - `DATABASE_URL` / `DIRECT_URL` (Supabase Postgres).
 - `ADMIN_EMAILS` (allowlist de admins).
-- `DEEPSEEK_API_KEY` (Professor IA).
+- `PROFESSOR_EMAILS` (allowlist de professores — envia e transforma apostilas; opcional, sem ela só admins enviam).
+- `DEEPSEEK_API_KEY` (Professor IA + transformação de apostilas).
 
 ### Variáveis opcionais (ativam recursos)
 

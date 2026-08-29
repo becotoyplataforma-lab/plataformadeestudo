@@ -62,6 +62,15 @@ export default async function ApostilaDetailPage({
       </div>
 
       <div className="flex flex-wrap gap-3">
+        {typeof (doc.metadata as Record<string, unknown> | null)?.transformed_html_path ===
+          "string" && (
+          <Link
+            href={`/apostilas/${doc.id}/visualizar`}
+            className="rounded-xl bg-gradient-to-r from-cyan-500/15 to-blue-600/15 px-4 py-2 text-sm font-medium text-cyan-200 ring-1 ring-inset ring-cyan-400/30 hover:from-cyan-500/25 hover:to-blue-600/25"
+          >
+            📖 Ler em fases (layout transformado)
+          </Link>
+        )}
         <Link
           href={`/professor?document_id=${doc.id}`}
           className="rounded-xl bg-cyan-500/15 px-4 py-2 text-sm font-medium text-cyan-200 ring-1 ring-inset ring-cyan-400/30 hover:bg-cyan-500/25"

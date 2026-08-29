@@ -7,12 +7,38 @@
  * Segue: docs/08-ETL.md · .ai/blueprints/02-extraction.blueprint.md
  */
 import "server-only";
-import { PDFParse } from "pdf-parse";
+import { createRequire } from "node:module";
 import mammoth from "mammoth";
+
+// pdf-parse v1: importamos o lib/pdf-parse.js diretamente (não o index.js),
+// pois o index.js tem um bloco de debug que tenta ler um arquivo de teste
+// quando module.parent é undefined (caso do ESM/Turbopack).
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse/lib/pdf-parse.js") as (
+  dataBuffer: Buffer,
+  options?: {
+    pagerender?: (pageData: {
+      getTextContent: (options?: unknown) => Promise<{
+        items: Array<{ str: string; transform: number[] }>;
+      }>;
+    }) => Promise<string> | string;
+    max?: number;
+    version?: string;
+  }
+) => Promise<{
+  numpages: number;
+  numrender: number;
+  info: unknown;
+  metadata: unknown;
+  text: string;
+  version: string;
+}>;
 
 export interface ExtractionResult {
   text: string;
   pageCount?: number;
+  /** Texto da primeira página (PDF) — útil para extrair título/cabeçalho. */
+  firstPageText?: string;
 }
 
 export class ExtractionError extends Error {
@@ -39,17 +65,34 @@ function stripHtml(html: string): string {
 }
 
 async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
-  try {
-    const textResult = await parser.getText();
-    const pageCount = textResult.total;
-    const text = (textResult.pages ?? [])
-      .map((p) => p.text)
-      .join("\n\n");
-    return { text, pageCount };
-  } finally {
-    await parser.destroy().catch(() => undefined);
-  }
+  // pdf-parse v1 usa pdf.js com disableWorker=true (sem worker), evitando o
+  // problema do Turbopack com o import() dinâmico do pdfjs-dist.
+  // Capturamos o texto da primeira página via pagerender para extrair o título.
+  let firstPageText: string | undefined;
+  const result = await pdfParse(buffer, {
+    pagerender: async (pageData: { getTextContent: (o?: unknown) => Promise<{ items: Array<{ str: string; transform: number[] }> }> }) => {
+      const textContent = await pageData.getTextContent();
+      let lastY: number | undefined;
+      let text = "";
+      for (const item of textContent.items) {
+        if (lastY === item.transform[5] || lastY === undefined) {
+          text += item.str;
+        } else {
+          text += "\n" + item.str;
+        }
+        lastY = item.transform[5];
+      }
+      if (firstPageText === undefined) {
+        firstPageText = text;
+      }
+      return text;
+    },
+  });
+  return {
+    text: result.text,
+    pageCount: result.numpages,
+    firstPageText,
+  };
 }
 
 async function extractDocx(buffer: Buffer): Promise<ExtractionResult> {

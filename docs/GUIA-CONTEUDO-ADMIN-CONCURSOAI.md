@@ -102,6 +102,15 @@ Editais e apostilas antigas às vezes são PDF escaneado (imagem, não texto). V
 ### 5.4 Transcrição de vídeo/áudio (se for usar aulas em vídeo como fonte)
 Requer um passo adicional não coberto pelo pipeline atual: vídeo/áudio → transcrição (Whisper ou similar) → texto → chunks. Só vale priorizar se o projeto realmente for usar videoaulas de terceiros como fonte de estudo (atenção redobrada a direitos autorais nesse caso).
 
+### 5.5 Transformação de apostila com IA (layout em fases + marca DeepSeek)
+Implementado — o admin e o professor podem transformar uma apostila enviada em uma **versão em fases de estudo** com o layout da DeepSeek (baleia):
+
+- **Automaticamente no upload**: checkbox "Transformar com IA" (marcado por padrão) no formulário de envio do admin e do professor. Após indexar, o sistema chama o serviço de transformação.
+- **Sob demanda**: botão "✨ Transformar com IA" na lista de apostilas do admin, e o link "📖 Ler em fases" na página de detalhe.
+- **Como funciona**: o texto extraído é enviado ao modelo `deepseek-chat` (flash) com `maxTokens: 16384`, que devolve um HTML completo com capa, índice, fases progressivas e caixas de REGRA/ATENÇÃO/DICA/CUIDADO, mantendo todo o conteúdo técnico. O HTML é salvo no storage e o metadata `transformed_html_path` é gravado no documento.
+- **Leitura**: `/apostilas/[id]/visualizar` renderiza a versão transformada em iframe; "Baixar HTML" baixa o arquivo.
+- **Observação técnica**: usa `deepseek-chat` (não `deepseek-reasoner`) porque o modelo de raciocínio consome todos os tokens de saída no `reasoning_content`, devolvendo `content` vazio.
+
 ---
 
 ## 6. Checklist priorizado para o admin "alimentar sozinho" o sistema
