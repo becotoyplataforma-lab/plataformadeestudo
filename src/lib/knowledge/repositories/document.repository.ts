@@ -54,6 +54,16 @@ export const DocumentRepository = {
     return row ?? null;
   },
 
+  /** Marcar/desmarcar documento como favorito (por usuário/dono). */
+  async updateFavorite(id: string, userId: string, isFavorite: boolean) {
+    const [row] = await db
+      .update(documents)
+      .set({ isFavorite, updatedAt: new Date() })
+      .where(and(eq(documents.id, id), eq(documents.userId, userId)))
+      .returning();
+    return row ?? null;
+  },
+
   /** Atualizar associações de edital/cargo do documento. */
   async updateAssociations(
     id: string,

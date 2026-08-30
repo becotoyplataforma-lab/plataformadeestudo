@@ -53,6 +53,7 @@ export const DocumentSubjectRepository = {
         documentId: documentSubjects.documentId,
         subjectId: documentSubjects.subjectId,
         subjectName: knowledgeSubjects.name,
+        subjectColor: knowledgeSubjects.color,
       })
       .from(documentSubjects)
       .innerJoin(

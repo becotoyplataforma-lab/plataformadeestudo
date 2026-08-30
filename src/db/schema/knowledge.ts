@@ -15,6 +15,7 @@
 import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   check,
   customType,
   foreignKey,
@@ -110,6 +111,7 @@ export const documents = pgTable(
     reviewNote: text("review_note"),
     chunkCount: integer("chunk_count").notNull().default(0),
     embeddingCount: integer("embedding_count").notNull().default(0),
+    isFavorite: boolean("is_favorite").notNull().default(false),
     processedAt: timestamp("processed_at", { withTimezone: true }),
     editalId: uuid("edital_id"),
     positionId: uuid("position_id"),

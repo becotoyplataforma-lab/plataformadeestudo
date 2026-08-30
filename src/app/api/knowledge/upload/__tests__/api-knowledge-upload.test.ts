@@ -17,7 +17,7 @@ vi.mock("@/lib/auth/auth", () => ({
   auth: (...args: unknown[]) => mockAuth(...args),
 }));
 
-const mockIsAdminEmail = vi.fn();
+const mockIsProfessorOrAdmin = vi.fn();
 vi.mock("@/lib/administration/services/admin-guard.service", async (importOriginal) => {
   const actual = await importOriginal<
     typeof import("@/lib/administration/services/admin-guard.service")
@@ -26,7 +26,7 @@ vi.mock("@/lib/administration/services/admin-guard.service", async (importOrigin
     ...actual,
     AdminGuardService: {
       ...actual.AdminGuardService,
-      isAdminEmail: (...a: unknown[]) => mockIsAdminEmail(...a),
+      isProfessorOrAdmin: (...a: unknown[]) => mockIsProfessorOrAdmin(...a),
     },
   };
 });
@@ -118,7 +118,7 @@ describe("POST /api/knowledge/upload — regra de negócio (admin apenas)", () =
     mockAuth.mockResolvedValue({
       user: { id: "aluno-1", email: "aluno@test.com" },
     });
-    mockIsAdminEmail.mockResolvedValue(false);
+    mockIsProfessorOrAdmin.mockResolvedValue(false);
     const res = await POST(formReq());
     expect(res.status).toBe(403);
     const body = await res.json();
@@ -129,7 +129,7 @@ describe("POST /api/knowledge/upload — regra de negócio (admin apenas)", () =
     mockAuth.mockResolvedValue({
       user: { id: "admin-1", email: "admin@test.com" },
     });
-    mockIsAdminEmail.mockResolvedValue(true);
+    mockIsProfessorOrAdmin.mockResolvedValue(true);
     const res = await POST(formReq());
     expect(res.status).toBe(201);
   });
@@ -138,7 +138,7 @@ describe("POST /api/knowledge/upload — regra de negócio (admin apenas)", () =
     mockAuth.mockResolvedValue({
       user: { id: "admin-1", email: "admin@test.com" },
     });
-    mockIsAdminEmail.mockResolvedValue(true);
+    mockIsProfessorOrAdmin.mockResolvedValue(true);
     // Simula o IngestionService rejeitando um arquivo cujo conteúdo não
     // corresponde ao MIME declarado (ex.: executável renomeado para .pdf).
     mockIngest.mockRejectedValue(
@@ -155,7 +155,7 @@ describe("POST /api/knowledge/upload — regra de negócio (admin apenas)", () =
     mockAuth.mockResolvedValue({
       user: { id: "admin-1", email: "admin@test.com" },
     });
-    mockIsAdminEmail.mockResolvedValue(true);
+    mockIsProfessorOrAdmin.mockResolvedValue(true);
     mockIngest.mockRejectedValue(
       new IngestionError("INVALID_TYPE", "Tipo de arquivo não permitido.")
     );
