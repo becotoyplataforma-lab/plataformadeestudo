@@ -92,8 +92,8 @@ export function SettingsContent({ plano, email }: Props) {
                 {plano === "free"
                   ? "20 questões/dia · 5 mensagens IA/dia"
                   : plano === "pro"
-                    ? "Questões ilimitadas · IA Flash + Pro"
-                    : "Tudo do Pro + Knowledge Engine"}
+                    ? "200 questões/dia · 500 mensagens IA/dia (Flash + Pro)"
+                    : "1000 questões/dia · 2000 mensagens IA/dia + Knowledge Engine"}
               </p>
             </div>
             {plano !== "free" && <Badge variant="success">Ativo</Badge>}
@@ -112,7 +112,7 @@ export function SettingsContent({ plano, email }: Props) {
                 >
                   <div>
                     <p className="font-semibold">Pro</p>
-                    <p className="text-xs text-muted-foreground">R$ 9,90 no 1º mês, depois R$ 19,90/mês · questões ilimitadas + IA Pro</p>
+                    <p className="text-xs text-muted-foreground">R$ 9,90 no 1º mês, depois R$ 19,90/mês · 200 questões/dia + 500 mensagens IA/dia</p>
                   </div>
                   <Sparkles className="h-5 w-5 text-blue-600" />
                 </button>

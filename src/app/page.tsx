@@ -300,7 +300,7 @@ export default function LandingPage() {
             features={[
               "Cronograma de estudos",
               "20 questões/dia",
-              "50 mensagens IA (V4 Flash)",
+              "5 mensagens IA/dia (V4 Flash)",
               "Flashcards ilimitados",
             ]}
             cta="Começar grátis"
@@ -308,13 +308,13 @@ export default function LandingPage() {
           />
           <PlanCard
             name="Pro"
-            price="R$ 29,90"
+            price="R$ 19,90"
             period="/mês"
             highlight
             features={[
               "Tudo do Gratuito",
-              "Questões ilimitadas",
-              "IA ilimitada (Flash + Pro)",
+              "200 questões/dia",
+              "500 mensagens IA/dia (Flash + Pro)",
               "Analíticas avançadas",
               "Histórico completo",
             ]}
@@ -327,6 +327,8 @@ export default function LandingPage() {
             period="/mês"
             features={[
               "Tudo do Pro",
+              "1000 questões/dia",
+              "2000 mensagens IA/dia",
               "Knowledge Engine (PDFs, editais)",
               "Simulados estilo banca",
               "Correção de redação",

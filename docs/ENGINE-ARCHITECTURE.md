@@ -668,7 +668,7 @@ Citation {
 #### Escalabilidade
 - Streaming reduz latência percebida
 - Cache reduz chamadas ao LLM
-- Rate limiting por plano (Free: 20/dia, Pro: 100/dia, Intensivo: ilimitado)
+- Rate limiting por plano (Free: 5 msgs IA/dia, Pro: 500 msgs IA/dia, Intensivo: 2000 msgs IA/dia)
 
 #### Fase
 **MVP** — Essencial. É o core da feature Professor IA.

@@ -96,7 +96,7 @@ Cada requisição monta a seguinte estrutura (token budget alvo):
 
 ## 8. Segurança e Moderação
 
-- **Rate limit:** por usuário/plano (ex.: Gratuito 50 msgs/dia, Pro 500/dia).
+- **Rate limit:** por usuário/plano (ex.: Gratuito 5 msgs/dia, Pro 500 msgs/dia, Intensivo 2000 msgs/dia).
 - **Cota de tokens:** janela móvel diária; retorna `429` com mensagem amigável.
 - **Sanitização:** escapar HTML nas mensagens antes de renderizar; usar `react-markdown`.
 - **Guardrails de conteúdo:** bloquear instruções nocivas; recusar educadamente conteúdo ilegal/proibido.

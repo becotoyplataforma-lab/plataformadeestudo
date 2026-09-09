@@ -62,7 +62,7 @@ Sair de "testado por partes isoladas" para "testado como produto completo, com d
 - Storage: R2 (primário) + Supabase (fallback) — `/api/health/storage`
 - IA: DeepSeek (geração/chat) + embeddings — configurados
 - Banco: RLS, ownership por usuário, allowlist de admin
-- Planos: Gratuito / Pro (R$29,90) / Intensivo (R$49,90) via Hubla
+- Planos: Gratuito / Pro (R$19,90, R$9,90 no 1º mês) / Intensivo (R$49,90) via Mercado Pago
 
 ---
 
