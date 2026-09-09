@@ -1,6 +1,7 @@
 import "server-only";
 import { EntitlementService } from "./entitlement.service";
 import { DEFAULT_FREE_LIMITS, type PlanLimits } from "../types";
+import { logger } from "@/lib/observability";
 
 /**
  * Resolve os limites de IA do usuário (fronteira Billing — OPEN-004).
@@ -23,6 +24,11 @@ export async function resolveUserLimits(userId: string): Promise<PlanLimits> {
       allowPro: limits.allowPro ?? false,
     };
   } catch (error) {
+    logger.error("billing", "PLAN_FALLBACK", {
+      event: "PLAN_FALLBACK",
+      layer: "limits.resolver",
+      reason: "LIMITS_RESOLUTION_FAILED",
+    });
     console.error(
       "[billing/limits] Falha ao resolver limites; usando fallback gratuito:",
       error

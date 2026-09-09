@@ -18,6 +18,7 @@ import {
 } from "../types";
 import type { plans, subscriptions } from "@/db/schema/billing";
 import type { AIModel } from "@/lib/ai/types";
+import { logger } from "@/lib/observability";
 
 type PlanRow = typeof plans.$inferSelect;
 type SubscriptionRow = typeof subscriptions.$inferSelect;
@@ -46,6 +47,14 @@ export const EntitlementService = {
    * Resolve o entitlement atual do usuário.
    * - Assinatura ativa (não expirada) → plano da assinatura.
    * - Sem assinatura / cancelada / expirada → plano gratuito.
+   *
+   * FASE 3C-1 (P0-A): fallback passa a ser observável via evento
+   * PLAN_FALLBACK (logger estruturado `billing`, sem PII). O comportamento
+   * funcional é preservado: erro → DEFAULT_FREE_LIMITS.
+   * - Sem assinatura + free existente → caminho normal (sem log).
+   * - Plano da assinatura ausente/inativo → PLAN_NOT_FOUND.
+   * - Plano free ausente → FREE_PLAN_NOT_FOUND (usa DEFAULT_FREE_LIMITS).
+   * normalizeLimits() de campo segue silenciosa (não é falha crítica).
    */
   async getCurrent(userId: string): Promise<CurrentEntitlement> {
     const sub = await SubscriptionRepository.findActiveByUser(userId);
@@ -54,15 +63,35 @@ export const EntitlementService = {
       // Assinatura expirada (ends_at passado) → trata como gratuito.
       if (sub.endsAt && sub.endsAt.getTime() < Date.now()) {
         const free = await PlanRepository.findByCode("free");
+        if (!free) {
+          logger.warn("billing", "PLAN_FALLBACK", {
+            event: "PLAN_FALLBACK",
+            layer: "entitlement",
+            reason: "FREE_PLAN_NOT_FOUND",
+          });
+        }
         return toEntitlement(null, free, "free");
       }
       const plan = await PlanRepository.findById(sub.planId);
       if (plan && plan.status === "active") {
         return toEntitlement(sub, plan, plan.priceCents > 0 ? "paid" : "free");
       }
+      // Assinatura existe mas o plano não foi resolvido → fallback p/ free.
+      logger.warn("billing", "PLAN_FALLBACK", {
+        event: "PLAN_FALLBACK",
+        layer: "entitlement",
+        reason: "PLAN_NOT_FOUND",
+      });
     }
 
     const free = await PlanRepository.findByCode("free");
+    if (!free) {
+      logger.warn("billing", "PLAN_FALLBACK", {
+        event: "PLAN_FALLBACK",
+        layer: "entitlement",
+        reason: "FREE_PLAN_NOT_FOUND",
+      });
+    }
     return toEntitlement(null, free, "free");
   },
 

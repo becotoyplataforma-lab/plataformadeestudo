@@ -1,5 +1,6 @@
 import "server-only";
 import { EntitlementService } from "./entitlement.service";
+import { logger } from "@/lib/observability";
 import type { Plan } from "@/types";
 
 /**
@@ -19,6 +20,11 @@ export async function resolveUserPlan(userId: string): Promise<Plan> {
       ? code
       : "free";
   } catch (error) {
+    logger.error("billing", "PLAN_FALLBACK", {
+      event: "PLAN_FALLBACK",
+      layer: "plan.resolver",
+      reason: "ENTITLEMENT_RESOLUTION_FAILED",
+    });
     console.error(
       "[billing/plan] Falha ao resolver plano; usando free:",
       error
