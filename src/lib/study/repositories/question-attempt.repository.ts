@@ -3,7 +3,7 @@
  *
  * Camada de persistência do aggregate QuestionAttempt (tentativa imutável).
  */
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import { questionAttempts, questions } from "@/db/schema";
 
@@ -66,6 +66,21 @@ export const QuestionAttemptRepository = {
       .from(questionAttempts)
       .where(
         and(eq(questionAttempts.userId, userId), eq(questionAttempts.isCorrect, true))
+      );
+    return row?.count ?? 0;
+  },
+
+  /** Contar tentativas do usuário na janela [start, end). Best-effort (sem lock). */
+  async countToday(userId: string, start: Date, end: Date): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(questionAttempts)
+      .where(
+        and(
+          eq(questionAttempts.userId, userId),
+          gte(questionAttempts.createdAt, start),
+          lt(questionAttempts.createdAt, end)
+        )
       );
     return row?.count ?? 0;
   },

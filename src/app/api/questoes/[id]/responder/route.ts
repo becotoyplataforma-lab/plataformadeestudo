@@ -1,8 +1,11 @@
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { apiError, apiOk } from "@/lib/api/helpers";
 import { answerQuestionSchema } from "@/lib/validations/questoes";
 import { getGabarito, getQuestionWithOptions } from "@/lib/db/repositories/questoes";
 import { QuestionAttemptRepository } from "@/lib/study/repositories";
+import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
+import { DEFAULT_FREE_LIMITS } from "@/lib/billing/types";
 
 /**
  * POST /api/questoes/:id/responder
@@ -31,6 +34,33 @@ export async function POST(
 
     const gabarito = await getGabarito(id);
     const correct = gabarito?.gabarito === parsed.data.selected_letter;
+
+    // --- Cota diária de questões (Billing: maxQuestionsPerDay, best-effort) ---
+    const limits = await resolveUserLimits(session.user.id);
+    const maxQuestionsPerDay =
+      limits.maxQuestionsPerDay ?? DEFAULT_FREE_LIMITS.maxQuestionsPerDay ?? 20;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 1);
+    const current = await QuestionAttemptRepository.countToday(
+      session.user.id,
+      start,
+      end
+    );
+    if (current >= maxQuestionsPerDay) {
+      return NextResponse.json(
+        {
+          error: "QUOTA_EXCEEDED",
+          message: `Você atingiu o limite diário de questões do seu plano (${maxQuestionsPerDay}/dia). Tente novamente amanhã ou faça upgrade.`,
+          resource: "questions",
+          limit: maxQuestionsPerDay,
+          current,
+          resetAt: end.toISOString(),
+        },
+        { status: 429 }
+      );
+    }
 
     await QuestionAttemptRepository.create({
       userId: session.user.id,
