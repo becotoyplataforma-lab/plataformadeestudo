@@ -30,7 +30,7 @@ const FREE_PLAN = {
   name: "Gratuito",
   code: "free",
   priceCents: 0,
-  limits: { maxMessages: 50, maxTokens: 100000, maxQuestionsPerDay: 20, maxDocuments: 3, allowPro: false },
+  limits: { maxMessages: 5, maxTokens: 100000, maxQuestionsPerDay: 20, maxDocuments: 3, allowPro: false },
   status: "active",
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -41,7 +41,8 @@ const PRO_PLAN = {
   id: "p-pro",
   name: "Pro",
   code: "pro",
-  priceCents: 2990,
+  priceCents: 1990,
+  promoPriceCents: 990,
   limits: { maxMessages: 500, maxTokens: 1000000, maxQuestionsPerDay: 200, maxDocuments: 20, allowPro: true },
   status: "active",
   createdAt: new Date(),
@@ -74,7 +75,7 @@ describe("EntitlementService", () => {
     expect(ent.tier).toBe("free");
     expect(ent.planCode).toBe("free");
     expect(ent.subscriptionId).toBeNull();
-    expect(ent.limits.maxMessages).toBe(50);
+    expect(ent.limits.maxMessages).toBe(5);
   });
 
   it("assinatura ativa resolve o plano Pro (entitlement pago)", async () => {
@@ -106,7 +107,7 @@ describe("EntitlementService", () => {
   it("getLimits retorna a quota do plano gratuito", async () => {
     mockFindActive.mockResolvedValue(null);
     const limits = await EntitlementService.getLimits("u1");
-    expect(limits.maxMessages).toBe(50);
+    expect(limits.maxMessages).toBe(5);
     expect(limits.maxTokens).toBe(100000);
     expect(limits.allowPro).toBe(false);
   });

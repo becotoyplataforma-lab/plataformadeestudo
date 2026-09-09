@@ -13,7 +13,7 @@ vi.mock("@/lib/db/drizzle", () => ({
 
 // Limites do plano gratuito (Billing) — injetados, nunca decididos pelo módulo.
 const FREE_LIMITS: PlanLimits = {
-  maxMessages: 50,
+  maxMessages: 5,
   maxTokens: 100_000,
   maxQuestionsPerDay: 20,
   maxDocuments: 3,
@@ -35,9 +35,9 @@ describe("ai/limits (Drizzle)", () => {
     expect(usage).toMatchObject({
       usedMessages: 0,
       usedTokens: 0,
-      maxMessages: 50,
+      maxMessages: 5,
       maxTokens: 100_000,
-      remainingMessages: 50,
+      remainingMessages: 5,
       canSend: true,
     });
   });
@@ -57,7 +57,7 @@ describe("ai/limits (Drizzle)", () => {
 
     expect(usage.usedMessages).toBe(3);
     expect(usage.usedTokens).toBe(30);
-    expect(usage.remainingMessages).toBe(50 - 3);
+    expect(usage.remainingMessages).toBe(5 - 3);
     expect(usage.canSend).toBe(true);
   });
 

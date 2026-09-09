@@ -27,7 +27,7 @@ describe.skipIf(!hasDb)("Billing — integração real", () => {
     const plan = await PlanRepository.create({
       name: "Pro Test",
       code: `pro-test-${userId.slice(0, 8)}`,
-      priceCents: 2990,
+      priceCents: 1990,
       limits: { maxMessages: 500, maxTokens: 1_000_000, allowPro: true },
       status: "active",
     });
@@ -59,7 +59,7 @@ describe.skipIf(!hasDb)("Billing — integração real", () => {
     const plan = await PlanRepository.create({
       name: "Pro Test 2",
       code: `pro-test2-${userId.slice(0, 8)}`,
-      priceCents: 2990,
+      priceCents: 1990,
       limits: { maxMessages: 500, maxTokens: 1_000_000, allowPro: true },
       status: "active",
     });

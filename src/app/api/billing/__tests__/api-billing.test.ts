@@ -90,7 +90,7 @@ describe("GET /api/billing/plans", () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockListActive.mockResolvedValue([
       { id: UUID, name: "Gratuito", code: "free", priceCents: 0, status: "active" },
-      { id: UUID, name: "Pro", code: "pro", priceCents: 2990, status: "active" },
+      { id: UUID, name: "Pro", code: "pro", priceCents: 1990, status: "active" },
     ]);
     const res = await getPlans();
     expect(res.status).toBe(200);
@@ -120,7 +120,7 @@ describe("GET /api/billing/entitlement", () => {
       subscriptionStatus: null,
       startsAt: null,
       endsAt: null,
-      limits: { maxMessages: 50, maxTokens: 100000, allowPro: false },
+      limits: { maxMessages: 5, maxTokens: 100000, allowPro: false },
     });
     const res = await getEntitlement();
     expect(res.status).toBe(200);
@@ -152,13 +152,13 @@ describe("POST /api/billing/checkout", () => {
       sandboxInitPoint: "https://sandbox.mercadopago.com/x",
       externalReference: "pro:u1",
       plan: "pro",
-      priceCents: 2990,
+      priceCents: 1990,
     });
     const res = await postCheckout(jsonReq({ plan: "pro" }));
     expect(res.status).toBe(200);
     const json = (await res.json()) as { plan: string; price_cents: number };
     expect(json.plan).toBe("pro");
-    expect(json.price_cents).toBe(2990);
+    expect(json.price_cents).toBe(1990);
     // A rota repassa o e-mail do usuário logado como payerEmail (3º arg)
     // para o createCheckout (necessário na Preapproval do Mercado Pago).
     expect(mockCreateCheckout).toHaveBeenCalledWith("u1", "pro", "user@example.com");

@@ -58,7 +58,8 @@ const PRO_PLAN = {
   id: "p-pro",
   name: "Pro",
   code: "pro",
-  priceCents: 2990,
+  priceCents: 1990,
+  promoPriceCents: 990,
   limits: { maxMessages: 500, maxTokens: 1000000, allowPro: true },
   status: "active",
   createdAt: new Date(),
@@ -91,7 +92,7 @@ const EXISTING_PAYMENT = {
   subscriptionId: "s1",
   provider: "mercadopago",
   providerId: "123",
-  amountCents: 2990,
+  amountCents: 1990,
   currency: "BRL",
   status: "approved",
   externalReference: "pro:u1",
@@ -150,7 +151,7 @@ describe("WebhookService.handleNotification", () => {
       id: 123,
       status: "approved",
       external_reference: "pro:u1",
-      transaction_amount: 29.9,
+      transaction_amount: 19.9,
       date_approved: "2026-08-05T00:00:00.000Z",
     });
     mockGetPreapproval.mockResolvedValue({
@@ -186,7 +187,7 @@ describe("WebhookService.handleNotification", () => {
         userId: "u1",
         provider: "mercadopago",
         providerId: "123",
-        amountCents: 2990,
+        amountCents: 1990,
         currency: "BRL",
         status: "approved",
         subscriptionId: "s1",
@@ -232,7 +233,7 @@ describe("WebhookService.handleNotification", () => {
       id: 123,
       status: "pending",
       external_reference: "pro:u1",
-      transaction_amount: 29.9,
+      transaction_amount: 19.9,
     });
     const result = await WebhookService.handleNotification({ data: { id: 123 } });
     expect(result.status).toBe("pending");

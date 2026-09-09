@@ -81,9 +81,9 @@ describe.skipIf(!hasDb)("Professor IA ↔ Billing — integração real", () => 
   it("limite gratuito atingido → LIMIT_EXCEEDED sem chamar a IA", async () => {
     const userId = await createTestUser();
     users.push(userId);
-    // Plano gratuito (sem assinatura) → maxMessages = 50 (default).
+    // Plano gratuito (sem assinatura) → maxMessages = 5 (default).
     await UsageRepository.increment(userId, startOfDay(), 0, 0);
-    for (let i = 1; i < 50; i++) {
+    for (let i = 1; i < 5; i++) {
       await UsageRepository.increment(userId, startOfDay(), 1, 1);
     }
 

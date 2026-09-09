@@ -77,7 +77,7 @@ const FREE_PLAN = {
   name: "Gratuito",
   code: "free",
   priceCents: 0,
-  limits: { maxMessages: 50, maxTokens: 100000, allowPro: false },
+  limits: { maxMessages: 5, maxTokens: 100000, allowPro: false },
   status: "active",
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -88,7 +88,8 @@ const PRO_PLAN = {
   id: "p-pro",
   name: "Pro",
   code: "pro",
-  priceCents: 2990,
+  priceCents: 1990,
+  promoPriceCents: 990,
   limits: { maxMessages: 500, maxTokens: 1000000, allowPro: true },
   status: "active",
   createdAt: new Date(),
@@ -163,7 +164,7 @@ describe("Integração Professor ↔ Billing (OPEN-004)", () => {
 
   it("plano gratuito com quota atingida → LIMIT_EXCEEDED (Professor não chama IA)", async () => {
     mockFindUsage.mockResolvedValue({
-      messagesCount: 50, // == maxMessages do free
+      messagesCount: 5, // == maxMessages do free
       tokensIn: 0,
       tokensOut: 0,
     });
