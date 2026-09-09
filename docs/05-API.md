@@ -209,7 +209,7 @@ data: {"tokens_in":310,"tokens_out":420,"model":"flash"}
 
 | Recurso | Limite | Janela |
 | --- | --- | --- |
-| Chat (free) | 50 mensagens | dia |
+| Chat (free) | 5 mensagens | dia |
 | Chat (pro) | 500 mensagens | dia |
 | Chat (intensivo) | 2.000 mensagens | dia |
 | Registro | 5 criações/IP | hora |

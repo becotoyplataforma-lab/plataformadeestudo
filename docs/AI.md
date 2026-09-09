@@ -16,7 +16,7 @@
 - `WeaknessAnalysisService` — matérias/tópicos com baixo acerto.
 
 ## Limites
-`resolveUserLimits` (billing) → `getAiUsage` (Drizzle, `ai_usage`). Free 50 msgs/dia.
+`resolveUserLimits` (billing) → `getAiUsage` (Drizzle, `ai_usage`). Free 5 msgs/dia.
 
 ## Segurança
 - `server-only` em todos os serviços de IA.
