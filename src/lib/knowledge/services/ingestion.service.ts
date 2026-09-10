@@ -9,6 +9,8 @@
 import { createHash } from "crypto";
 import { DocumentRepository } from "../repositories/document.repository";
 import { storageBackend } from "../storage/backend";
+import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
+import { DEFAULT_FREE_LIMITS } from "@/lib/billing/types";
 
 // ============================================================
 // Tipos
@@ -194,6 +196,22 @@ export const IngestionService = {
         "Este arquivo já foi enviado",
         { existingDocumentId: existing.id }
       );
+    }
+
+    // 4.1. Quota maxDocuments (best-effort, após duplicidade e antes do create).
+    // Limite oficial via resolveUserLimits; fallback segue mecanismo existente
+    // (DEFAULT_FREE_LIMITS). Conta apenas documents com deletedAt IS NULL.
+    const limits = await resolveUserLimits(userId);
+    const maxDocuments = limits.maxDocuments ?? DEFAULT_FREE_LIMITS.maxDocuments;
+    if (typeof maxDocuments === "number") {
+      const current = await DocumentRepository.countActiveByUser(userId);
+      if (current >= maxDocuments) {
+        throw new IngestionError(
+          "QUOTA_EXCEEDED",
+          `Você atingiu o limite de documentos do seu plano (${maxDocuments}). Exclua um documento ou faça upgrade.`,
+          { resource: "documents", limit: maxDocuments, current, resetAt: null }
+        );
+      }
     }
 
     // 5. Storage path no R2 (nome sanitizado contra path traversal).

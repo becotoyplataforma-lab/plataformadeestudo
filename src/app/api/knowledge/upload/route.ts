@@ -198,6 +198,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ document: dto }, { status: 201 });
   } catch (error) {
     if (error instanceof IngestionError) {
+      // Quota maxDocuments (FASE 3C-5C): 429 com resource/limit/current/resetAt.
+      // Quota de bytes existente (validateQuota) continua 413 — não misturar.
+      if (
+        error.code === "QUOTA_EXCEEDED" &&
+        (error.details as { resource?: unknown } | undefined)?.resource ===
+          "documents"
+      ) {
+        const details = error.details as {
+          limit?: unknown;
+          current?: unknown;
+        };
+        return NextResponse.json(
+          {
+            error: "QUOTA_EXCEEDED",
+            message: error.message,
+            resource: "documents",
+            limit: details.limit,
+            current: details.current,
+            resetAt: null,
+          },
+          { status: 429 }
+        );
+      }
       const statusMap: Record<string, number> = {
         DUPLICATE_FILE: 409,
         QUOTA_EXCEEDED: 413,

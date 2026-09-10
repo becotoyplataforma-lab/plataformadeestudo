@@ -159,6 +159,15 @@ export const DocumentRepository = {
       .offset(offset);
   },
 
+  /** Contar documentos ativos do usuário (quota maxDocuments, best-effort). */
+  async countActiveByUser(userId: string): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(documents)
+      .where(and(eq(documents.userId, userId), isNull(documents.deletedAt)));
+    return row?.count ?? 0;
+  },
+
   /** Somar storage usado pelo usuário (em bytes). */
   async getStorageUsage(userId: string): Promise<number> {
     const [row] = await db

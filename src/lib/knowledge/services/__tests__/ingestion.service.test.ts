@@ -6,13 +6,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockFindByHash = vi.fn();
 const mockCreate = vi.fn();
 const mockGetStorageUsage = vi.fn();
+const mockCountActiveByUser = vi.fn();
 
 vi.mock("../../repositories/document.repository", () => ({
   DocumentRepository: {
     findByHash: (...args: unknown[]) => mockFindByHash(...args),
     create: (...args: unknown[]) => mockCreate(...args),
     getStorageUsage: (...args: unknown[]) => mockGetStorageUsage(...args),
+    countActiveByUser: (...args: unknown[]) => mockCountActiveByUser(...args),
   },
+}));
+
+const mockResolveUserLimits = vi.fn();
+vi.mock("@/lib/billing/services/limits.resolver", () => ({
+  resolveUserLimits: (...args: unknown[]) => mockResolveUserLimits(...args),
 }));
 
 import { IngestionService, IngestionError } from "../ingestion.service";
@@ -20,6 +27,10 @@ import { IngestionService, IngestionError } from "../ingestion.service";
 describe("IngestionService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFindByHash.mockResolvedValue(null);
+    // Quota maxDocuments (FASE 3C-5C): default abaixo do limite Free (0/3).
+    mockResolveUserLimits.mockResolvedValue({ maxDocuments: 3 });
+    mockCountActiveByUser.mockResolvedValue(0);
   });
 
   describe("validateQuota", () => {
