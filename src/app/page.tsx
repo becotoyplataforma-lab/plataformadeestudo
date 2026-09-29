@@ -300,7 +300,7 @@ export default function LandingPage() {
             features={[
               "Cronograma de estudos",
               "20 questões/dia",
-              "5 mensagens IA/dia (V4 Flash)",
+              "5 mensagens IA/dia (limitadas)",
               "Flashcards ilimitados",
             ]}
             cta="Começar grátis"
