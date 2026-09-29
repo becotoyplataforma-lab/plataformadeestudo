@@ -79,6 +79,8 @@ export interface ContentSubject {
 export interface Question {
   id: string;
   subject_id: string | null;
+  topic_id?: string | null;
+  topic?: string | null;
   banca: string | null;
   cargo: string | null;
   ano: number | null;

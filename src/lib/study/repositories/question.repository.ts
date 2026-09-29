@@ -10,6 +10,7 @@ import {
   questions,
   questionOptions,
   knowledgeSubjects,
+  knowledgeTopics,
 } from "@/db/schema";
 import type { questionLevel } from "@/db/schema/study";
 
@@ -17,6 +18,7 @@ export type QuestionLevel = (typeof questionLevel.enumValues)[number];
 
 export interface QuestionFilters {
   subjectId?: string;
+  topicId?: string;
   banca?: string;
   nivel?: QuestionLevel;
   page?: number;
@@ -33,6 +35,10 @@ export const QuestionRepository = {
         subjectName: knowledgeSubjects.name,
         subjectSlug: knowledgeSubjects.slug,
         subjectColor: knowledgeSubjects.color,
+        topic: questions.topic,
+        knowledgeTopicId: questions.knowledgeTopicId,
+        topicName: knowledgeTopics.name,
+        topicSlug: knowledgeTopics.slug,
         banca: questions.banca,
         cargo: questions.cargo,
         ano: questions.ano,
@@ -48,6 +54,10 @@ export const QuestionRepository = {
       .leftJoin(
         knowledgeSubjects,
         eq(questions.knowledgeSubjectId, knowledgeSubjects.id)
+      )
+      .leftJoin(
+        knowledgeTopics,
+        eq(questions.knowledgeTopicId, knowledgeTopics.id)
       )
       .where(
         and(
@@ -67,7 +77,7 @@ export const QuestionRepository = {
 
   /** Listar questões públicas. */
   async listPublic(filters: QuestionFilters = {}) {
-    const { subjectId, banca, nivel, page = 1, pageSize = 20 } = filters;
+    const { subjectId, topicId, banca, nivel, page = 1, pageSize = 20 } = filters;
 
     const conditions = [
       eq(questions.isPublic, true),
@@ -75,6 +85,7 @@ export const QuestionRepository = {
       isNull(questions.deletedAt),
     ];
     if (subjectId) conditions.push(eq(questions.knowledgeSubjectId, subjectId));
+    if (topicId) conditions.push(eq(questions.knowledgeTopicId, topicId));
     if (banca) conditions.push(eq(questions.banca, banca));
     if (nivel) conditions.push(eq(questions.nivel, nivel));
 
@@ -85,6 +96,10 @@ export const QuestionRepository = {
         subjectName: knowledgeSubjects.name,
         subjectSlug: knowledgeSubjects.slug,
         subjectColor: knowledgeSubjects.color,
+        topic: questions.topic,
+        knowledgeTopicId: questions.knowledgeTopicId,
+        topicName: knowledgeTopics.name,
+        topicSlug: knowledgeTopics.slug,
         banca: questions.banca,
         cargo: questions.cargo,
         ano: questions.ano,
@@ -100,6 +115,10 @@ export const QuestionRepository = {
       .leftJoin(
         knowledgeSubjects,
         eq(questions.knowledgeSubjectId, knowledgeSubjects.id)
+      )
+      .leftJoin(
+        knowledgeTopics,
+        eq(questions.knowledgeTopicId, knowledgeTopics.id)
       )
       .where(and(...conditions))
       .orderBy(sql`${questions.createdAt} DESC`)

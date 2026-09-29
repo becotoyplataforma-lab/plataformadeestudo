@@ -21,6 +21,8 @@ import type { Question, QuestionOption } from "@/types";
 interface QuestionRow {
   id: string;
   knowledgeSubjectId: string;
+  knowledgeTopicId: string | null;
+  topic: string | null;
   subjectId: string | null;
   subjectName: string | null;
   subjectSlug: string | null;
@@ -43,6 +45,8 @@ function toQuestion(row: QuestionRow, options: QuestionOption[] = []): Question 
   return {
     id: row.id,
     subject_id: row.knowledgeSubjectId,
+    topic_id: row.knowledgeTopicId,
+    topic: row.topic,
     banca: row.banca,
     cargo: row.cargo,
     ano: row.ano,
@@ -69,6 +73,8 @@ function toQuestion(row: QuestionRow, options: QuestionOption[] = []): Question 
 const BASE_SELECT = {
   id: questions.id,
   knowledgeSubjectId: questions.knowledgeSubjectId,
+  knowledgeTopicId: questions.knowledgeTopicId,
+  topic: questions.topic,
   subjectId: knowledgeSubjects.id,
   subjectName: knowledgeSubjects.name,
   subjectSlug: knowledgeSubjects.slug,
@@ -139,10 +145,11 @@ async function listOptionsForQuestions(
 export async function listQuestions(
   filters: QuestionFilters
 ): Promise<{ data: Question[]; total: number }> {
-  const { subject_id, banca, nivel, page = 1, pageSize = 15 } = filters;
+  const { subject_id, topic_id, banca, nivel, page = 1, pageSize = 15 } = filters;
 
   const conditions = publicConditions();
   if (subject_id) conditions.push(eq(questions.knowledgeSubjectId, subject_id));
+  if (topic_id) conditions.push(eq(questions.knowledgeTopicId, topic_id));
   if (banca) conditions.push(eq(questions.banca, banca));
   if (nivel) conditions.push(eq(questions.nivel, nivel));
 

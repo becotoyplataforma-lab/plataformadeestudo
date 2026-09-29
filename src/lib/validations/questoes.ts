@@ -8,6 +8,7 @@ export const answerQuestionSchema = z.object({
 
 export const questionFiltersSchema = z.object({
   subject_id: z.string().uuid().optional(),
+  topic_id: z.string().uuid().optional(),
   banca: z.string().optional(),
   nivel: z.enum(["facil", "medio", "dificil"]).optional(),
   page: z.coerce.number().int().min(1).default(1),

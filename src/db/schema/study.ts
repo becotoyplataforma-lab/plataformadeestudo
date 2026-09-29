@@ -30,7 +30,12 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { authUsers } from "./identity";
-import { knowledgeSubjects, documents, documentChunks } from "./knowledge";
+import {
+  knowledgeSubjects,
+  knowledgeTopics,
+  documents,
+  documentChunks,
+} from "./knowledge";
 import { editais, positions } from "./contest";
 import { avatars } from "./ai";
 
@@ -184,6 +189,10 @@ export const questions = pgTable(
     aiGenerated: boolean("ai_generated").notNull().default(false),
     needsReview: boolean("needs_review").notNull().default(false),
     topic: text("topic"),
+    knowledgeTopicId: uuid("knowledge_topic_id").references(
+      () => knowledgeTopics.id,
+      { onDelete: "set null" }
+    ),
     isPublic: boolean("is_public").notNull().default(false),
     contentHash: text("content_hash"),
     status: questionStatus("status").notNull().default("rascunho"),
@@ -201,6 +210,7 @@ export const questions = pgTable(
       .where(sql`${t.deletedAt} is null`),
     check("chk_questions_gabarito", sql`${t.gabarito} ~ '^[A-E]$'`),
     index("idx_questions_subject").on(t.knowledgeSubjectId),
+    index("idx_questions_topic_id").on(t.knowledgeTopicId),
     index("idx_questions_banca").on(t.banca),
     index("idx_questions_nivel").on(t.nivel),
     index("idx_questions_status").on(t.status),
@@ -475,6 +485,10 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
   subject: one(knowledgeSubjects, {
     fields: [questions.knowledgeSubjectId],
     references: [knowledgeSubjects.id],
+  }),
+  topic: one(knowledgeTopics, {
+    fields: [questions.knowledgeTopicId],
+    references: [knowledgeTopics.id],
   }),
   sourceDocument: one(documents, {
     fields: [questions.sourceDocumentId],
