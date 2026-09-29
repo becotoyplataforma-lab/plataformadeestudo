@@ -20,6 +20,10 @@ import { StudySubjectRepository } from "../repositories/study-subject.repository
 import { StudyTaskRepository } from "../repositories/study-task.repository";
 import { LinkResolverService, type LinkResult } from "./link-resolver.service";
 import { PlannerAiService } from "./planner-ai.service";
+import {
+  EditalContextService,
+  pickTopTopicForSubject,
+} from "./edital-context.service";
 
 // ============================================================
 // Tipos
@@ -455,9 +459,10 @@ export const AdaptivePlannerService = {
     // 1. Recalcular prioridades
     const priorities = await this.recalculatePriorities(userId);
 
-    // 2. Buscar meta diária
+    // 2. Buscar meta diária e contexto enriquecido de edital com tópicos
     const profile = await AggregationRepository.getProfileMeta(userId);
     const dailyMetaMin = profile?.metaDiariaMin ?? 120;
+    const editalTopicContext = await EditalContextService.getEnrichedEditalContext(userId);
 
     let tasks: Array<{
       title: string;
@@ -479,6 +484,8 @@ export const AdaptivePlannerService = {
           dailyMetaMin,
           priorities,
           bancaTarget: profile?.bancaPreferida ?? null,
+          editalContestId: editalTopicContext.contestId,
+          enrichedSubjects: editalTopicContext.subjects,
         });
 
         if (aiResult && aiResult.tasks.length > 0) {
@@ -511,6 +518,13 @@ export const AdaptivePlannerService = {
         allocation.set(s.subjectId, weekMinutes);
       }
 
+      const enrichedByName = new Map(
+        (editalTopicContext.subjects ?? []).map((es) => [
+          es.subjectName.toLowerCase().trim(),
+          es,
+        ])
+      );
+
       // Gerar tarefas para cada dia ativo
       const start = parseISODate(startDate);
       for (const s of sorted) {
@@ -523,10 +537,32 @@ export const AdaptivePlannerService = {
         // valores < 5 (ex.: 15min/semana ÷ 5 dias = 3min), o que o Postgres rejeita.
         const perDay = Math.min(600, Math.max(5, Math.round(weekMin / activeDays.length)));
 
+        // Tópico prioritário determinístico (FASE 6D)
+        const enriched =
+          (s.knowledgeSubjectName
+            ? enrichedByName.get(s.knowledgeSubjectName.toLowerCase().trim())
+            : undefined) ??
+          enrichedByName.get(s.subjectName.toLowerCase().trim());
+
+        const topTopic = enriched?.topics
+          ? pickTopTopicForSubject(enriched.topics)
+          : null;
+        const taskTitle = topTopic
+          ? `Estudar ${s.subjectName}: ${topTopic.topicName}`
+          : `Estudar ${s.subjectName}`;
+        const taskDescription = topTopic
+          ? `Foco no tópico ${topTopic.topicName}${
+              topTopic.accuracyPct !== null
+                ? " (" + topTopic.accuracyPct + "% de acerto)"
+                : ""
+            }`
+          : null;
+
         for (const dayOffset of activeDays) {
           const taskDate = addDays(start, dayOffset);
           tasks.push({
-            title: `Estudar ${s.subjectName}`,
+            title: taskTitle,
+            description: taskDescription,
             scheduledDate: toISODate(taskDate),
             durationMin: perDay,
             studySubjectId: s.subjectId,

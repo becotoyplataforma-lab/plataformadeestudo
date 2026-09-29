@@ -3,19 +3,21 @@
  *
  * Serviço de personalização do cronograma de estudos com IA (DeepSeek).
  *
- * Arquitetura (FASE 5):
+ * Arquitetura (FASE 5 + FASE 6D):
  * 1. Motor determinístico calcula prioridades P1–P5 e fatores de desempenho.
- * 2. PlannerAiService constrói contexto estruturado seguro (sem credenciais/secrets).
+ * 2. PlannerAiService constrói contexto estruturado seguro enriquecido com tópicos do edital,
+ *    frequência histórica e desempenho por tópico (sem credenciais/secrets).
  * 3. Valida quota e limites de IA via Billing (resolveUserLimits / UsageService).
  * 4. Chama DeepSeek (modelo flash / deepseek-chat) com timeout seguro.
  * 5. Valida a resposta JSON estritamente via schema Zod e regras de domínio:
  *    - Todas as disciplinas devem pertencer ao usuário.
+ *    - Se fornecido, topic_id DEVE pertencer à disciplina correspondente no contexto.
  *    - Todas as datas devem pertencer aos dias ativos informados.
  *    - Duração das tarefas entre 5 e 600 minutos (constraint do banco).
  *    - Título obrigatoriamente padronizado com prefixo "Estudar ".
  *    - Soma diária de minutos dentro do limite do aluno.
  * 6. Em caso de qualquer falha (sem API key, quota excedida, timeout, erro HTTP,
- *    resposta inválida), aciona fallback para o gerador determinístico seguro.
+ *    resposta inválida, topic_id inexistente), aciona fallback para o gerador determinístico seguro.
  * 7. Registra consumo de tokens em ai_usage e emite telemetria padronizada:
  *    PLANNER_AI_CALL: OK ou PLANNER_AI_CALL: FALLBACK (sem segredos).
  */
@@ -26,6 +28,7 @@ import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
 import { UsageService } from "@/lib/ai/services/usage.service";
 import { logger } from "@/lib/observability";
 import type { SubjectPriority } from "./adaptive-planner.service";
+import type { EnrichedSubjectContext } from "./edital-context.service";
 
 // ============================================================
 // Schemas e Tipos
@@ -33,6 +36,7 @@ import type { SubjectPriority } from "./adaptive-planner.service";
 
 export const PlannerAiTaskSchema = z.object({
   subject_id: z.string().uuid({ message: "subject_id deve ser um UUID válido" }),
+  topic_id: z.string().uuid({ message: "topic_id deve ser um UUID válido" }).optional().nullable(),
   scheduled_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "scheduled_date deve ser YYYY-MM-DD" }),
@@ -57,6 +61,7 @@ export interface PlannerAiInput {
   priorities: SubjectPriority[];
   bancaTarget?: string | null;
   editalContestId?: string | null;
+  enrichedSubjects?: EnrichedSubjectContext[];
 }
 
 export interface PlannerAiResult {
@@ -66,6 +71,7 @@ export interface PlannerAiResult {
     scheduledDate: string;
     durationMin: number;
     studySubjectId: string;
+    topicId?: string | null;
   }>;
   summary?: string;
   aiGenerated: boolean;
@@ -108,7 +114,8 @@ export function validateAndNormalizeAiResponse(
   rawJson: string,
   validSubjectMap: Map<string, string>,
   validDates: Set<string>,
-  dailyMetaMin: number
+  dailyMetaMin: number,
+  validTopicBySubjectMap?: Map<string, Set<string>>
 ): {
   summary?: string;
   tasks: Array<{
@@ -117,6 +124,7 @@ export function validateAndNormalizeAiResponse(
     durationMin: number;
     studySubjectId: string;
     description?: string | null;
+    topicId?: string | null;
   }>;
 } {
   // 1. Extração e Parse do JSON
@@ -149,6 +157,7 @@ export function validateAndNormalizeAiResponse(
     durationMin: number;
     studySubjectId: string;
     description?: string | null;
+    topicId?: string | null;
   }> = [];
 
   for (const t of tasks) {
@@ -158,6 +167,16 @@ export function validateAndNormalizeAiResponse(
       throw new Error(
         `UNKNOWN_SUBJECT_ID: Disciplina ${t.subject_id} não pertence ao usuário`
       );
+    }
+
+    // Validação de tópico (FASE 6D): se topic_id for informado, deve pertencer à disciplina
+    if (t.topic_id && validTopicBySubjectMap) {
+      const allowedTopics = validTopicBySubjectMap.get(t.subject_id);
+      if (!allowedTopics || !allowedTopics.has(t.topic_id)) {
+        throw new Error(
+          `UNKNOWN_TOPIC_ID: Tópico ${t.topic_id} não pertence à disciplina ${t.subject_id}`
+        );
+      }
     }
 
     // Data deve ser um dos dias ativos
@@ -190,6 +209,7 @@ export function validateAndNormalizeAiResponse(
       durationMin: t.duration_min,
       studySubjectId: t.subject_id,
       description: t.description ?? null,
+      topicId: t.topic_id ?? null,
     });
   }
 
@@ -224,6 +244,7 @@ REGRAS RÍGIDAS DE SAÍDA:
   "tasks": [
     {
       "subject_id": "<UUID exato da matéria fornecida>",
+      "topic_id": "<UUID do tópico contido na lista de tópicos da matéria, ou null/omitido se geral>",
       "scheduled_date": "<Data YYYY-MM-DD contida em active_dates>",
       "duration_min": <minutos inteiros entre 15 e 180>,
       "title": "Estudar <Nome da Matéria>: <Tópico ou Atividade Específica>",
@@ -234,11 +255,12 @@ REGRAS RÍGIDAS DE SAÍDA:
 
 REGRAS DE INTEGRIDADE:
 - O campo "subject_id" DEVE ser obrigatoriamente um dos UUIDs presentes na lista de matérias fornecida. NUNCA invente disciplinas ou IDs.
+- O campo "topic_id" (opcional) DEVE OBRIGATORIAMENTE corresponder a um dos "topic_id" fornecidos dentro da lista de tópicos da respectiva disciplina. NUNCA invente tópicos ou IDs. Se a disciplina não tiver tópicos ou a sessão for de revisão geral, defina "topic_id" como null ou omita.
 - O campo "scheduled_date" DEVE ser obrigatoriamente uma das datas presentes em "active_dates".
 - O campo "title" DEVE OBRIGATORIAMENTE começar com o prefixo "Estudar " seguido do nome da matéria (ex.: "Estudar Português: Interpretação de Texto").
 - "duration_min" deve respeitar a disponibilidade diária do aluno (daily_meta_min).
 - DISTRIBUIÇÃO PEDAGÓGICA:
-  * Prioridades 5 e 4 (pontos fracos, baixa taxa de acerto): sessões mais longas ou frequentes, foco em teoria essencial e muitas questões comentadas.
+  * Disciplinas são a unidade principal do plano. Prioridades 5 e 4 (pontos fracos, baixa taxa de acerto): sessões mais longas ou frequentes, foco em teoria essencial e muitas questões comentadas. Dê preferência aos tópicos de menor accuracy_pct e maior historical_frequency_percent.
   * Prioridades 1 e 2 (matérias dominadas ou alto acerto): sessões de manutenção rápida, revisão espaçada e flashcards.
   * Prioridade 3: equilíbrio entre conteúdo e prática.
 - Para cada dia ativo, programe sessões para as disciplinas ativas, gerando exatamente 1 tarefa por disciplina para cada dia ativo informado (total de [disciplinas × dias ativos] tarefas).`;
@@ -277,8 +299,16 @@ export const PlannerAiService = {
   async generatePersonalizedPlan(
     input: PlannerAiInput
   ): Promise<PlannerAiResult | null> {
-    const { userId, startDate, activeDays, dailyMetaMin, priorities, bancaTarget, editalContestId } =
-      input;
+    const {
+      userId,
+      startDate,
+      activeDays,
+      dailyMetaMin,
+      priorities,
+      bancaTarget,
+      editalContestId,
+      enrichedSubjects,
+    } = input;
 
     // 0. Validações preliminares
     if (!priorities || priorities.length === 0 || !activeDays || activeDays.length === 0) {
@@ -320,6 +350,36 @@ export const PlannerAiService = {
       priorities.map((p) => [p.subjectId, p.subjectName])
     );
 
+    // Mapeamento de tópicos enriquecidos por disciplina (FASE 6D)
+    const enrichedSubjectMap = new Map<string, EnrichedSubjectContext>();
+    const enrichedByNameMap = new Map<string, EnrichedSubjectContext>();
+    if (enrichedSubjects) {
+      for (const es of enrichedSubjects) {
+        enrichedSubjectMap.set(es.subjectId, es);
+        enrichedByNameMap.set(es.subjectName.toLowerCase().trim(), es);
+      }
+    }
+
+    const validTopicBySubjectMap = new Map<string, Set<string>>();
+    for (const p of priorities) {
+      const enriched =
+        enrichedSubjectMap.get(p.subjectId) ??
+        (p.knowledgeSubjectName
+          ? enrichedByNameMap.get(p.knowledgeSubjectName.toLowerCase().trim())
+          : undefined) ??
+        enrichedByNameMap.get(p.subjectName.toLowerCase().trim());
+
+      const topicSet = new Set<string>();
+      if (enriched?.topics) {
+        for (const t of enriched.topics) {
+          if (t.topicId) topicSet.add(t.topicId);
+          if (t.noticeTopicId) topicSet.add(t.noticeTopicId);
+          if (t.knowledgeTopicId) topicSet.add(t.knowledgeTopicId);
+        }
+      }
+      validTopicBySubjectMap.set(p.subjectId, topicSet);
+    }
+
     // 4. Montagem do payload seguro para o DeepSeek (sem secrets, sem senhas, sem DB URL)
     const structuredContext = {
       student_profile: {
@@ -329,15 +389,38 @@ export const PlannerAiService = {
         banca_target: bancaTarget ?? null,
         edital_contest_id: editalContestId ?? null,
       },
-      subjects: priorities.map((p) => ({
-        subject_id: p.subjectId,
-        subject_name: p.subjectName,
-        priority: p.priority,
-        accuracy_pct: p.factors.accuracyPct,
-        total_questions: p.factors.totalQuestions,
-        trend: p.factors.trend,
-        days_since_last_task: p.factors.daysSinceLastTask,
-      })),
+      subjects: priorities.map((p) => {
+        const enriched =
+          enrichedSubjectMap.get(p.subjectId) ??
+          (p.knowledgeSubjectName
+            ? enrichedByNameMap.get(p.knowledgeSubjectName.toLowerCase().trim())
+            : undefined) ??
+          enrichedByNameMap.get(p.subjectName.toLowerCase().trim());
+
+        const topics = (enriched?.topics ?? []).map((t) => ({
+          topic_id: t.topicId,
+          topic_name: t.topicName,
+          edital_topic_weight: t.editalTopicWeight,
+          historical_frequency_percent: t.historicalFrequencyPercent,
+          frequency_source: t.frequencySource,
+          total_questions: t.totalQuestions,
+          attempted_questions: t.attemptedQuestions,
+          accuracy_pct: t.accuracyPct,
+          trend: t.trend,
+        }));
+
+        return {
+          subject_id: p.subjectId,
+          subject_name: p.subjectName,
+          priority: p.priority,
+          accuracy_pct: p.factors.accuracyPct,
+          total_questions: p.factors.totalQuestions,
+          trend: p.factors.trend,
+          days_since_last_task: p.factors.daysSinceLastTask,
+          edital_weight: p.factors.editalWeight,
+          topics,
+        };
+      }),
     };
 
     const userMessage = JSON.stringify(structuredContext, null, 2);
@@ -390,7 +473,8 @@ export const PlannerAiService = {
         rawContent,
         validSubjectMap,
         validDates,
-        dailyMetaMin
+        dailyMetaMin,
+        validTopicBySubjectMap
       );
     } catch (err) {
       logFallback(
