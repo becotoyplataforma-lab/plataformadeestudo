@@ -17,9 +17,11 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -28,7 +30,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { lifecycleStatus } from "./enums";
-import { knowledgeSubjects } from "./knowledge";
+import { knowledgeSubjects, knowledgeTopics } from "./knowledge";
 
 // ============================================================
 // ENUMS
@@ -266,6 +268,53 @@ export const noticeSubjects = pgTable(
 );
 
 // ============================================================
+// NOTICE_TOPICS — tópico do edital por matéria (DD-021/DD-022)
+// ============================================================
+
+export const noticeTopics = pgTable(
+  "notice_topics",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    noticeSubjectId: uuid("notice_subject_id")
+      .notNull()
+      .references(() => noticeSubjects.id, { onDelete: "cascade" }),
+    knowledgeTopicId: uuid("knowledge_topic_id").references(
+      () => knowledgeTopics.id,
+      { onDelete: "set null" }
+    ),
+    name: text("name").notNull(),
+    normalizedName: text("normalized_name").notNull(),
+    weight: numeric("weight", { precision: 5, scale: 2 }),
+    parentNoticeTopicId: uuid("parent_notice_topic_id"),
+    metadata: jsonb("metadata").default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.parentNoticeTopicId],
+      foreignColumns: [t.id],
+    }).onDelete("cascade"),
+    check(
+      "chk_notice_topics_weight",
+      sql`${t.weight} is null or (${t.weight} >= 0 and ${t.weight} <= 100)`
+    ),
+    uniqueIndex("uq_notice_topics_subject_norm")
+      .on(t.noticeSubjectId, t.normalizedName)
+      .where(sql`${t.deletedAt} is null`),
+    index("idx_notice_topics_subject").on(t.noticeSubjectId),
+    index("idx_notice_topics_knowledge").on(t.knowledgeTopicId),
+    index("idx_notice_topics_parent").on(t.parentNoticeTopicId),
+    index("idx_notice_topics_norm").on(t.normalizedName),
+  ]
+);
+
+// ============================================================
 // RELAÇÕES
 // ============================================================
 
@@ -311,7 +360,7 @@ export const positionsRelations = relations(positions, ({ one, many }) => ({
   noticeSubjects: many(noticeSubjects),
 }));
 
-export const noticeSubjectsRelations = relations(noticeSubjects, ({ one }) => ({
+export const noticeSubjectsRelations = relations(noticeSubjects, ({ one, many }) => ({
   edital: one(editais, {
     fields: [noticeSubjects.editalId],
     references: [editais.id],
@@ -323,5 +372,25 @@ export const noticeSubjectsRelations = relations(noticeSubjects, ({ one }) => ({
   knowledgeSubject: one(knowledgeSubjects, {
     fields: [noticeSubjects.knowledgeSubjectId],
     references: [knowledgeSubjects.id],
+  }),
+  noticeTopics: many(noticeTopics),
+}));
+
+export const noticeTopicsRelations = relations(noticeTopics, ({ one, many }) => ({
+  noticeSubject: one(noticeSubjects, {
+    fields: [noticeTopics.noticeSubjectId],
+    references: [noticeSubjects.id],
+  }),
+  knowledgeTopic: one(knowledgeTopics, {
+    fields: [noticeTopics.knowledgeTopicId],
+    references: [knowledgeTopics.id],
+  }),
+  parent: one(noticeTopics, {
+    fields: [noticeTopics.parentNoticeTopicId],
+    references: [noticeTopics.id],
+    relationName: "noticeTopicHierarchy",
+  }),
+  children: many(noticeTopics, {
+    relationName: "noticeTopicHierarchy",
   }),
 }));

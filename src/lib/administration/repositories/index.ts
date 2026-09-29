@@ -21,3 +21,8 @@ export {
 export {
   OrganBoardRepository,
 } from "./organ-board.repository";
+export {
+  NoticeTopicRepository,
+  type NoticeTopicInput,
+  type NoticeTopicRow,
+} from "./notice-topic.repository";

@@ -13,9 +13,16 @@ import {
   EditalApplyError,
 } from "@/lib/administration/services/edital.service";
 
+const TopicSchema = z.object({
+  name: z.string().min(1).max(300),
+  weight: z.number().min(0).max(100).optional().nullable(),
+  parent: z.string().min(1).max(300).optional().nullable(),
+});
+
 const MateriaSchema = z.object({
   name: z.string().min(2).max(120),
   weight: z.number().int().min(0).max(100),
+  topicos: z.array(TopicSchema).optional(),
 });
 
 const ApplySchema = z.object({
