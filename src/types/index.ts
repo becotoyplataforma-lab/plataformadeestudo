@@ -221,5 +221,7 @@ export interface PlannerPriority {
 
 export interface PlannerGenerateResponse {
   tasks_created: number;
+  ai_generated?: boolean;
+  plan_summary?: string | null;
   priorities: PlannerPriority[];
 }

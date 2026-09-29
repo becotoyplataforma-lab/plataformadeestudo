@@ -13,6 +13,7 @@ const PASSWORD = process.env.E2E_USER_PASSWORD ?? "";
 
 test.describe("Grupo B — Cronograma + Planner", () => {
   test.skip(!EMAIL || !PASSWORD, "Requer E2E_USER_EMAIL/E2E_USER_PASSWORD");
+  test.describe.configure({ timeout: 120_000 });
 
   test("login → cronograma → replan → P1–P5 → persistência", async ({ page }) => {
     // 1) Login

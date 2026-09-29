@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       tasks_created: result.tasksCreated,
+      ai_generated: result.aiGenerated ?? false,
+      plan_summary: result.planSummary ?? null,
       priorities: result.priorities.map((p) => ({
         subject_id: p.subjectId,
         subject_name: p.subjectName,

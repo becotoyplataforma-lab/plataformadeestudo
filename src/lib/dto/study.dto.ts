@@ -359,6 +359,8 @@ export type PlannerSubjectPriorityDto = OutputOf<typeof PlannerSubjectPriorityDt
 
 export const PlannerGenerateResponseDtoSchema = z.object({
   tasks_created: z.number().int(),
+  ai_generated: z.boolean().optional(),
+  plan_summary: z.string().nullable().optional(),
   priorities: z.array(PlannerSubjectPriorityDtoSchema),
 });
 export type PlannerGenerateResponseDto = OutputOf<typeof PlannerGenerateResponseDtoSchema>;

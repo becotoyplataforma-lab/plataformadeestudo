@@ -19,6 +19,7 @@ import { AggregationRepository } from "@/lib/analytics/repositories/aggregation.
 import { StudySubjectRepository } from "../repositories/study-subject.repository";
 import { StudyTaskRepository } from "../repositories/study-task.repository";
 import { LinkResolverService, type LinkResult } from "./link-resolver.service";
+import { PlannerAiService } from "./planner-ai.service";
 
 // ============================================================
 // Tipos
@@ -88,11 +89,14 @@ export interface WeekPlanResult {
   tasksCreated: number;
   tasks: Array<{
     title: string;
+    description?: string | null;
     scheduledDate: string;
     durationMin: number;
     studySubjectId: string;
   }>;
   priorities: SubjectPriority[];
+  aiGenerated?: boolean;
+  planSummary?: string;
 }
 
 export interface GenerateInput {
@@ -100,6 +104,8 @@ export interface GenerateInput {
   startDate: string; // ISO date (YYYY-MM-DD)
   /** Opcional: dias da semana para planejar (0=Dom, 6=Sáb). Default: 1-5 (seg-sex) */
   activeDays?: number[];
+  /** Opcional: tentar personalização com IA via DeepSeek. Default: true */
+  enableAi?: boolean;
 }
 
 // ============================================================
@@ -444,7 +450,7 @@ export const AdaptivePlannerService = {
    * prioridades recalculadas e na meta diária do usuário.
    */
   async generateWeekPlan(input: GenerateInput): Promise<WeekPlanResult> {
-    const { userId, startDate, activeDays = [1, 2, 3, 4, 5] } = input;
+    const { userId, startDate, activeDays = [1, 2, 3, 4, 5], enableAi = true } = input;
 
     // 1. Recalcular prioridades
     const priorities = await this.recalculatePriorities(userId);
@@ -453,51 +459,83 @@ export const AdaptivePlannerService = {
     const profile = await AggregationRepository.getProfileMeta(userId);
     const dailyMetaMin = profile?.metaDiariaMin ?? 120;
 
-    // 3. Ordenar por prioridade (maior primeiro)
-    const sorted = [...priorities].sort((a, b) => b.priority - a.priority);
-
-    // 4. Distribuir carga horária
-    // Prioridade 5 = 40% do tempo, 4 = 25%, 3 = 15%, 2 = 10%, 1 = 5%
-    const totalWeight = sorted.reduce((acc, s) => acc + s.priority, 0);
-    const allocation = new Map<string, number>();
-    for (const s of sorted) {
-      const pct = totalWeight > 0 ? s.priority / totalWeight : 0;
-      // Minutos por dia * dias ativos * percentual
-      const weekMinutes = Math.round(dailyMetaMin * activeDays.length * pct);
-      allocation.set(s.subjectId, weekMinutes);
-    }
-
-    // 5. Gerar tarefas para cada dia ativo
-    const start = parseISODate(startDate);
-    const tasks: Array<{
+    let tasks: Array<{
       title: string;
+      description?: string | null;
       scheduledDate: string;
       durationMin: number;
       studySubjectId: string;
     }> = [];
+    let aiGenerated = false;
+    let planSummary: string | undefined;
 
-    for (const s of sorted) {
-      const weekMin = allocation.get(s.subjectId) ?? 0;
-      if (weekMin < 15) continue; // mínimo 15min/semana
-
-      // Distribuir igualmente entre os dias ativos
-      // Garante duração dentro do intervalo aceito pela constraint do banco
-      // chk_study_tasks_duration (5–600 min): arredondamentos podem produzir
-      // valores < 5 (ex.: 15min/semana ÷ 5 dias = 3min), o que o Postgres rejeita.
-      const perDay = Math.min(600, Math.max(5, Math.round(weekMin / activeDays.length)));
-
-      for (const dayOffset of activeDays) {
-        const taskDate = addDays(start, dayOffset);
-        tasks.push({
-          title: `Estudar ${s.subjectName}`,
-          scheduledDate: toISODate(taskDate),
-          durationMin: perDay,
-          studySubjectId: s.subjectId,
+    // 3. Tentar personalização com IA via DeepSeek (se habilitado)
+    if (enableAi && priorities.length > 0) {
+      try {
+        const aiResult = await PlannerAiService.generatePersonalizedPlan({
+          userId,
+          startDate,
+          activeDays,
+          dailyMetaMin,
+          priorities,
+          bancaTarget: profile?.bancaPreferida ?? null,
         });
+
+        if (aiResult && aiResult.tasks.length > 0) {
+          tasks = aiResult.tasks;
+          aiGenerated = true;
+          planSummary = aiResult.summary;
+        }
+      } catch (err) {
+        console.log(
+          `[PLANNER_AI] PLANNER_AI_CALL: FALLBACK (exception: ${
+            err instanceof Error ? err.message : String(err)
+          })`
+        );
       }
     }
 
-    // 6. Persistir tarefas — SUBSTITUI o plano atual (remove pendentes antigas,
+    // 4. Se a IA não gerou tarefas (fallback ou sem IA): executar algoritmo determinístico
+    if (tasks.length === 0) {
+      // Ordenar por prioridade (maior primeiro)
+      const sorted = [...priorities].sort((a, b) => b.priority - a.priority);
+
+      // Distribuir carga horária
+      // Prioridade 5 = 40% do tempo, 4 = 25%, 3 = 15%, 2 = 10%, 1 = 5%
+      const totalWeight = sorted.reduce((acc, s) => acc + s.priority, 0);
+      const allocation = new Map<string, number>();
+      for (const s of sorted) {
+        const pct = totalWeight > 0 ? s.priority / totalWeight : 0;
+        // Minutos por dia * dias ativos * percentual
+        const weekMinutes = Math.round(dailyMetaMin * activeDays.length * pct);
+        allocation.set(s.subjectId, weekMinutes);
+      }
+
+      // Gerar tarefas para cada dia ativo
+      const start = parseISODate(startDate);
+      for (const s of sorted) {
+        const weekMin = allocation.get(s.subjectId) ?? 0;
+        if (weekMin < 15) continue; // mínimo 15min/semana
+
+        // Distribuir igualmente entre os dias ativos
+        // Garante duração dentro do intervalo aceito pela constraint do banco
+        // chk_study_tasks_duration (5–600 min): arredondamentos podem produzir
+        // valores < 5 (ex.: 15min/semana ÷ 5 dias = 3min), o que o Postgres rejeita.
+        const perDay = Math.min(600, Math.max(5, Math.round(weekMin / activeDays.length)));
+
+        for (const dayOffset of activeDays) {
+          const taskDate = addDays(start, dayOffset);
+          tasks.push({
+            title: `Estudar ${s.subjectName}`,
+            scheduledDate: toISODate(taskDate),
+            durationMin: perDay,
+            studySubjectId: s.subjectId,
+          });
+        }
+      }
+    }
+
+    // 5. Persistir tarefas — SUBSTITUI o plano atual (remove pendentes antigas,
     //    preserva concluídas) em uma transação atômica. Replanejar NÃO acumula
     //    tarefas: 25 → 25, nunca 50.
     if (tasks.length > 0) {
@@ -505,6 +543,7 @@ export const AdaptivePlannerService = {
         userId,
         studySubjectId: t.studySubjectId,
         title: t.title,
+        description: t.description ?? null,
         scheduledDate: new Date(t.scheduledDate + "T12:00:00Z"),
         durationMin: t.durationMin,
         status: "pendente" as const,
@@ -512,6 +551,12 @@ export const AdaptivePlannerService = {
       await StudyTaskRepository.replacePendingPlan(userId, rows);
     }
 
-    return { tasksCreated: tasks.length, tasks, priorities };
+    return {
+      tasksCreated: tasks.length,
+      tasks,
+      priorities,
+      aiGenerated,
+      planSummary,
+    };
   },
 };

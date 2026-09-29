@@ -122,6 +122,7 @@ export function CronogramaClient({ subjects, initialTasks, week }: Props) {
   const [busy, setBusy] = React.useState(false);
   const [plannerBusy, setPlannerBusy] = React.useState(false);
   const [plannerPriorities, setPlannerPriorities] = React.useState<PlannerPriority[]>([]);
+  const [plannerAiGenerated, setPlannerAiGenerated] = React.useState(false);
 
   // Formulário de nova tarefa
   const [title, setTitle] = React.useState("");
@@ -250,8 +251,11 @@ export function CronogramaClient({ subjects, initialTasks, week }: Props) {
       if (!res.ok) throw new Error("Falha ao gerar planejamento");
       const data: PlannerGenerateResponse = await res.json();
       setPlannerPriorities(data.priorities);
+      setPlannerAiGenerated(Boolean(data.ai_generated));
       toast.success(
-        `Cronograma atualizado! ${data.priorities.length} matérias analisadas · ${data.tasks_created} tarefas reorganizadas.`
+        data.ai_generated
+          ? `Cronograma atualizado com IA! ${data.priorities.length} matérias analisadas · ${data.tasks_created} tarefas personalizadas.`
+          : `Cronograma atualizado! ${data.priorities.length} matérias analisadas · ${data.tasks_created} tarefas reorganizadas.`
       );
       await refreshTasks();
     } catch (error) {
@@ -433,9 +437,16 @@ export function CronogramaClient({ subjects, initialTasks, week }: Props) {
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-extrabold uppercase tracking-[0.12em] text-slate-200">Suas disciplinas</h3>
               {plannerPriorities.length > 0 && (
-                <Badge variant="outline" className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300">
-                  <Sparkles className="mr-1 h-3 w-3" /> Planejamento inteligente
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-emerald-400/30 bg-emerald-500/10 text-emerald-300">
+                    <Sparkles className="mr-1 h-3 w-3" /> Planejamento inteligente
+                  </Badge>
+                  {plannerAiGenerated && (
+                    <Badge variant="outline" className="border-cyan-400/30 bg-cyan-500/10 text-[10px] text-cyan-300">
+                      Personalizado por IA
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
 
