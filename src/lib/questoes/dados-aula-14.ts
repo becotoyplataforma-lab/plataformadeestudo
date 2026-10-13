@@ -12,26 +12,26 @@ import type { QuestaoExtraida } from "./procedencia";
  * arquivo não existe, as páginas enxergam "dataset ausente" e nada mais, em
  * vez de quebrar a build ou servir conteúdo inventado.
  *
- * O caminho sai de `QUESTOES_AULA14_DIR`; o padrão é a pasta do Drive onde o
- * extrator grava.
+ * O caminho vem SEMPRE de `QUESTOES_AULA14_DIR`. Não existe padrão embutido: o
+ * JSON mora na unidade de estudo do usuário (Drive), e um literal `H:\...` no
+ * código-tronco faz o file-tracing do Next (`output: standalone`) tentar copiar
+ * um arquivo que não existe na máquina — a build de produção falhou com ENOENT
+ * exatamente nas duas rotas da Aula 14 por causa disso. Caminho de máquina
+ * pertence ao `.env.local` (não versionado); sem a variável, o dataset conta
+ * como "ausente", que já é o contrato desta tela.
  */
 
 const ARQUIVO = "questoes_aula_14.json";
-const PADRAO_DIR = join(
-  "H:",
-  "Meu Drive",
-  "plataforma de estudo",
-  "cbm-rj",
-  "portugues",
-  "questoes"
-);
 
-export function direcaoDataset(): string {
-  return process.env.QUESTOES_AULA14_DIR || PADRAO_DIR;
+/** Direção do dataset, ou null quando `QUESTOES_AULA14_DIR` não está configurada. */
+export function direcaoDataset(): string | null {
+  const dir = process.env.QUESTOES_AULA14_DIR?.trim();
+  return dir ? dir : null;
 }
 
-export function caminhoDataset(): string {
-  return join(direcaoDataset(), ARQUIVO);
+export function caminhoDataset(): string | null {
+  const dir = direcaoDataset();
+  return dir === null ? null : join(dir, ARQUIVO);
 }
 
 /**
@@ -89,7 +89,7 @@ let cache: CargaDataset | null = null;
 export function carregarAula14(): CargaDataset | null {
   if (cache) return cache;
   const caminho = caminhoDataset();
-  if (!existsSync(caminho)) return null;
+  if (caminho === null || !existsSync(caminho)) return null;
 
   const bruto = readFileSync(caminho, "utf-8");
   const lista: unknown[] = JSON.parse(bruto);

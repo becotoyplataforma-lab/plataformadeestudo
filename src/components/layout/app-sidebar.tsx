@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  BookMarked,
   BookOpen,
   BrainCircuit,
   CalendarCheck2,
@@ -18,6 +19,7 @@ import {
   Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { rotasPortugues } from "@/lib/questoes/rotas";
 
 interface NavItem {
   href: string;
@@ -56,6 +58,21 @@ const extraItems: NavItem[] = [
   { href: "/flashcards", label: "Flashcards", icon: Layers },
   { href: "/professor", label: "Professor IA", icon: MessagesSquare, badge: "IA" },
   { href: "/professor-apostilas", label: "Apostilas (Professor)", icon: FileText },
+];
+
+/**
+ * Trilhas por concurso. Diferente dos itens acima, estas rotas servem material
+ * ainda em `em_revisao`: o badge diz "Revisão" e não "Em breve" porque a tela
+ * existe e responde — o que falta é a conferência humana do conteúdo, não o
+ * recurso. A URL vem de `rotasPortugues` para o menu e a página não divergirem.
+ */
+const trilhaItems: NavItem[] = [
+  {
+    href: rotasPortugues.questoes(14),
+    label: "Português · Aula 14",
+    icon: BookMarked,
+    badge: "Revisão",
+  },
 ];
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
@@ -112,6 +129,15 @@ export function SidebarNav() {
   return (
     <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
       {navItems.map((item) => (
+        <NavLink key={item.href} item={item} pathname={pathname} />
+      ))}
+
+      <div className="my-3 border-t border-white/10" />
+
+      <p className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-500">
+        Trilhas
+      </p>
+      {trilhaItems.map((item) => (
         <NavLink key={item.href} item={item} pathname={pathname} />
       ))}
 

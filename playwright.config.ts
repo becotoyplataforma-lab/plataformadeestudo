@@ -1,4 +1,7 @@
+import { loadEnvConfig } from "@next/env";
 import { defineConfig, devices } from "@playwright/test";
+
+loadEnvConfig(process.cwd());
 
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 

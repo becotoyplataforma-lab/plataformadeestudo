@@ -14,6 +14,7 @@ import {
   alternativasOrdenadas,
   gabaritoConfiavel,
   rotuloGabarito,
+  selosMetadados,
   trilhaMetadados,
   type QuestaoExtraida,
 } from "@/lib/questoes/procedencia";
@@ -51,6 +52,7 @@ export function QuestaoCard({ questao, expandida = false, className }: QuestaoCa
   const confiavel = gabaritoConfiavel(questao);
   const acerto = revelada && questao.gabarito ? selecionada === questao.gabarito : null;
   const trilha = trilhaMetadados(questao);
+  const selos = selosMetadados(questao);
   const alternativas = alternativasOrdenadas(questao);
 
   return (
@@ -62,12 +64,27 @@ export function QuestaoCard({ questao, expandida = false, className }: QuestaoCa
           {questao.numero_original}
         </span>
         <code className="font-mono text-xs tracking-tight text-slate-500">{questao.codigo}</code>
-        {trilha.length > 0 && (
+        {selos.length > 0 && (
           <span
-            className="min-w-0 flex-1 truncate text-xs text-slate-500"
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1"
             title={trilha.join(" ▸ ")}
+            aria-label="Metadados da questão"
           >
-            {trilha.join(" ▸ ")}
+            {selos.map((selo, i) => (
+              <React.Fragment key={selo.chave}>
+                {i > 0 && (
+                  <span aria-hidden="true" className="text-slate-300">
+                    ▸
+                  </span>
+                )}
+                <span
+                  className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                  data-selo={selo.chave}
+                >
+                  {selo.texto}
+                </span>
+              </React.Fragment>
+            ))}
           </span>
         )}
         {questao.quarantined && (
@@ -110,6 +127,7 @@ export function QuestaoCard({ questao, expandida = false, className }: QuestaoCa
                       marcada && "border-orange-500 bg-orange-500 text-white",
                       correta && "border-emerald-500 bg-emerald-500 text-white"
                     )}
+                    data-alternativa={letra}
                   >
                     {letra}
                   </span>
@@ -206,8 +224,14 @@ export function QuestaoCard({ questao, expandida = false, className }: QuestaoCa
                   <dd>{questao.alvo_apostila}</dd>
                   <dt className="text-slate-400">Banca declarada</dt>
                   <dd>{questao.banca ?? "não informada"}</dd>
+                  <dt className="text-slate-400">Ano declarado</dt>
+                  <dd>{questao.ano ?? "não informado"}</dd>
                   <dt className="text-slate-400">Órgão declarado</dt>
                   <dd>{questao.orgao ?? "não informado"}</dd>
+                  <dt className="text-slate-400">Cargo declarado</dt>
+                  <dd>{questao.cargo ?? "não informado"}</dd>
+                  <dt className="text-slate-400">Assunto</dt>
+                  <dd>{questao.assunto || "não informado"}</dd>
                   <dt className="text-slate-400">Origem do gabarito</dt>
                   <dd>{questao.origem_gabarito}</dd>
                   <dt className="text-slate-400">contentHash</dt>

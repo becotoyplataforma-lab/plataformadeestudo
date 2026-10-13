@@ -110,16 +110,39 @@ export function rotuloGabarito(q: QuestaoExtraida): string | null {
 }
 
 /**
- * Texto do cabeçalho tipo "INOVERSASUL ▸ PROFESSOR ▸ 2025".
+ * Trilha de metadados no padrão de leitura do Qconcursos:
+ * `Banca · Ano ▸ Disciplina ▸ Assunto ▸ Órgão`.
  *
- * Só usa o que existe. Uma tag de dois segmentos (`TRT - 15ª Região / 2025`)
- * não tem banca informada pelo material, então o campo não aparece — em vez
- * de receber o órgão no lugar da banca.
+ * Um selo só existe se o material declarou aquele valor. `banca` está ausente
+ * em 906 dos 1.736 itens públicos do dataset; preencher com "Sem banca"
+ * transformaria uma lacuna do PDF em metadado, então o selo simplesmente não
+ * aparece. `cargo` e `ano` continuam visíveis na sanfona de procedência.
+ */
+export type ChaveSelo = "banca_ano" | "disciplina" | "assunto" | "orgao";
+
+export interface SeloMetadados {
+  chave: ChaveSelo;
+  texto: string;
+}
+
+export function selosMetadados(q: QuestaoExtraida): SeloMetadados[] {
+  const selos: SeloMetadados[] = [];
+  const bancaAno = [q.banca, q.ano ? String(q.ano) : null]
+    .filter((v): v is string => Boolean(v))
+    .join(" · ");
+  if (bancaAno) selos.push({ chave: "banca_ano", texto: bancaAno });
+  if (q.disciplina) selos.push({ chave: "disciplina", texto: q.disciplina });
+  if (q.assunto) selos.push({ chave: "assunto", texto: q.assunto });
+  if (q.orgao) selos.push({ chave: "orgao", texto: q.orgao });
+  return selos;
+}
+
+/**
+ * Texto plano da trilha (usado no `title`, onde a ordem completa cabe).
+ * Derivado de `selosMetadados` para as duas leituras nunca divergirem.
  */
 export function trilhaMetadados(q: QuestaoExtraida): string[] {
-  return [q.banca, q.orgao, q.cargo, q.ano ? String(q.ano) : null].filter(
-    (v): v is string => Boolean(v)
-  );
+  return selosMetadados(q).map((s) => s.texto);
 }
 
 /** Selo legível do estado de procedência. */
