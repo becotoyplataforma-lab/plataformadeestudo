@@ -13,6 +13,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   CADERNOS,
+  CHAVES_FILTRO,
   FILTRO_VAZIO,
   alternarFiltro,
   aplicarFiltros,
@@ -34,6 +35,7 @@ import {
   rotuloDaTag,
   semFaceta,
   tagsDoItem,
+  type Caderno,
   type FiltrosCaderno,
   type ItemCaderno,
 } from "../cadernos";
@@ -139,6 +141,38 @@ describe("catálogo de cadernos", () => {
   it("menu é derivado: sem lote local não há badge de revisão", () => {
     const semLote = [{ ...CADERNOS[0]!, lotes: [] }];
     expect(itensDeMenu(semLote)[0]!.badge).toBeUndefined();
+  });
+
+  it("matéria nova é linha no catálogo, não código novo", () => {
+    // A decisão de produto está em docs/31: o caderno é da matéria, e o catálogo
+    // precisa receber Direito, Informática e Raciocínio Lógico sem tocar em
+    // rota, menu ou componente. Uma entrada a mais tem de virar rota e item de
+    // menu sozinha — se isto exigir código novo, a abstração está errada.
+    const catalogo: Caderno[] = [
+      ...CADERNOS,
+      {
+        slug: "direito",
+        materia: "Direito",
+        materiaPublicada: null,
+        titulo: "Direito · Banco de Questões",
+        subtitulo: "Caderno de treino de Direito.",
+        lotes: [
+          {
+            origem: "apostila-01",
+            arquivo: "questoes_apostila_01.json",
+            descricao: "Apostila 1 · 9 assuntos",
+          },
+        ],
+      },
+    ];
+
+    const menu = itensDeMenu(catalogo);
+    expect(menu).toHaveLength(CADERNOS.length + 1);
+    expect(menu.map((m) => m.href)).toEqual([
+      rotasQuestoes.caderno("portugues"),
+      rotasQuestoes.caderno("direito"),
+    ]);
+    expect(menu.map((m) => m.badge)).toEqual(["Revisão", "Revisão"]);
   });
 });
 
@@ -292,6 +326,30 @@ describe("aplicação de filtros sobre o lote", () => {
     expect(f.origem).toEqual(["aula-14"]);
     expect(f.banca).toEqual(["INOVERSASUL"]);
     expect(f.tipo).toEqual(["certo_errado", "multipla_escolha"]);
+  });
+
+  it("disciplina permanece na barra com valor único", () => {
+    // Um lote de uma matéria só tem uma disciplina, e a barra continuaria certa
+    // se a escondesse como "otimização". Ela fica: `disciplina` é o nível acima
+    // do assunto e a chave pela qual as próximas matérias entram no catálogo.
+    // Esconder a faceta enquanto há uma matéria só trocaria o contrato por
+    // conveniência de hoje (docs/31 §7.2).
+    expect(CHAVES_FILTRO).toContain("disciplina");
+    expect(facetas([item({ disciplina: "Língua Portuguesa" })]).disciplina).toEqual([
+      "Língua Portuguesa",
+    ]);
+    // ...e com duas matérias a faceta separa as duas sem duplicar grafia
+    const duas = [
+      item({ disciplina: "Língua Portuguesa" }),
+      item({
+        disciplina: "lingua portuguesa",
+        id_local: "A14-S01-002",
+        codigo: "A14-S01-002",
+      }),
+    ];
+    expect(
+      facetas(duas).disciplina.filter((d) => normalizar(d) === "lingua portuguesa")
+    ).toHaveLength(1);
   });
 
   it("contagemPorAssunto ordena do maior para o menor", () => {

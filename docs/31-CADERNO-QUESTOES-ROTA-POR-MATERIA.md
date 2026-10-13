@@ -167,8 +167,15 @@ checkbox de qualidade (`gabarito=confiavel`); as opções saem de
 `contagemDaFaceta`, com o total observado ao lado do rótulo. Página é `?page=`
 com 20 cards por padrão (`?por=10|20|50`).
 
+`disciplina` fica na barra mesmo enquanto tem um valor único só. Não é enfeite do
+lote atual: é o nível acima do assunto e a chave pela qual Direito, Informática e
+Raciocínio Lógico entram no catálogo (§4) sem tocar em rota, menu ou componente.
+Escondê-la por ter uma opção seria trocar o contrato pela conveniência de hoje, e
+`cadernos.test.ts` trava as duas pontas — a faceta com valor único e o menu que
+cresce com uma linha de catálogo.
+
 Nada disso é estado de cliente: um `Select` do Radix dentro de um client
-componentia quebraria o link compartilhável e arrastaria hidratação para cada
+component quebraria o link compartilhável e arrastaria hidratação para cada
 lista. Como o `page` não participa do formulário, trocar filtro devolve
 naturalmente à página 1.
 
