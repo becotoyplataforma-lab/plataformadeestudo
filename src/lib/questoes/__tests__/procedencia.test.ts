@@ -16,7 +16,7 @@ import {
   trilhaMetadados,
   type QuestaoExtraida,
 } from "../procedencia";
-import { decomporIdLocal, ehIdLocalValido, rotasPortugues } from "../rotas";
+import { decomporIdLocal, ehIdLocalValido, ehUuid, rotasQuestoes } from "../rotas";
 
 function questaoBase(
   sob: Partial<QuestaoExtraida> = {}
@@ -157,14 +157,22 @@ describe("gabaritoConfiavel / rotuloGabarito", () => {
   });
 });
 
-describe("rotas e ids da trilha", () => {
-  it("a rota da lista é a mesma servida pelo menu lateral", () => {
-    expect(rotasPortugues.questoes(14)).toBe(
-      "/cbm-rj/portugues/questoes/aula-14"
-    );
-    expect(rotasPortugues.questao(14, "A14-S01-001")).toBe(
-      "/cbm-rj/portugues/questoes/aula-14/A14-S01-001"
-    );
+describe("rotas e ids do caderno", () => {
+  it("a rota do caderno é a matéria, não o PDF", () => {
+    expect(rotasQuestoes.caderno("portugues")).toBe("/questoes/portugues");
+    expect(rotasQuestoes.questao("A14-S01-001")).toBe("/questoes/A14-S01-001");
+  });
+
+  it("nenhuma rota gerada carrega número de aula no path", () => {
+    for (const rota of [
+      rotasQuestoes.raiz,
+      rotasQuestoes.caderno("portugues"),
+      rotasQuestoes.questao("A14-S01-001"),
+      rotasQuestoes.cadernoComFiltros("portugues", "origem=aula-14"),
+    ]) {
+      expect(rota.split("?")[0]).not.toMatch(/aula-\d+/);
+      expect(rota.split("?")[0]).not.toMatch(/cbm-/);
+    }
   });
 
   it("id no formato A14-Sxx-nnn é aceito; o resto é 404", () => {
@@ -174,7 +182,12 @@ describe("rotas e ids da trilha", () => {
     }
   });
 
-  it("decomporIdLocal lê aula, seção e número", () => {
+  it("uuid é distinguishido de código de lote", () => {
+    expect(ehUuid("8f14e45f-eea6-4c5b-8b7d-2f6b1a2c3d4e")).toBe(true);
+    expect(ehUuid("A14-S01-001")).toBe(false);
+  });
+
+  it("decomporIdLocal lê aula (procedência), seção e número", () => {
     expect(decomporIdLocal("A14-S22-007")).toEqual({
       aula: 14,
       secao: 22,

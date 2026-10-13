@@ -81,12 +81,14 @@ test.describe("Grupo B — P1–P5 variado (UI real)", () => {
       expect(qs.length).toBeGreaterThan(0);
       console.log(`[P1P5] ${name}: ${qs.length} questões carregadas`);
 
-      // Abre a página de questões e filtra pela matéria.
+      // Abre o navegador do banco e filtra pela matéria. `/questoes` hoje é o
+      // caderno da matéria (acervo em arquivo); o que está publicado em banco
+      // mora em `/questoes/banco`, e é daí que estas 25 questões vêm.
       // Dropdown Radix com lista longa (catálogo completo de matérias): clicar
       // na opção por ponteiro é flaky (intercepção no re-render pode selecionar
       // a matéria vizinha — ex.: Ética em vez de Informática). Seleção por
       // teclado (typeahead + Enter) é determinística.
-      await page.goto("/questoes");
+      await page.goto("/questoes/banco");
       await page.getByRole("combobox").first().click();
       await page.keyboard.type(name, { delay: 25 });
       await page.keyboard.press("Enter");

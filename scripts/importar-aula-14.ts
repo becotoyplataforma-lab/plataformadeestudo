@@ -8,8 +8,9 @@
  * produção tem outro caminho: a rota de admin `/api/admin/questions/import`,
  * que exige sessão de admin e escolhe o tipo por lote.
  *
- * Os arquivos vêm de `QUESTOES_AULA14_DIR`, o mesmo diretório do carregador da
- * tela (`src/lib/questoes/dados-aula-14.ts`), e são sustentados pelo portão do
+ * O caminho vem de `QUESTOES_AULA14_DIR`/`MATERIAIS_DATASET_DIR` — a mesma
+ * precedência do carregador da tela (`src/lib/questoes/diretorio-dataset.ts`),
+ * e são sustentados pelo portão do
  * extrator: `verificar` deve estar verde antes (`docs/30-ATA-...md` §2). Este
  * script não regrava artefato nenhum — só lê os dois JSON de import e declara o
  * `tipo` de cada lote, que é a pendência §7.1: 627 linhas de múltipla escolha e
@@ -35,6 +36,7 @@ import {
   type TipoImportacao,
 } from "../src/lib/administration/services/question-import.service";
 import { KnowledgeSubjectRepository } from "../src/lib/knowledge/repositories/subject.repository";
+import { direcaoDataset } from "../src/lib/questoes/diretorio-dataset";
 
 const ARQUIVO_MULTIPLA = "questoes_aula_14_import.json";
 const ARQUIVO_CERTO_ERRADO = "questoes_aula_14_certo_errado_import.json";
@@ -55,7 +57,7 @@ type Args = {
 function usage(): string {
   return [
     "Uso: tsx --conditions=react-server scripts/importar-aula-14.ts [opções]",
-    "  --dir <caminho>        diretório dos artefatos (padrão: QUESTOES_AULA14_DIR)",
+    "  --dir <caminho>        diretório dos artefatos (padrão: MATERIAIS_DATASET_DIR, depois QUESTOES_AULA14_DIR)",
     "  --materia-id <uuid>    knowledge_subject_id de destino (exigido com --aplicar)",
     "  --materia-nome <nome>  resolve a matéria pelo nome exato no catálogo",
     "  --aplicar              escreve no banco; sem esta flag o lote só é conferido",
@@ -64,7 +66,7 @@ function usage(): string {
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
-    dir: (process.env.QUESTOES_AULA14_DIR ?? "").trim(),
+    dir: direcaoDataset()?.caminho ?? "",
     subjectId: null,
     subjectName: null,
     apply: false,

@@ -185,9 +185,16 @@ realinhado por suposição: item colado sai do lote, não é remendado. Importá
    com banco conectado, e é esse número que decide entre `skipped` e relatório.
 2. **Geração de resolução por IA:** sem credencial de provedor; `resolucao_status` fica em
    `pendente_geracao`.
-3. **Rota de apostila da Aula 14:** não criada, por fronteira de escopo.
-4. **Navegação:** a rota `/cbm-rj/portugues/questoes/aula-14` só é linkada do dashboard depois do smoke
-   test em browser — a verificação desta frente foi por dados e por build, não por renderização.
+3. **Rota de apostila da Aula 14:** não criada. A frente de navegação foi resolvida de outra forma — ver
+   item 5 e `docs/31-CADERNO-QUESTOES-ROTA-POR-MATERIA.md`.
+4. **Navegação:** a rota `/cbm-rj/portugues/questoes/aula-14` foi **retirada** nesta rodada e vive atrás de
+   redirect permanente (`next.config.ts`). O acervo local é servido pelo caderno de matéria
+   (`/questoes/portugues`), e a fumaça em browser está em
+   `tests/e2e/caderno-questoes-smoke.spec.ts`.
+5. **Nomenclatura (docs/31):** "aula 14" deixou de ser entidade de rota/menu e passou a ser tag de
+   procedência (`?origem=aula-14`). O importador ainda não preenche `source_document_id` nem
+   `knowledge_topic_id`, então o vínculo de cada questão com a apostila e com o tópico canônico continua
+   pendência de homologação — não é defeito da refatoração de rota, é a etapa seguinte.
 
 ## 8. Gate do que não entra em commit nem em banco
 

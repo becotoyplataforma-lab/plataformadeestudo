@@ -8,13 +8,14 @@
  * Com Drizzle o produto lê via role postgres (bypass RLS), consistente com o app
  * (user-data via Drizzle).
  */
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, isNotNull, isNull, not, notInArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import {
   knowledgeSubjects,
   questionOptions,
   questions,
 } from "@/db/schema";
+import { ENUNCIADOS_FIXTURA, PREFIXOS_ENUNCIADO_FIXTURA, ehMateriaDeFixtura } from "@/lib/db/fixturas-de-teste";
 import type { QuestionFilters } from "@/lib/validations/questoes";
 import type { Question, QuestionOption } from "@/types";
 
@@ -92,13 +93,43 @@ const BASE_SELECT = {
   isPublic: questions.isPublic,
 };
 
-/** Condições de "questão pública e publicada" (soft-delete fora). */
+/**
+ * Exclusão de fixtura de teste. Só coluna de `questions`: as mesmas condições
+ * alimentam a contagem do `count(*)` (que não dá join), então qualquer cláusula
+ * aqui precisa ser resolvida sem tocar em `knowledge_subjects`.
+ */
+function foraDeFixtura() {
+  return [
+    notInArray(questions.enunciado, [...ENUNCIADOS_FIXTURA]),
+    ...PREFIXOS_ENUNCIADO_FIXTURA.map((prefixo) =>
+      not(ilike(questions.enunciado, `${prefixo}%`))
+    ),
+  ];
+}
+
+/** Condições de "questão pública e publicada" (soft-delete e fixtura fora). */
 function publicConditions() {
   return [
     eq(questions.isPublic, true),
     eq(questions.status, "publicada"),
     isNull(questions.deletedAt),
+    ...foraDeFixtura(),
   ];
+}
+
+/**
+ * Quantas questões publicadas existem para uma matéria canônica.
+ *
+ * Sai do repositório em vez de ficar montado na página para que a contagem do
+ * caderno e a lista obedeçam à mesma regra de fixtura: "publicadas" que só
+ * existem porque um teste inseriu não pode aparecer como acervo.
+ */
+export async function countPublicasDaMateria(knowledgeSubjectId: string): Promise<number> {
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(questions)
+    .where(and(eq(questions.knowledgeSubjectId, knowledgeSubjectId), ...publicConditions()));
+  return total;
 }
 
 /** Options de um conjunto de questões (query batched). */
@@ -178,19 +209,25 @@ export async function listQuestions(
   };
 }
 
-/** Lista matérias do catálogo (para filtros). */
+/** Lista matérias do catálogo (para filtros), sem as fixturas de teste. */
 export async function listSubjects(): Promise<
   Array<{ id: string; name: string; color: string | null }>
 > {
-  return db
+  const linhas = await db
     .select({
       id: knowledgeSubjects.id,
       name: knowledgeSubjects.name,
+      slug: knowledgeSubjects.slug,
       color: knowledgeSubjects.color,
     })
     .from(knowledgeSubjects)
     .where(isNull(knowledgeSubjects.deletedAt))
     .orderBy(knowledgeSubjects.name);
+  // Nome/slug de teste não são catálogo: "E2E a1b2c3d4" no filtro seria um
+  // convite para o aluno estudar uma matéria que não existe.
+  return linhas
+    .filter((linha) => !ehMateriaDeFixtura(linha))
+    .map(({ id, name, color }) => ({ id, name, color }));
 }
 
 /** Busca uma questão pública por ID, com options e subject. */

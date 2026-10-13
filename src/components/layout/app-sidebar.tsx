@@ -19,7 +19,7 @@ import {
   Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { rotasPortugues } from "@/lib/questoes/rotas";
+import { itensDeMenu } from "@/lib/questoes/cadernos";
 
 interface NavItem {
   href: string;
@@ -61,19 +61,21 @@ const extraItems: NavItem[] = [
 ];
 
 /**
- * Trilhas por concurso. Diferente dos itens acima, estas rotas servem material
- * ainda em `em_revisao`: o badge diz "Revisão" e não "Em breve" porque a tela
- * existe e responde — o que falta é a conferência humana do conteúdo, não o
- * recurso. A URL vem de `rotasPortugues` para o menu e a página não divergirem.
+ * Cadernos por matéria, derivados do catálogo (`src/lib/questoes/cadernos.ts`).
+ *
+ * O rótulo é domínio ("Português · Banco de Questões"), nunca o número de um
+ * PDF: a aula, o curso de terceiro e a prova-alvo são metadado de procedência e
+ * viram tag de filtro dentro do caderno. Enquanto um caderno tiver lote local
+ * ainda não importado, o badge diz "Revisão" — a tela existe e responde, o que
+ * falta é a conferência humana do conteúdo, não o recurso. Apostila nova é uma
+ * linha no catálogo; nada aqui precisa saber dela.
  */
-const trilhaItems: NavItem[] = [
-  {
-    href: rotasPortugues.questoes(14),
-    label: "Português · Aula 14",
-    icon: BookMarked,
-    badge: "Revisão",
-  },
-];
+const trilhaItems: NavItem[] = itensDeMenu().map((item) => ({
+  href: item.href,
+  label: item.label,
+  icon: BookMarked,
+  badge: item.badge,
+}));
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active =
@@ -135,7 +137,7 @@ export function SidebarNav() {
       <div className="my-3 border-t border-white/10" />
 
       <p className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-500">
-        Trilhas
+        Cadernos
       </p>
       {trilhaItems.map((item) => (
         <NavLink key={item.href} item={item} pathname={pathname} />

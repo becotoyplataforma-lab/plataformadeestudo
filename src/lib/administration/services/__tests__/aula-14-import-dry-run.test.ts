@@ -5,11 +5,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * Dry-run do lote da Aula 14 contra o contrato real do importador.
  *
- * O caminho vem de `QUESTOES_AULA14_DIR`, a mesma variável do carregador
- * (`src/lib/questoes/dados-aula-14.ts`): os artefatos moram na unidade de
+ * O caminho vem de `direcaoDataset()` (`src/lib/questoes/diretorio-dataset.ts`),
+ * a mesma precedência do carregador da tela: os artefatos moram na unidade de
  * estudo do usuário e nunca entram no repositório. Sem a variável não há
  * arquivo na máquina, e "dataset ausente" já é o contrato da tela — aqui o
  * suite não roda, em vez de falhar em CI.
+ *
+ * É essa função compartilhada que fecha a armadilha que existia aqui: o guarda
+ * lia só o nome legado (`QUESTOES_AULA14_DIR`), então num ambiente configurado
+ * com o nome genérico os 8 casos abaixo viravam `skip` silencioso — cobertura
+ * que se desliga sozinha sem ninguém ver.
  *
  * O repositório de escrita é mocked: nada toca banco. O que se exercita é a
  * parte do `importQuestions` que decide se uma linha vira linha de banco —
@@ -30,12 +35,13 @@ vi.mock("@/lib/administration/repositories/question.repository", () => ({
 }));
 
 import { QuestionWriteRepository } from "@/lib/administration/repositories/question.repository";
+import { direcaoDataset } from "@/lib/questoes/diretorio-dataset";
 import {
   QuestionImportService,
   type TipoImportacao,
 } from "../question-import.service";
 
-const DIRETORIO = (process.env.QUESTOES_AULA14_DIR ?? "").trim();
+const DIRETORIO = direcaoDataset()?.caminho ?? "";
 const ARQUIVO_MULTIPLA = "questoes_aula_14_import.json";
 const ARQUIVO_CERTO_ERRADO = "questoes_aula_14_certo_errado_import.json";
 const COLUNAS = [
