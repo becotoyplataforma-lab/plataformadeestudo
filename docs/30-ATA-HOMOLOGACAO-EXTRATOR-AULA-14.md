@@ -161,14 +161,28 @@ realinhado por suposição: item colado sai do lote, não é remendado. Importá
    **Dry-run feito** (`src/lib/administration/services/__tests__/aula-14-import-dry-run.test.ts`, repositório
    de escrita mocked, nenhum banco tocado): **886** linhas passam por `rowsFromFile` → `parseQuestion` →
    `validateQuestion` sem um único erro e sem `skipped` do próprio lote; **3.531** alternativas gravadas
-   (3.013 + 518), `content_hash` único por linha, payload `status=em_revisao`, `isPublic=false`,
-   `needsReview=true`, `explicacao=undefined`. O dry-run expôs uma decisão nova e pendente:
-   `importQuestions` fixa `tipo: "multipla_escolha"` (question-import.service.ts:352), então as **259**
-   questões certo/errado entrariam com tipo errado — `questions.tipo` é `text` (src/db/schema/study.ts:170)
-   e a UI já distingue os dois (src/lib/questoes/procedencia.ts:108). Antes de importar é preciso ou
-   parameterizar o tipo no serviço, ou importar os dois lotes em chamadas separadas com `tipo` explícito.
-   Falta ainda o `findByContentHash` real: as 826 repetições de corpo do PDF já viraram um só `content_hash`,
-   mas a colisão com questões **já existentes no banco** só é medida com banco.
+   (3.013 + 518), `content_hash` único por linha e também entre os dois lotes, payload `status=em_revisao`,
+   `isPublic=false`, `needsReview=true`, `explicacao=undefined`.
+
+   1.1 **`tipo` — gap resolvido nesta rodada:** o dry-run anterior expôs que `importQuestions` fixava
+   `tipo: "multipla_escolha"`, o que classificaria errado as **259** questões certo/errado
+   (`questions.tipo` é `text` com default `multipla_escolha`, src/db/schema/study.ts:170; a UI já distingue
+   os dois, src/lib/questoes/procedencia.ts:108). O serviço foi parametrizado:
+   `importQuestions`/`importFromBuffer` aceitam `tipo` (`multipla_escolha` | `certo_errado`; o default é o
+   primeiro, então lote antigo não muda de comportamento) e `validateQuestion(q, tipo)` virou guarda de
+   coerência nos dois sentidos — linha do par `C=Certo`/`E=Errado` só é aceita em lote `certo_errado`, e
+   lote `certo_errado` só aceita esse par. Tipo trocado não grava nada: cada linha vira erro nomeado.
+   `POST /api/admin/questions/import` lê `tipo` do `formData` (400 `TIPO_INVALIDO` fora da lista) e o
+   formulário admin ganhou o seletor de tipo por arquivo.
+   1.2 **Execução pronta:** `scripts/importar-aula-14.ts` roda os dois artefatos com o tipo declarado por
+   arquivo (627 `multipla_escolha` + 259 `certo_errado`). É dry-run por padrão; com `--aplicar` chama
+   `assertNonProductionDatabaseUrl()` antes de qualquer escrita — no `.env.local` atual o destino é o próprio
+   projeto de produção (`ref == prodRef`, `safe=false`), então `--aplicar` sai **BLOCKED** aqui, e escrita em
+   produção segue pela rota de admin (sessão de admin, fila de revisão). Conferência do script nos artefatos
+   reais: `linhas=886 importaveis=886 duplicadasNoLote=0 erros=0`, nenhuma linha escrita.
+   1.3 **O que falta para o import:** medir `findByContentHash` contra banco real — as 826 repetições de
+   corpo do PDF já cabem num único `content_hash`, mas a colisão com questões **já existentes** só é vista
+   com banco conectado, e é esse número que decide entre `skipped` e relatório.
 2. **Geração de resolução por IA:** sem credencial de provedor; `resolucao_status` fica em
    `pendente_geracao`.
 3. **Rota de apostila da Aula 14:** não criada, por fronteira de escopo.
@@ -190,9 +204,12 @@ realinhado por suposição: item colado sai do lote, não é remendado. Importá
 | `extract` regenerado após a regra 5.5 | seções=33 itens=1.758 com_gabarito=1.720 quarentena=65; varredura limpa em 7/7 |
 | `verificar` no dataset real | **APROVADO**, exit 0, 7/7 artefatos, 0 bloqueantes, identidade re-derivada do cache; `import_multipla=627`, `import_certo_errado=259`, `rico=1.736`, `ids_unicos=1.736` |
 | `verificar` com artefato adulterado após a escrita | exit 1, reprova por regra nomeada (ver testes) |
-| dry-run do import (banco mocked) | 6 tests passed — 886/886 aceitas, 0 erros, 0 skipped de lote, 3.531 alternativas, hash único; ver §7.1 |
+| dry-run do import (banco mocked) | 8 tests passed — 627+259=886/886 aceitas com o tipo declarado por lote, 0 erros, 0 skipped de lote, 3.531 alternativas, `content_hash` único inclusive entre os dois lotes; ver §7.1 |
+| `question-import.service.test.ts` | 17 passed (6 novos: tipo por lote, guard nos dois sentidos, `conferirLote` sem escrita, `importFromBuffer`) |
+| `scripts/importar-aula-14.ts` em dry-run nos artefatos reais | exit 0 — `linhas=886 importaveis=886 duplicadasNoLote=0 erros=0`, nenhuma linha escrita; `--aplicar` é BLOCKED porque o `DATABASE_URL` local é o projeto de produção |
 | `tsc --noEmit` / ESLint nas rotas e libs tocadas | limpos |
-| `vitest run` | **1601 passed**, 6 expected fail, 29 skipped (147 arquivos; o dry-run fica `skip` sem `QUESTOES_AULA14_DIR`) |
+| `npm run build` | exit 0, rotas `/cbm-rj/portugues/questoes` e `/cbm-rj/portugues/questoes/aula-14` geradas |
+| `vitest run` | **1609 passed**, 6 expected fail, 29 skipped (147 arquivos; o dry-run fica `skip` sem `QUESTOES_AULA14_DIR`) |
 
 Artefatos em `H:\Meu Drive\plataforma de estudo\cbm-rj\portugues\questoes\`: `questoes_aula_14.json`,
 `questoes_aula_14_import.json`, `questoes_aula_14_certo_errado_import.json`, `quarentena_aula_14.json`,
@@ -205,7 +222,16 @@ Código desta frente: `agents/pdf_question_extractor/` (`verificacao.py` novo, `
 (`dados-aula-14.ts`, `procedencia.ts`, `rotas.ts`), `src/app/(dashboard)/cbm-rj/portugues/questoes/aula-14/`
 (listagem com `?secao=` e `?filtro=gabarito`, detalhe com navegação entre vizinhos da mesma seção e
 `notFound()` para ID malformado ou inexistente), `src/components/questoes/questao-card.tsx`,
-`src/lib/administration/services/__tests__/aula-14-import-dry-run.test.ts` (dry-run do §7.1).
+`src/lib/administration/services/__tests__/aula-14-import-dry-run.test.ts` (dry-run do §7.1) e, nesta
+rodada, o caminho de escrita: `src/lib/administration/services/question-import.service.ts` (tipo por lote,
+guarda de coerência nos dois sentidos, `conferirLote` sem escrita e `importFromBuffer` a partir de bytes),
+`src/app/api/admin/questions/import/route.ts` e `src/components/admin/questoes-import-form.tsx` (tipo
+escolhido por arquivo), `scripts/importar-aula-14.ts` (execução do lote da Aula 14, dry-run por padrão).
+
+Rastro de commits: **C0** = `084caa7` (`fix(extrator): quarentena para alternativas com marcadores
+embutidos e dry-run aula-14`, 7 arquivos) e **C1** = este commit (tipo por lote, guarda, script de execução,
+testes e esta ata). Os dois em `main` local; `origin/main` segue sem push, e os demais arquivos sujos da
+árvore continuam fora porque pertencem a outra frente.
 
 **Assinatura desta ata:** entrega aprovada para revisão humana dos artefatos. Import, publicação e
 geração de resolução permanecem gated e exigem decisão explícita, com `verificar` verde no momento da

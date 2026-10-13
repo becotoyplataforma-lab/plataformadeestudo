@@ -12,6 +12,7 @@ import {
 import {
   QuestionImportService,
   QuestionImportError,
+  isTipoImportacao,
 } from "@/lib/administration/services/question-import.service";
 
 export async function POST(request: NextRequest) {
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
     const banca = (formData.get("banca") as string) || undefined;
     const cargo = (formData.get("cargo") as string) || undefined;
     const anoRaw = (formData.get("ano") as string) || undefined;
+    const tipoRaw = (formData.get("tipo") as string) || "multipla_escolha";
 
     if (!file) {
       return NextResponse.json({ error: "NO_FILE", message: "Arquivo não enviado." }, { status: 400 });
@@ -34,12 +36,22 @@ export async function POST(request: NextRequest) {
     if (!subject.success) {
       return NextResponse.json({ error: "SUBJECT_REQUIRED", message: "Selecione a matéria." }, { status: 400 });
     }
+    if (!isTipoImportacao(tipoRaw)) {
+      return NextResponse.json(
+        {
+          error: "TIPO_INVALIDO",
+          message: "tipo deve ser multipla_escolha ou certo_errado.",
+        },
+        { status: 400 }
+      );
+    }
     const ano = anoRaw ? Number.parseInt(anoRaw, 10) : undefined;
 
     const result = await QuestionImportService.importQuestions({
       adminUserId: admin.userId,
       file,
       subjectId,
+      tipo: tipoRaw,
       defaultBanca: banca,
       defaultCargo: cargo,
       defaultAno: ano,

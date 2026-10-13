@@ -30,7 +30,10 @@ vi.mock("@/lib/administration/repositories/question.repository", () => ({
 }));
 
 import { QuestionWriteRepository } from "@/lib/administration/repositories/question.repository";
-import { QuestionImportService } from "../question-import.service";
+import {
+  QuestionImportService,
+  type TipoImportacao,
+} from "../question-import.service";
 
 const DIRETORIO = (process.env.QUESTOES_AULA14_DIR ?? "").trim();
 const ARQUIVO_MULTIPLA = "questoes_aula_14_import.json";
@@ -41,6 +44,12 @@ const COLUNAS = [
   "alternativa_c",
   "alternativa_d",
   "alternativa_e",
+];
+
+/** Cada lote tem um tipo declarado — é o que o importador agora exige (§7.1). */
+const LOTES: { arquivo: string; tipo: TipoImportacao; rotulo: string }[] = [
+  { arquivo: ARQUIVO_MULTIPLA, tipo: "multipla_escolha", rotulo: "multipla" },
+  { arquivo: ARQUIVO_CERTO_ERRADO, tipo: "certo_errado", rotulo: "certo_errado" },
 ];
 
 type Linha = Record<string, string>;
@@ -71,13 +80,14 @@ function arquivoFake(nome: string): File {
   } as unknown as File;
 }
 
-async function importar(nome: string) {
+async function importar(nome: string, tipo: TipoImportacao) {
   vi.clearAllMocks();
   const linhas = lerLinhas(nome);
   const resultado = await QuestionImportService.importQuestions({
     adminUserId: "dry-run-aula-14",
     file: arquivoFake(nome),
     subjectId: "dry-run-subject",
+    tipo,
   });
   const questoes = vi
     .mocked(QuestionWriteRepository.createQuestion)
@@ -99,7 +109,8 @@ descrever("dry-run do import da Aula 14 (artefatos locais, banco mockado)", () =
 
   it("nenhuma linha de múltipla escolha é perdida ou rejeitada", async () => {
     const { linhas, resultado, questoes, lotesDeOpcoes } = await importar(
-      ARQUIVO_MULTIPLA
+      ARQUIVO_MULTIPLA,
+      "multipla_escolha"
     );
     expect(linhas.length).toBeGreaterThan(0);
     expect(resultado.errors).toEqual([]);
@@ -109,27 +120,39 @@ descrever("dry-run do import da Aula 14 (artefatos locais, banco mockado)", () =
     expect(lotesDeOpcoes.flat()).toHaveLength(
       linhas.reduce((n, l) => n + alternativasDaLinha(l), 0)
     );
+    // O tipo que se declara é o tipo que se grava — nenhuma linha C/E se
+    // esconde aqui, porque o guard recusa o par C/E em lote de múltipla.
+    expect(new Set(questoes.map((q) => q.tipo))).toEqual(
+      new Set(["multipla_escolha"])
+    );
     console.info(
       `[dry-run] multipla: importadas=${resultado.imported} ignoradas=${resultado.skipped} erros=${resultado.errors.length} alternativas=${lotesDeOpcoes.flat().length}`
     );
   });
 
   it("nenhuma linha certo/errado é perdida ou rejeitada", async () => {
-    const { linhas, resultado, lotesDeOpcoes } = await importar(
-      ARQUIVO_CERTO_ERRADO
+    const { linhas, resultado, questoes, lotesDeOpcoes } = await importar(
+      ARQUIVO_CERTO_ERRADO,
+      "certo_errado"
     );
     expect(linhas.length).toBeGreaterThan(0);
     expect(resultado.errors).toEqual([]);
     expect(resultado.imported).toBe(linhas.length);
     expect(lotesDeOpcoes.flat()).toHaveLength(linhas.length * 2);
+    expect(new Set(questoes.map((q) => q.tipo))).toEqual(
+      new Set(["certo_errado"])
+    );
+    expect(
+      lotesDeOpcoes.every((lote) => lote.map((o) => o.letter).join("") === "CE")
+    ).toBe(true);
     console.info(
-      `[dry-run] certo_errado: importadas=${resultado.imported} alternativas=${lotesDeOpcoes.flat().length}`
+      `[dry-run] certo_errado: importadas=${resultado.imported} tipo=certo_errado alternativas=${lotesDeOpcoes.flat().length}`
     );
   });
 
   it("gabarito aponta sempre para uma alternativa gravada", async () => {
-    for (const nome of [ARQUIVO_MULTIPLA, ARQUIVO_CERTO_ERRADO]) {
-      const { questoes, lotesDeOpcoes } = await importar(nome);
+    for (const lote of LOTES) {
+      const { questoes, lotesDeOpcoes } = await importar(lote.arquivo, lote.tipo);
       const semGabarito = questoes.filter((q, i) => {
         const letras = lotesDeOpcoes[i].map((o) => o.letter);
         return !letras.includes(String(q.gabarito));
@@ -143,8 +166,8 @@ descrever("dry-run do import da Aula 14 (artefatos locais, banco mockado)", () =
   });
 
   it("tudo entra em revisão, não público e sem explicação de terceiro", async () => {
-    for (const nome of [ARQUIVO_MULTIPLA, ARQUIVO_CERTO_ERRADO]) {
-      const { questoes } = await importar(nome);
+    for (const lote of LOTES) {
+      const { questoes } = await importar(lote.arquivo, lote.tipo);
       expect(questoes.every((q) => q.status === "em_revisao")).toBe(true);
       expect(questoes.every((q) => q.isPublic === false)).toBe(true);
       expect(questoes.every((q) => q.needsReview === true)).toBe(true);
@@ -159,27 +182,86 @@ descrever("dry-run do import da Aula 14 (artefatos locais, banco mockado)", () =
     }
   });
 
-  it("contentHash é único dentro de cada lote", async () => {
-    for (const nome of [ARQUIVO_MULTIPLA, ARQUIVO_CERTO_ERRADO]) {
-      const { questoes } = await importar(nome);
+  it("contentHash é único dentro de cada lote e entre os dois lotes", async () => {
+    const todos: string[] = [];
+    for (const lote of LOTES) {
+      const { questoes } = await importar(lote.arquivo, lote.tipo);
       const hashes = questoes.map((q) => q.contentHash as string);
       expect(new Set(hashes).size).toBe(hashes.length);
+      todos.push(...hashes);
     }
+    expect(new Set(todos).size).toBe(todos.length);
   });
 
-  it("o serviço grava tipo multipla_escolha até no lote certo/errado", async () => {
+  it("o tipo declarado decide o tipo gravado (§7.1 resolvido)", async () => {
     /**
-     * Gap registrado, não descoberto depois da escrita: `importQuestions` fixa
-     * o tipo (question-import.service.ts:352) enquanto a coluna `questions.tipo`
-     * é texto com default "multipla_escolha" (src/db/schema/study.ts:170) e o
-     * front já distingue certo_errado (src/lib/questoes/procedencia.ts:108).
-     * As 259 linhas C/E entrariam classificadas errado. Este teste trava o
-     * comportamento atual para que a decisão do §6 seja tomada com número.
+     * O gap que o dry-run expôs: `importQuestions` fixava "multipla_escolha",
+     * então as linhas C/E entrariam classificadas errado. O serviço agora recebe
+     * o tipo do lote, e cada lote é gravado com o tipo que se declarou.
      */
-    const { questoes, resultado } = await importar(ARQUIVO_CERTO_ERRADO);
-    expect(resultado.errors).toEqual([]);
-    expect(new Set(questoes.map((q) => q.tipo))).toEqual(
+    const multipla = await importar(ARQUIVO_MULTIPLA, "multipla_escolha");
+    const certoErrado = await importar(ARQUIVO_CERTO_ERRADO, "certo_errado");
+
+    expect(multipla.resultado.errors).toEqual([]);
+    expect(certoErrado.resultado.errors).toEqual([]);
+    expect(new Set(multipla.questoes.map((q) => q.tipo))).toEqual(
       new Set(["multipla_escolha"])
+    );
+    expect(new Set(certoErrado.questoes.map((q) => q.tipo))).toEqual(
+      new Set(["certo_errado"])
+    );
+    console.info(
+      `[dry-run] tipos: multipla_escolha=${multipla.resultado.imported} ` +
+        `certo_errado=${certoErrado.resultado.imported}`
+    );
+  });
+
+  it("tipo trocado entre os lotes não grava nenhuma linha", async () => {
+    /**
+     * Guarda de coerência: lote C/E declarado múltipla escolha e lote múltiplo
+     * declarado C/E são rejeitados linha a linha antes de qualquer escrita.
+     */
+    const ceComoMultipla = await importar(ARQUIVO_CERTO_ERRADO, "multipla_escolha");
+    expect(ceComoMultipla.questoes).toEqual([]);
+    expect(ceComoMultipla.resultado.imported).toBe(0);
+    expect(ceComoMultipla.resultado.errors).toHaveLength(
+      ceComoMultipla.linhas.length
+    );
+    expect(ceComoMultipla.resultado.errors[0].message).toContain(
+      "exige o tipo certo_errado"
+    );
+
+    const multiplaComoCe = await importar(ARQUIVO_MULTIPLA, "certo_errado");
+    expect(multiplaComoCe.questoes).toEqual([]);
+    expect(multiplaComoCe.resultado.errors[0].message).toContain(
+      "tipo certo_errado exige exatamente as alternativas C e E"
+    );
+  });
+
+  it("conferirLote conta o lote inteiro sem tocar em banco", async () => {
+    vi.clearAllMocks();
+    let linhas = 0;
+    let importaveis = 0;
+
+    for (const lote of LOTES) {
+      const conferido = await QuestionImportService.conferirLote({
+        buffer: readFileSync(join(DIRETORIO, lote.arquivo)),
+        fileName: lote.arquivo,
+        mimeType: "application/json",
+        tipo: lote.tipo,
+      });
+      expect(conferido.tipo).toBe(lote.tipo);
+      expect(conferido.erros).toEqual([]);
+      expect(conferido.duplicadasNoLote).toBe(0);
+      expect(conferido.importaveis).toBe(conferido.linhas);
+      linhas += conferido.linhas;
+      importaveis += conferido.importaveis;
+    }
+
+    expect(QuestionWriteRepository.createQuestion).not.toHaveBeenCalled();
+    expect(QuestionWriteRepository.findByContentHash).not.toHaveBeenCalled();
+    console.info(
+      `[dry-run] conferirLote: linhas=${linhas} importaveis=${importaveis} (escritas=0)`
     );
   });
 });

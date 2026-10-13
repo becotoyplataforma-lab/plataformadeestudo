@@ -205,3 +205,154 @@ describe("QuestionImportService.importQuestions", () => {
     expect(opts.find((o: { letter: string }) => o.letter === "C").isCorrect).toBe(true);
   });
 });
+
+describe("tipo do lote (multipla_escolha × certo_errado)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const SUBJECT = "aaaaaaaa-0000-4000-8000-000000000001";
+  const ultimaQuestaoCriada = () =>
+    (QuestionWriteRepository.createQuestion as ReturnType<typeof vi.fn>).mock
+      .calls.at(-1)?.[0] as Record<string, unknown>;
+  const ultimoLoteDeOpcoes = () =>
+    (QuestionWriteRepository.createOptions as ReturnType<typeof vi.fn>).mock
+      .calls.at(-1)?.[0] as { letter: string; text: string; isCorrect: boolean }[];
+
+  const loteCe = JSON.stringify([
+    {
+      enunciado: "O uso da crase está correto na expressão 'àquela hora'?",
+      alternativa_c: "Certo",
+      alternativa_e: "Errado",
+      gabarito: "c",
+      topic: "Crase",
+    },
+  ]);
+
+  it("grava o lote C/E com tipo certo_errado e o par C/E nas alternativas", async () => {
+    const result = await QuestionImportService.importQuestions({
+      adminUserId: "u1",
+      file: new File([loteCe], "ce.json", { type: "application/json" }),
+      subjectId: SUBJECT,
+      tipo: "certo_errado",
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.imported).toBe(1);
+    expect(ultimaQuestaoCriada().tipo).toBe("certo_errado");
+    expect(ultimaQuestaoCriada().gabarito).toBe("C");
+    expect(ultimoLoteDeOpcoes().map((o) => [o.letter, o.text])).toEqual([
+      ["C", "Certo"],
+      ["E", "Errado"],
+    ]);
+    expect(ultimoLoteDeOpcoes().find((o) => o.letter === "C")?.isCorrect).toBe(true);
+  });
+
+  it("mantém multipla_escolha como default (compatibilidade com lotes antigos)", async () => {
+    const result = await QuestionImportService.importQuestions({
+      adminUserId: "u1",
+      file: new File([loteCe], "ce.json", { type: "application/json" }),
+      subjectId: SUBJECT,
+    });
+
+    // Sem declarar o tipo, a linha C/E NÃO é gravada: o guard recusa o par.
+    expect(result.imported).toBe(0);
+    expect(result.errors[0]?.message).toContain(
+      "linha certo/errado (C=Certo, E=Errado) exige o tipo certo_errado"
+    );
+  });
+
+  it("recusa lote declarado certo_errado que traz alternativas de múltipla escolha", async () => {
+    const json = JSON.stringify([
+      {
+        enunciado: "Capital do Brasil?",
+        alternativa_a: "Rio",
+        alternativa_b: "SP",
+        gabarito: "b",
+      },
+    ]);
+
+    const result = await QuestionImportService.importQuestions({
+      adminUserId: "u1",
+      file: new File([json], "mix.json", { type: "application/json" }),
+      subjectId: SUBJECT,
+      tipo: "certo_errado",
+    });
+
+    expect(result.imported).toBe(0);
+    expect(result.errors[0]?.message).toContain(
+      "tipo certo_errado exige exatamente as alternativas C e E (linha traz: AB)"
+    );
+    expect(QuestionWriteRepository.createQuestion).not.toHaveBeenCalled();
+  });
+
+  it("recusa par C/E com texto que não é Certo/Errado, e tolera pontuação e caixa", async () => {
+    const errado = JSON.stringify([
+      { enunciado: "P?", alternativa_c: "Sim", alternativa_e: "Não", gabarito: "c" },
+    ]);
+    const comRuido = JSON.stringify([
+      { enunciado: "P?", alternativa_c: " CERTO. ", alternativa_e: "Errado", gabarito: "e" },
+    ]);
+
+    const rejeitado = await QuestionImportService.importQuestions({
+      adminUserId: "u1",
+      file: new File([errado], "errado.json", { type: "application/json" }),
+      subjectId: SUBJECT,
+      tipo: "certo_errado",
+    });
+    expect(rejeitado.errors[0]?.message).toContain(
+      'tipo certo_errado exige os textos "Certo" e "Errado"'
+    );
+
+    const aceito = await QuestionImportService.importQuestions({
+      adminUserId: "u1",
+      file: new File([comRuido], "ruido.json", { type: "application/json" }),
+      subjectId: SUBJECT,
+      tipo: "certo_errado",
+    });
+    expect(aceito.errors).toEqual([]);
+    expect(aceito.imported).toBe(1);
+    expect(ultimoLoteDeOpcoes().map((o) => o.text)).toEqual(["CERTO.", "Errado"]);
+  });
+
+  it("conferirLote conta sem escrever", async () => {
+    vi.mocked(QuestionWriteRepository.createQuestion).mockClear();
+    const conferido = await QuestionImportService.conferirLote({
+      buffer: Buffer.from(loteCe),
+      fileName: "ce.json",
+      mimeType: "application/json",
+      tipo: "certo_errado",
+    });
+
+    expect(conferido).toMatchObject({
+      arquivo: "ce.json",
+      tipo: "certo_errado",
+      linhas: 1,
+      importaveis: 1,
+      duplicadasNoLote: 0,
+      topicos: ["Crase"],
+    });
+    expect(conferido.erros).toEqual([]);
+    expect(QuestionWriteRepository.createQuestion).not.toHaveBeenCalled();
+  });
+
+  it("importFromBuffer aceita bytes lidos de disco e grava o tipo declarado", async () => {
+    const result = await QuestionImportService.importFromBuffer({
+      adminUserId: "script:aula-14",
+      subjectId: SUBJECT,
+      tipo: "certo_errado",
+      buffer: Buffer.from(loteCe),
+      fileName: "ce.json",
+      mimeType: "application/json",
+    });
+
+    expect(result.imported).toBe(1);
+    expect(ultimaQuestaoCriada()).toMatchObject({
+      tipo: "certo_errado",
+      status: "em_revisao",
+      isPublic: false,
+      needsReview: true,
+      topic: "Crase",
+    });
+  });
+});

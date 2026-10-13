@@ -38,6 +38,42 @@ export interface ImportResult {
   errors: { row: number; message: string }[];
 }
 
+/**
+ * Tipos que o importador sabe gravar. `certo_errado` é o item de duas
+ * alternativas fixas — C = "Certo", E = "Errado" — o mesmo par sintético que o
+ * extrator emite e que `verificacao.py` exige no artefato. A coluna
+ * `questions.tipo` é texto com default "multipla_escolha"
+ * (`src/db/schema/study.ts:170`) e a UI já distingue os dois
+ * (`src/components/questoes/questao-card.tsx`, `src/lib/questoes/procedencia.ts`),
+ * então quem importa lote C/E precisa dizer o tipo: sem isso, 259 questões
+ * entrariam classificadas como múltipla escolha.
+ */
+export const TIPOS_IMPORTACAO = ["multipla_escolha", "certo_errado"] as const;
+
+export type TipoImportacao = (typeof TIPOS_IMPORTACAO)[number];
+
+export function isTipoImportacao(valor: unknown): valor is TipoImportacao {
+  return (
+    typeof valor === "string" &&
+    (TIPOS_IMPORTACAO as readonly string[]).includes(valor)
+  );
+}
+
+const PAR_CERTO_ERRADO = [
+  { letter: "C", texto: "certo" },
+  { letter: "E", texto: "errado" },
+] as const;
+
+/** "Certo." / " ERRADO " e acentos não devem confundir a checagem do par. */
+function normalizarTextoAlternativa(value: string): string {
+  return value
+    .trim()
+    .replace(/[.!?]+$/, "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 // ============================================================
 // CSV parsing (comma/semicolon, BOM, aspas)
 // ============================================================
@@ -178,13 +214,34 @@ export function parseQuestion(
   };
 }
 
-export function validateQuestion(q: ParsedQuestion): string[] {
+export function validateQuestion(
+  q: ParsedQuestion,
+  tipo: TipoImportacao = "multipla_escolha"
+): string[] {
   const issues: string[] = [];
   if (!q.enunciado) issues.push("enunciado obrigatório");
   if (q.alternativas.length < 2) issues.push("é necessário ao menos 2 alternativas");
   if (!q.gabarito) issues.push("gabarito (A-E) obrigatório");
   else if (!q.alternativas.some((a) => a.letter === q.gabarito))
     issues.push(`gabarito ${q.gabarito} não corresponde a uma alternativa`);
+
+  const letras = q.alternativas.map((a) => a.letter).join("");
+  const ehParCertoErrado =
+    letras === PAR_CERTO_ERRADO.map((p) => p.letter).join("") &&
+    q.alternativas.every(
+      (a, i) => normalizarTextoAlternativa(a.text) === PAR_CERTO_ERRADO[i].texto
+    );
+
+  if (tipo === "certo_errado") {
+    if (letras !== "CE") {
+      issues.push(`tipo certo_errado exige exatamente as alternativas C e E (linha traz: ${letras || "nenhuma"})`);
+    } else if (!ehParCertoErrado) {
+      issues.push('tipo certo_errado exige os textos "Certo" e "Errado"');
+    }
+  } else if (ehParCertoErrado) {
+    issues.push("linha certo/errado (C=Certo, E=Errado) exige o tipo certo_errado");
+  }
+
   return issues;
 }
 
@@ -292,47 +349,94 @@ async function rowsFromFile(
 // Service
 // ============================================================
 
+const LIMITE_BYTES = 10 * 1024 * 1024;
+const LIMITE_LINHAS = 5000;
+
+export interface ImportConfig {
+  adminUserId: string;
+  subjectId: string;
+  /** Tipo de todo o lote. Default "multipla_escolha" (comportamento histórico). */
+  tipo?: TipoImportacao;
+  defaultBanca?: string;
+  defaultCargo?: string;
+  defaultAno?: number;
+}
+
+type LinhaValida = { row: number; questao: ParsedQuestion; hash: string };
+
+/**
+ * Lê e valida o lote inteiro antes de qualquer escrita, inclusive contra o
+ * `tipo` declarado: lote com tipo errado nunca chega a `createQuestion`.
+ */
+function analisarLote(
+  rows: Record<string, string | undefined>[],
+  tipo: TipoImportacao
+): { validas: LinhaValida[]; erros: { row: number; message: string }[]; duplicadas: number } {
+  const validas: LinhaValida[] = [];
+  const erros: { row: number; message: string }[] = [];
+  const vistos = new Set<string>();
+  let duplicadas = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    // +2: linha 1 é o cabeçalho no CSV/XLSX; em JSON é o deslocamento conhecido
+    // do contrato e serve só para apontar a linha no relatório de erros.
+    const numeroDaLinha = i + 2;
+    const questao = parseQuestion(numeroDaLinha, rows[i]);
+    const issues = validateQuestion(questao, tipo);
+    if (issues.length > 0) {
+      erros.push({ row: numeroDaLinha, message: issues.join("; ") });
+      continue;
+    }
+    const hash = computeHash(questao);
+    if (vistos.has(hash)) {
+      duplicadas++;
+      continue;
+    }
+    vistos.add(hash);
+    validas.push({ row: numeroDaLinha, questao, hash });
+  }
+
+  return { validas, erros, duplicadas };
+}
+
 export const QuestionImportService = {
   /** Importa questões de um arquivo com validação + dedup + gravação. */
-  async importQuestions(input: {
-    adminUserId: string;
-    file: File;
-    subjectId: string;
-    defaultBanca?: string;
-    defaultCargo?: string;
-    defaultAno?: number;
-  }): Promise<ImportResult> {
+  async importQuestions(
+    input: ImportConfig & { file: File }
+  ): Promise<ImportResult> {
     const buffer = Buffer.from(await input.file.arrayBuffer());
-    if (buffer.byteLength > 10 * 1024 * 1024) {
+    return QuestionImportService.importFromBuffer({
+      ...input,
+      buffer,
+      fileName: input.file.name,
+      mimeType: input.file.type,
+    });
+  },
+
+  /**
+   * Mesmo caminho de `importQuestions` a partir de bytes, sem depender de
+   * `File` — é o que permite rodar o lote da Aula 14 por script.
+   */
+  async importFromBuffer(
+    input: ImportConfig & { buffer: Buffer; fileName: string; mimeType?: string }
+  ): Promise<ImportResult> {
+    if (input.buffer.byteLength > LIMITE_BYTES) {
       throw new QuestionImportError("FILE_TOO_LARGE", "Arquivo excede o limite de 10 MB.");
     }
 
-    const rows = await rowsFromFile(buffer, input.file.type, input.file.name);
+    const tipo = input.tipo ?? "multipla_escolha";
+    const rows = await rowsFromFile(input.buffer, input.mimeType ?? "", input.fileName);
     if (rows.length === 0) {
       throw new QuestionImportError("EMPTY_FILE", "Nenhuma linha de questão encontrada.");
     }
-    if (rows.length > 5000) {
+    if (rows.length > LIMITE_LINHAS) {
       throw new QuestionImportError("TOO_MANY_ROWS", "Máximo de 5000 questões por importação.");
     }
 
-    const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
-    const seenHashes = new Set<string>();
+    const { validas, erros, duplicadas } = analisarLote(rows, tipo);
+    const result: ImportResult = { imported: 0, skipped: duplicadas, errors: erros };
 
-    for (let i = 0; i < rows.length; i++) {
-      const q = parseQuestion(i + 2, rows[i]);
-      const issues = validateQuestion(q);
-      if (issues.length > 0) {
-        result.errors.push({ row: i + 2, message: issues.join("; ") });
-        continue;
-      }
-
-      const hash = computeHash(q);
-      if (seenHashes.has(hash)) {
-        result.skipped++;
-        continue;
-      }
-      seenHashes.add(hash);
-
+    for (const { row, questao: q, hash } of validas) {
       try {
         const existing = await QuestionWriteRepository.findByContentHash(hash);
         if (existing) {
@@ -349,7 +453,7 @@ export const QuestionImportService = {
           enunciado: q.enunciado,
           gabarito: q.gabarito,
           explicacao: q.explicacao,
-          tipo: "multipla_escolha",
+          tipo,
           fonte: q.fonte,
           origin: "import",
           aiGenerated: false,
@@ -372,12 +476,51 @@ export const QuestionImportService = {
         result.imported++;
       } catch (error) {
         result.errors.push({
-          row: i + 2,
+          row,
           message: error instanceof Error ? error.message : "Falha ao gravar",
         });
       }
     }
 
+    result.errors.sort((a, b) => a.row - b.row);
     return result;
+  },
+
+  /**
+   * Confere o lote sem tocar em banco: é a contagem que precede a decisão de
+   * importar (`--conferir` do script da Aula 14 e o dry-run de testes).
+   */
+  async conferirLote(input: {
+    buffer: Buffer;
+    fileName: string;
+    mimeType?: string;
+    tipo?: TipoImportacao;
+  }): Promise<{
+    arquivo: string;
+    tipo: TipoImportacao;
+    linhas: number;
+    importaveis: number;
+    duplicadasNoLote: number;
+    topicos: string[];
+    erros: { row: number; message: string }[];
+  }> {
+    const tipo = input.tipo ?? "multipla_escolha";
+    const rows = await rowsFromFile(input.buffer, input.mimeType ?? "", input.fileName);
+    const { validas, erros, duplicadas } = analisarLote(rows, tipo);
+    return {
+      arquivo: input.fileName,
+      tipo,
+      linhas: rows.length,
+      importaveis: validas.length,
+      duplicadasNoLote: duplicadas,
+      topicos: [
+        ...new Set(
+          validas
+            .map((v) => v.questao.topic)
+            .filter((t): t is string => Boolean(t))
+        ),
+      ].sort(),
+      erros,
+    };
   },
 };

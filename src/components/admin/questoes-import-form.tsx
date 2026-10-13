@@ -26,6 +26,7 @@ export function QuestoesImportForm() {
   const [banca, setBanca] = useState("");
   const [cargo, setCargo] = useState("");
   const [ano, setAno] = useState("");
+  const [tipo, setTipo] = useState<"multipla_escolha" | "certo_errado">("multipla_escolha");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
 
@@ -48,6 +49,7 @@ export function QuestoesImportForm() {
       if (banca) fd.append("banca", banca);
       if (cargo) fd.append("cargo", cargo);
       if (ano) fd.append("ano", ano);
+      fd.append("tipo", tipo);
       const res = await fetch("/api/admin/questions/import", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) {
@@ -73,7 +75,10 @@ export function QuestoesImportForm() {
         <div className="mb-3 rounded-xl border border-white/10 bg-slate-900/40 p-3 text-xs text-slate-400">
           Colunas: <code>enunciado, a, b, c, d, e, gabarito</code> (obrigatórias) ·{" "}
           <code>explicacao, nivel, ano, banca, cargo, fonte, tema</code> (opcionais). Gabarito =
-          letra (A–E). Questões entram em <b>em_revisão</b> e são deduplicadas por conteúdo.
+          letra (A–E). O tipo escolhido vale para <b>todo o arquivo</b>: lote certo/errado precisa
+          trazer as colunas <code>c</code>/<code>e</code> com <code>Certo</code>/<code>Errado</code>,
+          e linha fora desse par é rejeitada antes de gravar. Questões entram em{" "}
+          <b>em_revisão</b> e são deduplicadas por conteúdo.
           {" "}
           <a
             href="/api/admin/questions/import/template"
@@ -121,6 +126,16 @@ export function QuestoesImportForm() {
             onChange={(e) => setAno(e.target.value)}
             className="bg-slate-900 text-slate-200"
           />
+          <select
+            value={tipo}
+            onChange={(e) =>
+              setTipo(e.target.value as "multipla_escolha" | "certo_errado")
+            }
+            className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-200"
+          >
+            <option value="multipla_escolha">Tipo: múltipla escolha</option>
+            <option value="certo_errado">Tipo: certo/errado (C/E)</option>
+          </select>
           <Button type="submit" disabled={busy || !file || !subjectId}>
             {busy ? "Importando..." : "Importar questões"}
           </Button>
