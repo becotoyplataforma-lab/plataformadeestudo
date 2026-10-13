@@ -39,7 +39,12 @@ ESTRUTURA_INCOMPLETA = "estrutura_incompleta"
 REVISAO_PENDENTE = "revisao_pendente"
 
 #: Problemas que significam "falta estrutura para existir no banco".
-_SEM_ESTRUTURA = {"enunciado_vazio", "alternativas_insuficientes", "alternativas_repetidas"}
+_SEM_ESTRUTURA = {
+    "enunciado_vazio",
+    "alternativas_insuficientes",
+    "alternativas_repetidas",
+    "alternativa_com_marca_de_letra",
+}
 #: Problemas que significam "não sabemos a resposta".
 _SEM_GABARITO = {
     "gabarito_ausente",

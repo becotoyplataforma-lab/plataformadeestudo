@@ -7,10 +7,15 @@ para que o teste rode sem depender do arquivo de 862 paginas.
 
 from __future__ import annotations
 
+from agents.pdf_question_extractor.exam_tags import Tag
 from agents.pdf_question_extractor.parser import (
+    Alternativa,
+    Questao,
     _dividir_blocos,
     _dividir_grupos,
     _eh_item_certo_errado,
+    _marcas_embutidas,
+    _resolver_tipo,
     _sequencia_de_alternativas,
     extrair_chaves,
 )
@@ -147,6 +152,59 @@ def test_chaves_de_lista_nas_formas_reais() -> None:
     assert chaves[12].gabarito == "B"
     assert chaves[4].anulada
     assert chaves[5].conflitado
+def _item_multipla(alts: list[tuple[str, str]]) -> Questao:
+    """Escolha multipla crua, com o minimo que _resolver_tipo examina."""
+    return Questao(
+        numero=45,
+        secao=SECAO,
+        id_local="A14-S09-045",
+        tag=Tag(crua="IGEDUC / Pref. Calumbi - PE / 2025", classificacao="banca/cargo/ano"),
+        pagina_inicial=8,
+        pagina_final=8,
+        enunciado="Aponte a alternativa que justifica o emprego da virgula.",
+        alternativas=[Alternativa(letra, texto) for letra, texto in alts],
+    )
+
+
+def test_coluna_entrelacada_e_quarentenada() -> None:
+    """Ancora A14-S09-045: duas colunas viram uma opcao, com a letra da vizinha dentro.
+
+    As letras que restam (A, B) continuam contiguas a partir de A, entao
+    ``alternativas_fora_da_sequencia`` nao dispara; sem esta regra o item segue
+    para o import com o gabarito apontando para uma opcao que engoliu outras.
+    """
+    q = _item_multipla(
+        [
+            ("A", "Separar o aposto. C) Separar o sujeito."),
+            ("B", "Separar o vocativo. D) Separar termo deslocado na oracao."),
+        ]
+    )
+    _resolver_tipo(q)
+    assert _marcas_embutidas(q.alternativas) == [("A", "C"), ("B", "D")]
+    assert "alternativa_com_marca_de_letra" in q.problemas
+    assert "alternativas_fora_da_sequencia" not in q.problemas
+
+
+def test_prosa_com_sigla_entre_parenteses_nao_e_marca_de_alternativa() -> None:
+    """Falso positivo medido no lote: ``(IA)`` e ``IVA)`` nao sao marcador de opcao."""
+    q = _item_multipla(
+        [
+            ("A", "Desde a decada de 60, a adocao do imposto sobre valor agregado (IVA) trouxe avanco."),
+            ("B", "A inteligencia artificial (IA) nao altera a regra."),
+        ]
+    )
+    _resolver_tipo(q)
+    assert q.problemas == []
+
+
+def test_item_de_cinco_alternativas_limpas_nao_ganha_problema() -> None:
+    q = _item_multipla(
+        [("A", "um"), ("B", "dois"), ("C", "tres"), ("D", "quatro"), ("E", "cinco")]
+    )
+    _resolver_tipo(q)
+    assert q.tipo == "multipla_escolha"
+    assert q.problemas == []
+
 
 
 def test_c_e_invertido_nao_passa_como_legitimo() -> None:

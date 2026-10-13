@@ -58,6 +58,13 @@ _ORDEM_LETRAS = "ABCDE"
 #: Marcador de alternativa, com ou sem maiuscula, sempre precedido de
 #: nao-palavra (para nao casar o "B)" de "AB)" nem de "3B)").
 _MARCADOR_ALT = re.compile(r"(?<!\w)([A-Ea-e])\)\s*")
+#: Letra de alternativa que sobrou **dentro** do texto de outra. As colunas do
+#: PDF sao lidas entrelacadas: o bloco ``A) ... C) ... B) ... D)`` produz duas
+#: opcoes contiguas a partir de A, entao a checagem de sequencia nao ve nada e
+#: o gabarito passa a apontar para uma opcao que engoliu outras duas. Medido na
+#: Aula 14: 6 itens chegaram ao import assim (docs/30-ATA-HOMOLOGACAO §6).
+#: Maiuscula e obrigatoria: ``(IA)``/``IVA)`` sao prosa, nao marcador.
+_MARCA_DENTRO_DA_ALTERNATIVA = re.compile(r"(?<!\w)([A-E])\)\s")
 
 
 @dataclass
@@ -230,6 +237,20 @@ def _texto_normalizado(texto: str) -> str:
     return re.sub(r"[^a-z]", "", dobrada)
 
 
+def _marcas_embutidas(alternativas: list[Alternativa]) -> list[tuple[str, str]]:
+    """Pares ``(letra_da_opcao, letra_embutida)`` denotando colunas entrelacadas.
+
+    A letra própria da opcao nao conta: o marcador que abriu o texto ja foi
+    consumido pela particao, entao o que sobra aqui e sempre outra opcao.
+    """
+    embutidas: list[tuple[str, str]] = []
+    for alt in alternativas:
+        for marca in _MARCA_DENTRO_DA_ALTERNATIVA.finditer(alt.texto or ""):
+            if marca.group(1) != alt.letra:
+                embutidas.append((alt.letra, marca.group(1)))
+    return embutidas
+
+
 def _eh_item_certo_errado(alternativas: list[Alternativa]) -> bool:
     """``C) Certo`` + ``E) Errado`` explícitos: é item C/E, não escolha simples.
 
@@ -305,6 +326,11 @@ def _resolver_tipo(q: Questao) -> None:
         esperadas = _ORDEM_LETRAS[: len(set(letras))]
         if sorted(set(letras)) != sorted(esperadas):
             q.problemas.append("alternativas_fora_da_sequencia")
+        #: Sequencia contigua nao prova particao correta: coluna entrelacada
+        #: deixa o marcador da vizinha dentro do texto, e o gabarito passa a
+        #: apontar para uma opcao que contem outras. Nada e realinhado a chute.
+        if _marcas_embutidas(q.alternativas):
+            q.problemas.append("alternativa_com_marca_de_letra")
         return
 
     q.tipo = "certo_errado"

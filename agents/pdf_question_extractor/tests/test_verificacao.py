@@ -194,6 +194,31 @@ def test_marca_de_origem_injetada_reprova(tmp_path: Path) -> None:
 
 def test_mobilia_proibida_vem_do_cache_e_reprova(tmp_path: Path) -> None:
     escrever_base(tmp_path)
+def test_alternativa_embutida_no_import_reprova(tmp_path: Path) -> None:
+    """Coluna entrelacada escrita no arquivo de import: bloqueante no gate de disco.
+
+    O parser ja quarentena o item, mas o gate reconfirma a partir do artefato:
+    se a linha chegar ao arquivo por outra mao, o import nao pode ser aprovado.
+    """
+    escrever_base(tmp_path)
+    linhas = _recarregar(tmp_path, NOME_IMPORT)
+    linhas[0]["alternativa_a"] = "Separar o aposto. C) Separar o sujeito."
+    _escrever(tmp_path, NOME_IMPORT, linhas)
+    v = verificacao.verificar(tmp_path)
+    assert "alternativa_com_marca_de_letra" in regras(v)
+    assert not v.ok
+
+
+def test_prosa_com_sigla_no_import_nao_reprova(tmp_path: Path) -> None:
+    """``(IA)``/``IVA)`` sao prosa, nao marcador: o gate nao pode inventar falha."""
+    escrever_base(tmp_path)
+    linhas = _recarregar(tmp_path, NOME_IMPORT)
+    linhas[0]["alternativa_a"] = "A adocao do imposto sobre valor agregado (IVA) trouxe avanco."
+    linhas[0]["alternativa_b"] = "A inteligencia artificial (IA) mudou o calculo."
+    _escrever(tmp_path, NOME_IMPORT, linhas)
+    v = verificacao.verificar(tmp_path)
+    assert "alternativa_com_marca_de_letra" not in regras(v)
+
     literal = "CURSO DO FULANO DA SILVA"
     (tmp_path / pipeline.CACHE_NOME).write_text(
         json.dumps({"linhas": [[]], "mobilia": {literal: 862}, "removidas": {}}), encoding="utf-8"

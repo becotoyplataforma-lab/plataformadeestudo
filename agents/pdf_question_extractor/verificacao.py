@@ -91,6 +91,10 @@ ESPERADOS = (
 _ID_LOCAL = re.compile(r"^A\d{1,3}-S\d{1,3}-\d{1,4}$")
 LETRAS = frozenset("ABCDE")
 CERTO_ERRADO = frozenset({"C", "E"})
+#: Espelho de ``parser._MARCA_DENTRO_DA_ALTERNATIVA``. O parser ja quarentena o
+#: item, mas o gate de disco reconfirma a partir do artefato: um import com
+#: coluna entrelacada escrita por outra mao nao pode passar.
+_MARCA_DENTRO_DA_ALTERNATIVA = re.compile(r"(?<!\w)([A-E])\)\s")
 
 
 @dataclass(frozen=True)
@@ -292,6 +296,25 @@ def _conferir_linhas(nome: str, linhas: Any, letras_validas: frozenset[str]) -> 
             falhas.append(Falha(nome, "menos_de_2_alternativas", "linha %d: %s" % (i, sorted(presentes))))
         if gab in letras_validas and gab not in presentes:
             falhas.append(Falha(nome, "gabarito_sem_alternativa", "linha %d: %s" % (i, gab)))
+        for letra in sorted(presentes):
+            texto = row.get("alternativa_" + letra.lower()) or ""
+            embutida = next(
+                (
+                    m.group(1)
+                    for m in _MARCA_DENTRO_DA_ALTERNATIVA.finditer(texto)
+                    if m.group(1) != letra
+                ),
+                None,
+            )
+            if embutida:
+                falhas.append(
+                    Falha(
+                        nome,
+                        "alternativa_com_marca_de_letra",
+                        "linha %d: alternativa_%s embute %s)" % (i, letra.lower(), embutida),
+                    )
+                )
+                break
     return falhas
 
 

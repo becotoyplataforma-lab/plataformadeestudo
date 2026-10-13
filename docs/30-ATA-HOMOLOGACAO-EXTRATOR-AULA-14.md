@@ -31,12 +31,12 @@ Fonte: `curso-384118-aula-14-somente-em-pdf-089a-completo.pdf`, 26.057.794 bytes
 | origem do **veredicto** (inclui quem não virou letra) | bloco 932 · comentário 744 · corpo duplicado 82 | `contagens.por_origem_veredicto` |
 | origem do gabarito **com letra** | bloco 920 · comentário 718 · corpo duplicado 82 = **1.720** | `contagens.com_gabarito_por_origem` |
 | recuperados por join de corpo | 82, em 761 grupos de cópia | `relatorio.recuperacao_por_corpo` |
-| quarentena | **59** | `quarentena_aula_14.json` |
+| quarentena | **65** | `quarentena_aula_14.json` |
 | inéditas do compilador (não entram no rico) | 22 | `contagens.ineditas` |
 | artefato rico | **1.736** = 1.758 − 22 | `questoes_aula_14.json` |
-| importáveis | **889** = 630 múltipla + 259 certo-errado | `relatorio.importaveis` |
+| importáveis | **886** = 627 múltipla + 259 certo-errado | `relatorio.importaveis` |
 | comentários isolados no arquivo LOCAL | 806 | `comentarios_aula_14_LOCAL.json` |
-| procedência | oficial 1.702 · inconclusiva 30 · estrutura incompleta 4 · inédita 22 | `relatorio.procedencia` |
+| procedência | oficial 1.694 · inconclusiva 30 · estrutura incompleta 12 · inédita 22 | `relatorio.procedencia` |
 
 Os dois últimos blocos de origem **não são a mesma contagem** e é precisamente por isso que as chaves
 foram separadas: ver §5.
@@ -104,6 +104,7 @@ não existe: `linha_import` manda órgão para `fonte`, que é a coluna que o im
 | somas do relatório vs. arquivos do disco | relatório que afirma número que os arquivos não sustentam é falha, não discrepância |
 | `todos_limpos` e `varredura` declarados vs. reescaneio | o relatório não grava veredito de si mesmo; aqui ele é olhado |
 | letra fora das alternativas ⇒ **quarentenado** | o defeito é da fonte; o invariante não é "nunca acontece", é "quem assim sozinhou não é importado" |
+| texto de alternativa contendo marcador `A)`–`E)` de outra letra ⇒ **reprovado** | sequência contígua a partir de A não prova partição: coluna entrelaçada do PDF engole duas opções numa só, e o gate de disco pega isso mesmo quando o artefato foi escrito por outra mão |
 
 ## 5. Correções desta rodada, incluindo as minhas
 
@@ -129,22 +130,45 @@ passam nessa checagem, e `verificar` reprova qualquer linha C/E cujo par não se
 **5.4 JSX de `questao-card.tsx` restaurado** (fechos de `</div>` que faltavam antes do rodapé expandido),
 e `.gitignore` passou a ignorar artefatos locais-only.
 
+**5.5 Fuga de alternativas coladas, achada depois do primeiro APROVADO.** A checagem de sequência compara
+as letras que **restaram** com `A..`: `["A","B"]` é contíguo e passa. Só que as colunas do PDF são lidas
+entrelaçadas, então `A) … C) … B) … D) …` vira duas opções cujo texto carrega o marcador da vizinha — o
+gabarito passa a apontar para uma alternativa que engoliu outras duas, e nada no lote era reprovado.
+Medido: 10 itens de múltipla escolha com marcador interno, dos quais **6 já iam para o banco** (3 questões
+canônicas, cada uma com cópia em outra seção). Regra nova, nos dois lados do portão:
+`parser._marcas_embutidas` declara `alternativa_com_marca_de_letra` (quarentena, proveniência
+`estrutura_incompleta`), e `verificacao._conferir_linhas` reprova a mesma forma lida do disco. Nada foi
+realinhado por suposição: item colado sai do lote, não é remendado. Importáveis **889 → 886**, quarentena
+**59 → 65**, `verificar` **APROVADO** de novo, `pytest` **125** verdes (5 testes novos).
+
 ## 6. Casos que pedem decisão humana antes de qualquer import
 
 | caso | qtde | IDs / nota |
 |---|---|---|
 | letra de gabarito fora das alternativas, **quarentenadas** | 4 | `A14-S05-033` (E em A–D), `A14-S22-033` (mesmo corpo, mesma queixa), `A14-S23-001` (D em C/E), `A14-S23-005` (o bloco indica letra inexistente e o resolvidor recusa: fica sem gabarito) |
 | alternativas fora da sequência | 3 | decisão: exibir com aviso ou excluir do lote de import |
+| alternativa embutindo marcador de outra letra (**5.5**) | 8 | `A14-S09-045`, `A14-S26-045`, `A14-S11-057`, `A14-S28-057`, `A14-S17-015`, `A14-S33-015` (saíram do lote); `A14-S10-025`, `A14-S27-025` (já quarentenadas pela sequência). Conserto é do parser, não de digitação: realinhar letra a letra seria chute |
 | sem chave no bloco de gabarito | 16 | quarentena; não se inferiu posição |
 | conflito entre cópias do mesmo corpo | 5 grupos | quarentena; maioria não elege |
 | anulado pelo material | 7 | gabarito não atribuído |
 | enunciado vazio | 4 | descartados na carga da UI |
 | sem gabarito algum | 38 | não importáveis |
-| **total em quarentena** | **59** | `quarentena_aula_14.json` |
+| **total em quarentena** | **65** | `quarentena_aula_14.json` |
 
 ## 7. Pendências deliberadas (não são defeitos)
 
 1. **Import no banco:** exige aprovação explícita; `verificar` deve estar verde no momento da decisão.
+   **Dry-run feito** (`src/lib/administration/services/__tests__/aula-14-import-dry-run.test.ts`, repositório
+   de escrita mocked, nenhum banco tocado): **886** linhas passam por `rowsFromFile` → `parseQuestion` →
+   `validateQuestion` sem um único erro e sem `skipped` do próprio lote; **3.531** alternativas gravadas
+   (3.013 + 518), `content_hash` único por linha, payload `status=em_revisao`, `isPublic=false`,
+   `needsReview=true`, `explicacao=undefined`. O dry-run expôs uma decisão nova e pendente:
+   `importQuestions` fixa `tipo: "multipla_escolha"` (question-import.service.ts:352), então as **259**
+   questões certo/errado entrariam com tipo errado — `questions.tipo` é `text` (src/db/schema/study.ts:170)
+   e a UI já distingue os dois (src/lib/questoes/procedencia.ts:108). Antes de importar é preciso ou
+   parameterizar o tipo no serviço, ou importar os dois lotes em chamadas separadas com `tipo` explícito.
+   Falta ainda o `findByContentHash` real: as 826 repetições de corpo do PDF já viraram um só `content_hash`,
+   mas a colisão com questões **já existentes no banco** só é medida com banco.
 2. **Geração de resolução por IA:** sem credencial de provedor; `resolucao_status` fica em
    `pendente_geracao`.
 3. **Rota de apostila da Aula 14:** não criada, por fronteira de escopo.
@@ -162,11 +186,13 @@ e `.gitignore` passou a ignorar artefatos locais-only.
 
 | checagem | resultado |
 |---|---|
-| `pytest agents/pdf_question_extractor` | **120 passed** (93 anteriores + 27 de `test_verificacao.py`) |
-| `verificar` no dataset real | **APROVADO**, exit 0, 7/7 artefatos, 0 bloqueantes, identidade re-derivada do cache |
+| `pytest agents/pdf_question_extractor` | **125 passed** (120 da homologação + 5 da regra 5.5: 3 em `test_parser.py`, 2 em `test_verificacao.py`) |
+| `extract` regenerado após a regra 5.5 | seções=33 itens=1.758 com_gabarito=1.720 quarentena=65; varredura limpa em 7/7 |
+| `verificar` no dataset real | **APROVADO**, exit 0, 7/7 artefatos, 0 bloqueantes, identidade re-derivada do cache; `import_multipla=627`, `import_certo_errado=259`, `rico=1.736`, `ids_unicos=1.736` |
 | `verificar` com artefato adulterado após a escrita | exit 1, reprova por regra nomeada (ver testes) |
+| dry-run do import (banco mocked) | 6 tests passed — 886/886 aceitas, 0 erros, 0 skipped de lote, 3.531 alternativas, hash único; ver §7.1 |
 | `tsc --noEmit` / ESLint nas rotas e libs tocadas | limpos |
-| `vitest run` | 1582 passed |
+| `vitest run` | **1601 passed**, 6 expected fail, 29 skipped (147 arquivos; o dry-run fica `skip` sem `QUESTOES_AULA14_DIR`) |
 
 Artefatos em `H:\Meu Drive\plataforma de estudo\cbm-rj\portugues\questoes\`: `questoes_aula_14.json`,
 `questoes_aula_14_import.json`, `questoes_aula_14_certo_errado_import.json`, `quarentena_aula_14.json`,
@@ -174,10 +200,12 @@ Artefatos em `H:\Meu Drive\plataforma de estudo\cbm-rj\portugues\questoes\`: `qu
 (local-only).
 
 Código desta frente: `agents/pdf_question_extractor/` (`verificacao.py` novo, `cli.py` com subcomando
-`verificar`, `artifacts.py` com as duas chaves de origem), `src/lib/questoes/`
+`verificar`, `artifacts.py` com as duas chaves de origem; regra 5.5 em `parser.py`, `verificacao.py` e
+`provenance.py`), `src/lib/questoes/`
 (`dados-aula-14.ts`, `procedencia.ts`, `rotas.ts`), `src/app/(dashboard)/cbm-rj/portugues/questoes/aula-14/`
 (listagem com `?secao=` e `?filtro=gabarito`, detalhe com navegação entre vizinhos da mesma seção e
-`notFound()` para ID malformado ou inexistente), `src/components/questoes/questao-card.tsx`.
+`notFound()` para ID malformado ou inexistente), `src/components/questoes/questao-card.tsx`,
+`src/lib/administration/services/__tests__/aula-14-import-dry-run.test.ts` (dry-run do §7.1).
 
 **Assinatura desta ata:** entrega aprovada para revisão humana dos artefatos. Import, publicação e
 geração de resolução permanecem gated e exigem decisão explícita, com `verificar` verde no momento da
