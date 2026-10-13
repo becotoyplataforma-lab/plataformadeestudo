@@ -74,3 +74,13 @@ supabase/.temp
 
 print/
 
+
+# Artefatos locais do extrator da Aula 14 (docs/30): o comentario de material de
+# terceiro nunca e publicado, importado nem versionado.
+comentarios_*_LOCAL.json
+.aula14_linhas_limpas.json
+
+# Python do extrator: bytecode e ambiente local nunca entram no repositorio.
+__pycache__/
+*.pyc
+.venv/

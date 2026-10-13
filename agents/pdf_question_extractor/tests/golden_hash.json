@@ -1,0 +1,246 @@
+{
+  "raw": [
+    {
+      "enunciado": "Questões de ortografia: crase, til e porquês.",
+      "alternativas": [
+        [
+          "A",
+          " certo"
+        ],
+        [
+          "B",
+          " errado"
+        ]
+      ],
+      "gabarito": "A",
+      "body": "Questões de ortografia: crase, til e porquês.||A: certo||B: errado||A",
+      "normalized": "questoes de ortografia: crase, til e porques.||a: certo||b: errado||a",
+      "hash": "77a807db7ece2eca04535cdb2c4f44d579fb8e4b81f7fa78d30f5aba6d818d02"
+    },
+    {
+      "enunciado": "  Espacos nas bordas  ",
+      "alternativas": [
+        [
+          "A",
+          " um"
+        ],
+        [
+          "B",
+          " dois"
+        ]
+      ],
+      "gabarito": "B",
+      "body": "  Espacos nas bordas  ||A: um||B: dois||B",
+      "normalized": " espacos nas bordas ||a: um||b: dois||b",
+      "hash": "a6bfcbd42b62b0a44155a38f85ba4150697927d96630bb02f573cf36d75f32d7"
+    },
+    {
+      "enunciado": "Nova  linha\nquebra   aqui\ttab",
+      "alternativas": [
+        [
+          "A",
+          " ô"
+        ],
+        [
+          "B",
+          " ã"
+        ],
+        [
+          "C",
+          " é"
+        ]
+      ],
+      "gabarito": "C",
+      "body": "Nova  linha\nquebra   aqui\ttab||A: ô||B: ã||C: é||C",
+      "normalized": "nova linha quebra aqui tab||a: o||b: a||c: e||c",
+      "hash": "be92a00837e2b736014000f53ce63cd4f3092a8c8254960bfd9614b33d9ba95b"
+    },
+    {
+      "enunciado": "ÁÉÍÓÚ À ÃÕ Ç Ü",
+      "alternativas": [
+        [
+          "A",
+          " a"
+        ],
+        [
+          "B",
+          " b"
+        ],
+        [
+          "C",
+          " c"
+        ],
+        [
+          "D",
+          " d"
+        ],
+        [
+          "E",
+          " e"
+        ]
+      ],
+      "gabarito": "E",
+      "body": "ÁÉÍÓÚ À ÃÕ Ç Ü||A: a||B: b||C: c||D: d||E: e||E",
+      "normalized": "aeiou a ao c u||a: a||b: b||c: c||d: d||e: e||e",
+      "hash": "3189592344084d3ad97ec1eccf834f26e79c36252e3f697a9e6f6c514072be54"
+    },
+    {
+      "enunciado": "",
+      "alternativas": [
+        [
+          "A",
+          " v"
+        ]
+      ],
+      "gabarito": "",
+      "body": "||A: v||",
+      "normalized": "||a: v||",
+      "hash": "7e4c3addf3f96175e2f2d60645d4637db49db1f4e718a949defe2e1b1c3263c6"
+    },
+    {
+      "enunciado": "Combining dentro do bloco: a̧b",
+      "alternativas": [
+        [
+          "A",
+          " x"
+        ]
+      ],
+      "gabarito": "A",
+      "body": "Combining dentro do bloco: a̧b||A: x||A",
+      "normalized": "combining dentro do bloco: ab||a: x||a",
+      "hash": "c2db5494a33d090d20d865fa7d3901b162a8b1dc769cb29cb61c6af2ee89667c"
+    },
+    {
+      "enunciado": "Combining fora do bloco: a҃b",
+      "alternativas": [
+        [
+          "A",
+          " x"
+        ]
+      ],
+      "gabarito": "A",
+      "body": "Combining fora do bloco: a҃b||A: x||A",
+      "normalized": "combining fora do bloco: a҃b||a: x||a",
+      "hash": "ca570f5dcd2c33cfa5f1bd17bcf0c534ff74ccf0f60dbfc97cc9eef1f08fedb8"
+    },
+    {
+      "enunciado": "números 12345 e símbolos /|-•§",
+      "alternativas": [
+        [
+          "A",
+          " y"
+        ],
+        [
+          "B",
+          " z"
+        ]
+      ],
+      "gabarito": "D",
+      "body": "números 12345 e símbolos /|-•§||A: y||B: z||D",
+      "normalized": "numeros 12345 e simbolos /|-•§||a: y||b: z||d",
+      "hash": "65bef07d0caa1d285ae56560c4bd032a0ba4b301d268848fcf8a78e7b0ee11be"
+    },
+    {
+      "enunciado": "  a  b  ",
+      "alternativas": [
+        [
+          "A",
+          " x"
+        ]
+      ],
+      "gabarito": "A",
+      "body": "  a  b  ||A: x||A",
+      "normalized": " a b ||a: x||a",
+      "hash": "7448c791254fe042a18b80cd69cd139e88c33823f09450e4fec01ef773078ca6"
+    }
+  ],
+  "import": [
+    {
+      "values": {
+        "enunciado": "  Identificam-se no vocábulo “lexicais” oito letras.  ",
+        "alt_a": "  Certo  ",
+        "alt_b": "",
+        "alt_c": "Errado",
+        "gabarito": "C"
+      },
+      "parsed": {
+        "enunciado": "Identificam-se no vocábulo “lexicais” oito letras.",
+        "alternativas": [
+          {
+            "letter": "A",
+            "text": "Certo"
+          },
+          {
+            "letter": "C",
+            "text": "Errado"
+          }
+        ],
+        "gabarito": "C"
+      },
+      "hash": "a655c7fe4c1096d286ae6c9318b81d208802ae534a98f80e660fd446af9174b4"
+    },
+    {
+      "values": {
+        "enunciado": "O vocábulo “histórico” tem nove letras.",
+        "alt_a": "um",
+        "alt_b": " dois ",
+        "alt_c": "",
+        "alt_d": "",
+        "alt_e": "",
+        "gabarito": "letra B"
+      },
+      "parsed": {
+        "enunciado": "O vocábulo “histórico” tem nove letras.",
+        "alternativas": [
+          {
+            "letter": "A",
+            "text": "um"
+          },
+          {
+            "letter": "B",
+            "text": "dois"
+          }
+        ],
+        "gabarito": "B"
+      },
+      "hash": "c00cb362f0c620a885a9383598e9c9618fbbfae0c4608b478ad6af04a91515b1"
+    },
+    {
+      "values": {
+        "enunciado": "Questão sem gabarito normalizável.",
+        "alt_a": "a",
+        "alt_b": "b",
+        "gabarito": "NULA"
+      },
+      "parsed": {
+        "enunciado": "Questão sem gabarito normalizável.",
+        "alternativas": [
+          {
+            "letter": "A",
+            "text": "a"
+          },
+          {
+            "letter": "B",
+            "text": "b"
+          }
+        ],
+        "gabarito": "A"
+      },
+      "hash": "a5362902a7fde5444d0d56ba402650b7ca8c04f83ce7170160b57b660cf99d17"
+    }
+  ],
+  "gabarito": {
+    "Correto.": "E",
+    "Certo.": "E",
+    "Errado.": "D",
+    "Verdadeiro.": "E",
+    "Incorreto.": "E",
+    "D": "D",
+    "A": "A",
+    " c. ": "C",
+    "letra C": "C",
+    "Resposta: B": "B",
+    "": null,
+    "E": "E"
+  }
+}
