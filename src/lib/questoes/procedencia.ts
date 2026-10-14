@@ -98,6 +98,26 @@ export function gabaritoConfiavel(q: QuestaoExtraida): boolean {
   return !q.quarantined && typeof q.gabarito === "string" && q.gabarito.length === 1;
 }
 
+/**
+ * O material anulou a questão? O extrator registra isso de duas formas, e as
+ * duas são leitura do PDF: `gabarito_metodo === "anulada"` quando a palavra
+ * "anulada" aparece como resposta, e o aviso `gabarito_anulado` quando a anulação
+ * vem do bloco de gabaritos. Nenhum dos dois é inferência da UI.
+ */
+export function ehAnulada(q: QuestaoExtraida): boolean {
+  return q.gabarito_metodo === "anulada" || q.avisos.includes("gabarito_anulado");
+}
+
+/**
+ * Questão que o próprio material declara como de sua autoria, não de prova
+ * (estado `inedita_compilador`, já declarado em `SELO_PROCEDENCIA`). No lote de
+ * hoje nenhum item o carrega — por isso a caixa "Inéditas" não aparece na barra,
+ * e `cadernos.test.ts` cobre o predicado com fixtura.
+ */
+export function ehInedita(q: QuestaoExtraida): boolean {
+  return q.provenance_status === "inedita_compilador" || q.proveniencia.estado === "inedita_compilador";
+}
+
 export const LABEL_GABARITO: Record<string, string> = {
   C: "Certo",
   E: "Errado",

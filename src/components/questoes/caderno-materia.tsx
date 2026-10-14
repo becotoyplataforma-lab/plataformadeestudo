@@ -46,7 +46,13 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">{caderno.titulo}</h1>
-          <Badge variant="secondary">{acervo.itens.length} questões</Badge>
+          <Badge variant="secondary">{confiaveis} questões</Badge>
+          {acervo.semGabaritoConfiavel > 0 && (
+            <span className="text-xs text-muted-foreground" data-pendencia>
+              {acervo.itens.length} no acervo inteiro: {acervo.semGabaritoConfiavel} estão em
+              revisão sem gabarito confirmado, e só entram com o filtro ligado.
+            </span>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">{caderno.subtitulo}</p>
         <p data-contagem className="text-sm font-medium text-foreground">
@@ -79,6 +85,9 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
         acao={rotasQuestoes.caderno(caderno.slug)}
         filtros={filtros}
         opcoes={listagem.opcoes}
+        abas={listagem.abas}
+        refinamentos={listagem.refinamentos}
+        porPagina={pagina.porPagina}
       />
 
       <Sanfona rotulo="Sobre este acervo" id="lote">

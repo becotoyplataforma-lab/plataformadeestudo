@@ -5,20 +5,25 @@ import { countPublicasDaMateria } from "@/lib/db/repositories/questoes";
 import {
   aplicarFiltros,
   calcularPagina,
-  contagemDaFaceta,
   contagemPorAssunto,
   facetas,
   fatiarPagina,
   lerFiltros,
+  opcoesDoContexto,
+  refinamentosDoContexto,
   removerCopiasIdenticas,
   semFaceta,
+  totaisDasAbas,
+  type AbaComTotal,
   type AcervoDistinto,
   type Caderno,
+  type ChaveDeContagem,
   type Facetas,
   type FiltrosCaderno,
   type ItemCaderno,
   type OpcaoFaceta,
   type Pagina,
+  type RefinamentosCaderno,
 } from "./cadernos";
 import { carregarCaderno, type CargaCaderno } from "./dados-caderno";
 
@@ -33,17 +38,16 @@ import { carregarCaderno, type CargaCaderno } from "./dados-caderno";
  *  1. lê-se o lote (validação de forma já feita pelo carregador);
  *  2. colapsam-se as cópias idênticas por `content_hash` — sem isso a tela
  *     afirmaria 1.736 questões quando o material tem 920 distintas;
- *  3. aplicam-se os filtros da URL sobre o acervo distinto;
- *  4. corta-se a página pedida, com o `page` amarrado ao total real.
+ *  3. aplicam-se os filtros da URL sobre o acervo distinto — e o padrão de
+ *     qualidade (só gabarito que o material sustenta) já está dentro desses
+ *     filtros, por isso a tela abre em 886 e não em 918 (docs/31 §7.6);
+ *  4. corta-se a página pedida, com o `page` amarrado ao total real;
+ *  5. contam-se abas, facetas e refinamentos sobre o mesmo acervo, cada um no
+ *     contexto em que o clique do aluno vai cair.
  */
 
-export interface OpcoesDeFiltro {
-  disciplina: OpcaoFaceta[];
-  assunto: OpcaoFaceta[];
-  banca: OpcaoFaceta[];
-  ano: OpcaoFaceta[];
-  tipo: OpcaoFaceta[];
-}
+/** Uma linha de select por faceta contável, com o total medido no contexto. */
+export type OpcoesDeFiltro = Record<ChaveDeContagem, OpcaoFaceta[]>;
 
 export interface ListagemCaderno {
   caderno: Caderno;
@@ -57,6 +61,10 @@ export interface ListagemCaderno {
   /** Só o recorte da página corrente: é o que vira card. */
   visiveis: ItemCaderno[];
   opcoes: OpcoesDeFiltro;
+  /** As duas abas do topo, com o total que cada clique devolve. */
+  abas: AbaComTotal[];
+  /** Quantos itens cada caixa de refinamento movimenta no contexto vigente. */
+  refinamentos: RefinamentosCaderno;
   facetas: Facetas;
   assuntos: { assunto: string; total: number }[];
   semBanca: number;
@@ -81,15 +89,13 @@ export function montarListagem(
     acervo,
     filtrados,
     visiveis: fatiarPagina(filtrados, pagina),
-    // As opções saem do acervo inteiro, não da página: o select não pode mudar
-    // de tamanho conforme o filtro que o aluno acabou de aplicar.
-    opcoes: {
-      disciplina: contagemDaFaceta(acervo.itens, "disciplina"),
-      assunto: contagemDaFaceta(acervo.itens, "assunto"),
-      banca: contagemDaFaceta(acervo.itens, "banca"),
-      ano: contagemDaFaceta(acervo.itens, "ano"),
-      tipo: contagemDaFaceta(acervo.itens, "tipo"),
-    },
+    // As opções saem do acervo inteiro, nunca da página: o select não pode mudar
+    // de tamanho conforme o filtro que o aluno acabou de aplicar. Cada faceta é
+    // contada sem a restrição da própria faceta, então o número ao lado do rótulo
+    // é exatamente o que o clique devolve.
+    opcoes: opcoesDoContexto(acervo.itens, filtros),
+    abas: totaisDasAbas(acervo.itens, filtros),
+    refinamentos: refinamentosDoContexto(acervo.itens, filtros),
     facetas: facetas(acervo.itens),
     assuntos: contagemPorAssunto(acervo.itens),
     semBanca: semFaceta(acervo.itens, "banca"),

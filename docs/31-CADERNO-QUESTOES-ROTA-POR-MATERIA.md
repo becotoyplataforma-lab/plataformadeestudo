@@ -47,8 +47,17 @@ questão  → /questoes/<id>        banca   → ?banca=<sigla>
                                  ano     → ?ano=<aaaa>
                                  tipo    → ?tipo=multipla_escolha|certo_errado
                                  
-QUALIDADE DO ACERVO (não é procedência)
-                                 ?gabarito=confiavel → só item fora de quarentena
+                                 disciplina → ?disciplina=<nome canônico>
+                                 orgao   → ?orgao=<órgão transcrito do cabeçalho>
+                                 cargo   → ?cargo=<cargo transcrito do cabeçalho>
+                                 palavra → ?palavra=<texto no enunciado ou metadado>
+
+QUALIDADE DO ACERVO (não é procedência, e hoje não é opt-in)
+                                 padrão da tela: só gabarito que o material sustenta
+                                 ?gabarito=confiavel → item fora de quarentena (o padrão)
+                                 ?gabarito=todos → entram as 32 questões em revisão
+                                 ?anuladas=excluir · ?ineditas=excluir
+                                 ?bloco=objetivas|fixacao → aba da barra (§7.7)
 ```
 
 - Rota de treino: `/questoes/portugues`. Segunda apostila = linha nova de
@@ -139,12 +148,20 @@ Segunda rodada, depois de ver a tela em navegador. O que mudou e por quê.
 | Itens lidos pelo carregador | 1.732 |
 | Cópias idênticas colapsadas (`content_hash`) | 814 |
 | **Questões distintas exibidas** | **918** |
+| **Padrão da tela hoje (§7.6)** | **886** |
 | **Distintas com gabarito que o material sustenta** | **886** |
 | Distintas sem resposta confiável (em quarentena: 27) | 32 |
 | `disciplina` | 1 valor ("Língua Portuguesa", nas 918) |
 | `assunto` | 17 valores |
 | `banca` | 144 valores declarados; 464 questões sem banca |
-| `ano` | 13 valores |
+| `orgao` | 232 valores; 454 questões sem órgão |
+| `cargo` | 131 valores; 464 questões sem cargo |
+| `ano` | 13 valores; 71 questões sem ano |
+| `tipo` | 646 múltipla escolha · 272 certo/errado |
+| Só na "Lista de Questões" (aba de fixação) | 154 (138 com gabarito confirmado) |
+| Anuladas pelo material | 3 — todas também sem gabarito confiável |
+| Inéditas do compilador (`inedita_compilador`) | 0 |
+| Com `explicacao` non-null | 0 (contrato do extrator: comentário não viaja) |
 | `nivel` | nulo em todo o lote |
 
 A tela dizia "1736 itens em revisão" e o filtro de assunto mostrava conta
@@ -162,10 +179,18 @@ dado, badge seria inventado. A lacuna aparece na sanfona de procedência como
 ### 7.2 Filtro e página vivem na URL
 
 `/questoes/<slug>` renderiza em servidor. A barra é um `<form method="get">` com
-`<select>` nativo por faceta (Disciplina, Assunto, Banca, Ano, Modalidade) e
-checkbox de qualidade (`gabarito=confiavel`); as opções saem de
-`contagemDaFaceta`, com o total observado ao lado do rótulo. Página é `?page=`
+`<select>` e `<input>` nativos — hoje com a forma do filtro avançado de
+QConcursos (aba em cima, grade de dropdowns, caixas de refinamento, linha
+"Filtrar por" e rodapé de ações: ver §7.7). As opções saem de
+`opcoesDoContexto`, com o total observado ao lado do rótulo; a página é `?page=`
 com 20 cards por padrão (`?por=10|20|50`).
+
+O total ao lado de cada opção é **a resposta do clique**, não uma contagem do
+acervo inteiro: cada faceta é contada sobre os itens que passam em todos os
+outros filtros, menos nela (`itensExcetoFiltro`). Sem isso, com uma banca
+escolhida, "Pontuação (68)" levaria a 60 e a barra mentiria sobre o próprio
+resultado. A paginação fica de fora da contagem de propósito — trocar de página
+nunca muda o tamanho do select.
 
 `disciplina` fica na barra mesmo enquanto tem um valor único só. Não é enfeite do
 lote atual: é o nível acima do assunto e a chave pela qual Direito, Informática e
@@ -176,8 +201,9 @@ cresce com uma linha de catálogo.
 
 Nada disso é estado de cliente: um `Select` do Radix dentro de um client
 component quebraria o link compartilhável e arrastaria hidratação para cada
-lista. Como o `page` não participa do formulário, trocar filtro devolve
-naturalmente à página 1.
+lista. O simples/avançado é `<details>` nativo (sem JavaScript, sem estado), e
+como o `page` não participa do formulário, trocar filtro devolve naturalmente à
+página 1.
 
 ### 7.3 O card voltou a ser da plataforma
 
@@ -236,4 +262,89 @@ decisão humana com banco de teste comprovadamente isolado.
    publicado continua vazio, e é por isso que o caderno em arquivo é a tela do
    aluno hoje.
 4. **Nota do aluno é local.** Persistência real pede tabela e API próprias.
+
+### 7.6 Decisão de produto: o caderno abre em 886, não em 918
+
+O padrão do caderno é **gabarito que o material sustenta**. Um `?gabarito=` que
+não diz nada vale `confiavel`, e as 32 distintas sem resposta confirmada (27 em
+quarentena + 5 sem letra) só entram quando alguém liga a caixa "Incluir questões
+em revisão" — que escreve `?gabarito=todos` na URL.
+
+| Leitura | Query | Medido no lote de hoje |
+|---|---|---|
+| Padrão da tela | `/questoes/portugues` | **886** questões (45 páginas) |
+| Revisão dentro | `/questoes/portugues?gabarito=todos` | 918 questões (46 páginas) |
+| Link antigo | `/questoes/portugues?gabarito=confiavel` | 886 — continua válido, agora é o canônico |
+
+Por que isto é decisão e não ajuste de UI: enquanto o filtro era opt-in, a
+primeira tela do aluno misturava 32 itens cuja resposta o PDF não dá com 886 que
+dá, e o selo âmbar de "gabarito inconclusivo" era a única coisa dizendo a
+diferença. O bloco de modelo do §2 já listava `?gabarito=confiavel` como tag de
+qualidade; o que mudou é que ela passou a ser a **leitura aplicada quando a URL
+não diz nada**, declarada em `FILTRO_PADRAO` (`src/lib/questoes/cadernos.ts`) e
+travada em `cadernos.test.ts` ("o padrão da tela é gabarito confiável").
+
+A medição do acervo continua íntegra: `removerCopiasIdenticas` não filtra nada, e
+a sanfona "Sobre este acervo" segue dizendo 1.732 linhas, 918 distintas, 32 sem
+resposta confiável. Esconder a pendência seria pior que esconder o filtro: o
+cabeçalho do caderno mostra os dois números ("886 questões" e "918 no acervo
+inteiro: 32 estão em revisão").
+
+### 7.7 A barra de filtros (forma QConcursos, conteúdo do lote)
+
+`src/components/questoes/barra-filtros.tsx` recebeu a forma do filtro avançado de
+referência: aba no topo, grade de dropdowns, caixas de refinamento, linha
+"Filtrar por" com ×, e rodapé com simples/avançado, tamanho de página e
+`[Limpar] [Filtrar]`. O mecanismo é o de sempre — `<form method="get">` com
+`<select>`/`<input>` nativos e `<details>` para o avançado: sem ilha de cliente,
+sem endpoint, e o botão voltar continua funcionando.
+
+Chaves de URL (ordem contratual em `CHAVES_FILTRO`):
+
+| Controle | Chave | Fonte da opção |
+|---|---|---|
+| Palavra-chave | `?palavra=` | `enunciado`, `tema`/`assunto`, `banca`, `orgao`, `cargo`, `codigo` (`textoDeBusca`) |
+| Disciplina | `?disciplina=` | `QuestaoExtraida.disciplina` |
+| Assunto | `?assunto=` | `QuestaoExtraida.assunto` |
+| Banca | `?banca=` | `QuestaoExtraida.banca` |
+| Instituição/Órgão | `?orgao=` | `QuestaoExtraida.orgao` — 232 valores, 464 questões sem declarar |
+| Ano | `?ano=` | `QuestaoExtraida.ano` |
+| Cargo | `?cargo=` | `QuestaoExtraida.cargo` — 131 valores |
+| Modalidade | `?tipo=` | `QuestaoExtraida.tipo` (646 múltipla / 272 C-E) |
+| Procedência | `?origem=` | `LoteProcedencia.origem` (o lote, nunca a rota) |
+| Aba | `?bloco=objetivas\|fixacao` | `secao_tipo` do material, via `ehExercicioDeFixacao` |
+| Incluir revisão | `?gabarito=todos` | `gabaritoConfiavel` (§7.6) |
+| Excluir anuladas | `?anuladas=excluir` | `ehAnulada` (`gabarito_metodo === "anulada"` ou aviso `gabarito_anulado`) |
+| Excluir inéditas | `?ineditas=excluir` | `ehInedita` (estado `inedita_compilador`) |
+
+As abas não são partição do acervo: **Questões Objetivas** é o todo (tudo neste
+material é objetivo — múltipla escolha ou C/E), e **Exercícios de Fixação** é o
+recorte que o próprio PDF chama de "Lista de Questões", ou seja, as 154 distintas
+sem versão comentada publicada (138 delas com gabarito confirmado). O rótulo é
+transcrição do material (§6), não título inventado; a linha abaixo das abas diz
+isso na tela.
+
+O que **não** virou controle, com o motivo medido, aparece no rodapé do avançado
+("Filtros que este acervo ainda não responde", `FILTROS_TRAVADOS`): Nível,
+Dificuldade, Área de Formação, Área de Atuação, Gabarito Comentado, Comentários
+da comunidade, Meus Comentários, Minhas Anotações, Aulas, Dos meus cadernos, Dos
+meus simulados, Desatualizadas e Salvar Filtros. Cada um tem `motivo` e `fonte`
+(coluna ausente, `explicacao` sempre `null` por contrato do extrator, ou falta de
+tabela por aluno) — caixa que não filtra nada parece produto e é lacuna de dados,
+e a honestidade custa uma linha de prosa, não um filtro falso.
+
+Duas medições explicam comportamentos que pareceriam bug:
+
+1. **A caixa "Excluir anuladas" some no padrão.** As 3 anuladas do lote estão
+   todas sem gabarito confiável, então o filtro de qualidade já as cortou:
+   `refinamentosDoContexto` devolve `anuladas: 0` e a barra não oferece o que não
+   tem efeito. Com `?gabarito=todos` ela volta a aparecer (3 itens).
+2. **A caixa "Excluir inéditas" não existe hoje.** Nenhum item do lote carrega
+   `inedita_compilador`; quando uma apostila com esse estado entrar no catálogo, a
+   caixa aparece sozinha — `cadernos.test.ts` já cobre o predicado com fixtura.
+
+"Salvar filtros" também não virou botão: o estado é a URL, e o rodapé diz para
+copiar o endereço. Persistir um pedido por aluno pede tabela e API próprias —
+o mesmo motivo pelo qual "Meus Comentários" segue `localStorage` (§7.3).
+
 

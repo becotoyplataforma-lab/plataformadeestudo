@@ -12,30 +12,42 @@ import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 
 import {
+  ABAS_CADERNO,
   CADERNOS,
+  CHAVES_DE_CONTAGEM,
   CHAVES_FILTRO,
-  FILTRO_VAZIO,
+  FILTROS_TRAVADOS,
+  FILTRO_PADRAO,
+  PALAVRA_MINIMA,
+  ROTULO_DAS_CHAVES,
   alternarFiltro,
   aplicarFiltros,
   cadernoPorSlug,
   calcularPagina,
+  chipsDeFiltro,
   contagemDaFaceta,
   contagemPorAssunto,
+  ehExercicioDeFixacao,
   facetas,
   fatiarPagina,
-  filtroEstaVazio,
+  filtroEhPadrao,
   itensDeMenu,
   janelaDePaginas,
   lerFiltros,
   normalizar,
+  opcoesDoContexto,
   queryDeFiltros,
   queryDePagina,
+  refinamentosDoContexto,
   removerCopiasIdenticas,
   resolverRef,
   rotuloDaTag,
+  semAChave,
   semFaceta,
   tagsDoItem,
+  totaisDasAbas,
   type Caderno,
+  type ChaveFiltro,
   type FiltrosCaderno,
   type ItemCaderno,
 } from "../cadernos";
@@ -190,6 +202,19 @@ describe("resolverRef (/questoes/[ref])", () => {
 });
 
 describe("leitura de filtros da URL", () => {
+  it("sem nada na URL a tela já abre no padrão de qualidade", () => {
+    // Decisão de produto (docs/31 §7.6): o aluno vê primeiro o gabarito que o
+    // material sustenta. `null` não existe mais aqui — `gabarito` e `bloco` têm
+    // valor vigente mesmo sem pedido, e é esse valor que a barra reflete.
+    expect(lerFiltros({})).toEqual(FILTRO_PADRAO);
+    expect(lerFiltros(new URLSearchParams())).toEqual(FILTRO_PADRAO);
+    expect(FILTRO_PADRAO.gabarito).toBe("confiavel");
+    expect(FILTRO_PADRAO.bloco).toBe("objetivas");
+    expect(filtroEhPadrao(lerFiltros({ gabarito: "confiavel" }))).toBe(true);
+    expect(filtroEhPadrao(lerFiltros({ bloco: "objetivas" }))).toBe(true);
+    expect(filtroEhPadrao(lerFiltros({ gabarito: "todos" }))).toBe(false);
+  });
+
   it("lerFiltros tolera objeto cru, vetor e lixo numérico", () => {
     expect(lerFiltros({ assunto: "Pontuação", ano: "2019" })).toMatchObject({
       assunto: "Pontuação",
@@ -197,23 +222,40 @@ describe("leitura de filtros da URL", () => {
     });
     expect(lerFiltros({ assunto: ["A", "B"] }).assunto).toBe("A");
     expect(lerFiltros({ ano: "abc" }).ano).toBeNull();
-    expect(lerFiltros({ assunto: "   " })).toEqual(FILTRO_VAZIO);
+    expect(lerFiltros({ assunto: "   " })).toEqual(FILTRO_PADRAO);
     expect(lerFiltros(new URLSearchParams("banca=FGV&tipo=certo_errado"))).toMatchObject({
       banca: "FGV",
       tipo: "certo_errado",
     });
-    expect(filtroEstaVazio(FILTRO_VAZIO)).toBe(true);
+  });
+
+  it("palavra-chave só vira filtro com texto que discrimina", () => {
+    expect(lerFiltros({ palavra: "crase" }).palavra).toBe("crase");
+    expect(lerFiltros({ palavra: "  crase  " }).palavra).toBe("crase");
+    // Abaixo do mínimo, ou sem letra nenhuma depois de desacentuar, não entra na
+    // URL: um `?palavra=?!` travaria o link compartilhável por nada.
+    expect(lerFiltros({ palavra: "a" }).palavra).toBeNull();
+    expect(lerFiltros({ palavra: "?!-" }).palavra).toBeNull();
+    expect(PALAVRA_MINIMA).toBe(2);
+  });
+
+  it("tag fechada: valor que a lista não sabe aplicar volta ao padrão", () => {
+    expect(lerFiltros({ gabarito: "confiavel" }).gabarito).toBe("confiavel");
+    expect(lerFiltros({ gabarito: "todos" }).gabarito).toBe("todos");
+    expect(lerFiltros({ gabarito: "mais-ou-menos" }).gabarito).toBe("confiavel");
+    expect(lerFiltros({ bloco: "fixacao" }).bloco).toBe("fixacao");
+    expect(lerFiltros({ bloco: "quarentena" }).bloco).toBe("objetivas");
+    expect(lerFiltros({ anuladas: "excluir" }).anuladas).toBe("excluir");
+    expect(lerFiltros({ anuladas: "sim" }).anuladas).toBeNull();
+    expect(lerFiltros({ ineditas: "excluir" }).ineditas).toBe("excluir");
   });
 
   it("queryDeFiltros é determinística na ordem das chaves", () => {
     const f: FiltrosCaderno = {
+      ...FILTRO_PADRAO,
       assunto: "Pontuação",
-      disciplina: null,
-      banca: null,
       ano: 2019,
       origem: "aula-14",
-      tipo: null,
-      gabarito: null,
     };
     const q = queryDeFiltros(f);
     // Ordem = CHAVES_FILTRO. Não se afirma a forma exata do percent-encoding:
@@ -222,18 +264,115 @@ describe("leitura de filtros da URL", () => {
     expect(q.startsWith("assunto=")).toBe(true);
     expect(q).toContain("ano=2019");
     expect(q).toContain("origem=aula-14");
-    expect(q.indexOf("ano=2019")).toBeLessThan(q.indexOf("origem=aula-14"));
+    expect(q.indexOf("origem=aula-14")).toBeLessThan(q.indexOf("ano=2019"));
     expect(q).not.toContain("banca=");
     expect(q).not.toContain("tipo=");
     expect(lerFiltros(new URLSearchParams(q))).toEqual(f);
     expect(queryDeFiltros(lerFiltros({ assunto: "Ortografia" }))).toBe("assunto=Ortografia");
   });
 
-  it("alternarFiltro desliga a tag já ativa", () => {
-    const ligado = alternarFiltro(FILTRO_VAZIO, "origem", "aula-14");
+  it("o padrão não entra na URL: o link canônico continua limpo", () => {
+    // `?gabarito=confiavel` era o filtro explícito de antes; hoje é o que se
+    // aplica sem pedir, e escrevê-lo em todo link sujaria histórico e canônico.
+    expect(queryDeFiltros(FILTRO_PADRAO)).toBe("");
+    expect(queryDeFiltros(lerFiltros({ gabarito: "confiavel" }))).toBe("");
+    expect(queryDeFiltros(lerFiltros({ gabarito: "todos" }))).toBe("gabarito=todos");
+    expect(queryDeFiltros(lerFiltros({ bloco: "fixacao" }))).toBe("bloco=fixacao");
+  });
+
+  it("alternarFiltro desliga a tag já ativa, e desligar é voltar ao padrão", () => {
+    const ligado = alternarFiltro(FILTRO_PADRAO, "origem", "aula-14");
     expect(ligado.origem).toBe("aula-14");
     expect(alternarFiltro(ligado, "origem", "aula-14").origem).toBeNull();
-    expect(alternarFiltro(FILTRO_VAZIO, "ano", "2019").ano).toBe(2019);
+    expect(alternarFiltro(FILTRO_PADRAO, "ano", "2019").ano).toBe(2019);
+    const comAno = alternarFiltro(FILTRO_PADRAO, "ano", "2019");
+    expect(alternarFiltro(comAno, "ano", "2019").ano).toBeNull();
+    // As chaves de domínio fechado nunca resultam em `null`: voltam ao valor
+    // vigente, senão o "x" do chip levaria a uma tela que a UI não representa.
+    const revisao = alternarFiltro(FILTRO_PADRAO, "gabarito", "todos");
+    expect(revisao.gabarito).toBe("todos");
+    expect(alternarFiltro(revisao, "gabarito", "todos").gabarito).toBe("confiavel");
+    const fixacao = alternarFiltro(FILTRO_PADRAO, "bloco", "fixacao");
+    expect(fixacao.bloco).toBe("fixacao");
+    expect(alternarFiltro(fixacao, "bloco", "fixacao").bloco).toBe("objetivas");
+    expect(alternarFiltro(FILTRO_PADRAO, "anuladas", "excluir").anuladas).toBe("excluir");
+  });
+
+  it("toda chave tem valor aplicável, rótulo e caminho de volta", () => {
+    // Cobertura por chave: filtro novo sem casa em `alternarFiltro` ou sem
+    // `ROTULO_DAS_CHAVES` viraria botão morto na barra e chip sem nome.
+    const VALOR: Record<ChaveFiltro, string> = {
+      disciplina: "Direito",
+      assunto: "Pontuação",
+      palavra: "crase",
+      banca: "FGV",
+      orgao: "TRT - 15ª Região - SP",
+      cargo: "Soldado",
+      origem: "aula-14",
+      ano: "2019",
+      tipo: "certo_errado",
+      bloco: "fixacao",
+      gabarito: "todos",
+      anuladas: "excluir",
+      ineditas: "excluir",
+    };
+    for (const chave of CHAVES_FILTRO) {
+      const aplicado = alternarFiltro(FILTRO_PADRAO, chave, VALOR[chave]);
+      expect(aplicado[chave]).not.toBe(FILTRO_PADRAO[chave]);
+      expect(filtroEhPadrao(aplicado)).toBe(false);
+      const desligado = semAChave(aplicado, chave);
+      expect(desligado[chave]).toBe(FILTRO_PADRAO[chave]);
+      expect(queryDeFiltros(desligado)).toBe("");
+      const chip = chipsDeFiltro(aplicado).find((c) => c.chave === chave);
+      expect(chip?.rotulo.length).toBeGreaterThan(0);
+      // E o rótulo vem do domínio, não de um mapa solto no componente.
+      expect(ROTULO_DAS_CHAVES[chave].length).toBeGreaterThan(0);
+    }
+    // Toda faceta contável tem de ser tag observável do item: se alguém pedir
+    // select de `gabarito`, `bloco` ou `palavra` o tipo reclama, porque essas
+    // três não são tag — são qualidade, aba e busca.
+    expect(CHAVES_DE_CONTAGEM).toEqual([
+      "disciplina",
+      "assunto",
+      "banca",
+      "orgao",
+      "cargo",
+      "origem",
+      "ano",
+      "tipo",
+    ]);
+  });
+
+  it("chipsDeFiltro nomeia o que está ativo e omite o padrão", () => {
+    const filtros = lerFiltros({
+      assunto: "Pontuação",
+      palavra: "crase",
+      orgao: "TRT - 15ª Região - SP",
+      bloco: "fixacao",
+      gabarito: "todos",
+      anuladas: "excluir",
+    });
+    expect(chipsDeFiltro(filtros).map((c) => c.chave)).toEqual([
+      "assunto",
+      "palavra",
+      "orgao",
+      "bloco",
+      "gabarito",
+      "anuladas",
+    ]);
+    expect(chipsDeFiltro(filtros).find((c) => c.chave === "bloco")?.valor).toBe(
+      "Exercícios de Fixação"
+    );
+    // O rótulo legível da procedência e da modalidade, nunca a chave interna.
+    expect(chipsDeFiltro(lerFiltros({ origem: "aula-14" }))[0]).toMatchObject({
+      rotulo: "Procedência",
+      valor: "Aula 14",
+    });
+    expect(chipsDeFiltro(lerFiltros({ tipo: "certo_errado" }))[0]).toMatchObject({
+      rotulo: "Modalidade",
+      valor: "Certo/Errado",
+    });
+    expect(chipsDeFiltro(FILTRO_PADRAO)).toEqual([]);
   });
 });
 
@@ -276,7 +415,7 @@ describe("aplicação de filtros sobre o lote", () => {
     expect(aplicarFiltros(itens, lerFiltros({ ano: "1999" }))).toHaveLength(0);
     expect(aplicarFiltros(itens, lerFiltros({ origem: "aula-14" }))).toHaveLength(2);
     expect(aplicarFiltros(itens, lerFiltros({ origem: "aula-99" }))).toHaveLength(0);
-    expect(aplicarFiltros(itens, FILTRO_VAZIO)).toHaveLength(2);
+    expect(aplicarFiltros(itens, FILTRO_PADRAO)).toHaveLength(2);
   });
 
   it("tagsDoItem espelha o que o card mostra como selo", () => {
@@ -294,17 +433,19 @@ describe("aplicação de filtros sobre o lote", () => {
     expect(tagsDoItem(item({ gabarito: null })).gabarito).toBeNull();
   });
 
-  it("gabarito=confiavel é filtro de qualidade, com valor fechado", () => {
-    expect(lerFiltros({ gabarito: "confiavel" }).gabarito).toBe("confiavel");
-    expect(lerFiltros({ gabarito: "mais-ou-menos" }).gabarito).toBeNull();
-    expect(alternarFiltro(FILTRO_VAZIO, "gabarito", "confiavel").gabarito).toBe("confiavel");
-
+  it("o padrão da tela é gabarito confiável; `todos` é a única alternativa", () => {
     const itens = [
-      item(),
-      item({ quarantined: true, id_local: "A14-S01-002", codigo: "A14-S01-002" }),
-      item({ gabarito: null, id_local: "A14-S01-003", codigo: "A14-S01-003" }),
+      itemEm(1),
+      itemEm(2, { quarantined: true }),
+      itemEm(3, { gabarito: null }),
     ];
+    expect(aplicarFiltros(itens, lerFiltros({}))).toHaveLength(1);
     expect(aplicarFiltros(itens, lerFiltros({ gabarito: "confiavel" }))).toHaveLength(1);
+    expect(aplicarFiltros(itens, lerFiltros({ gabarito: "todos" }))).toHaveLength(3);
+    // Link antigo continua valendo: era filtro explícito, hoje é o padrão.
+    expect(aplicarFiltros(itens, lerFiltros(new URLSearchParams("gabarito=confiavel")))).toHaveLength(
+      1
+    );
     // Combinado com outra tag, os predicados se acumulam (E), nunca se ignoram.
     expect(
       aplicarFiltros(itens, lerFiltros({ gabarito: "confiavel", assunto: "Ortografia" }))
@@ -312,6 +453,9 @@ describe("aplicação de filtros sobre o lote", () => {
     expect(
       aplicarFiltros(itens, lerFiltros({ gabarito: "confiavel", assunto: "Pontuação" }))
     ).toHaveLength(0);
+    // E a medição do acervo não é filtrada: a sanfona continua dizendo 3 distintas,
+    // 2 sem gabarito confiável — senão a tela esconderia a própria pendência.
+    expect(removerCopiasIdenticas(itens).semGabaritoConfiavel).toBe(2);
   });
 
   it("facetas saem ordenadas e sem duplicata de grafia", () => {
@@ -415,7 +559,7 @@ describe("cópia canônica do acervo", () => {
 
   it("o corte da página vem depois de deduplicar, nunca antes", () => {
     const dupla = [item({ content_hash: "h1" }), item({ content_hash: "h1", secao_tipo: "lista", id_local: "A14-S09-001", codigo: "A14-S09-001" })];
-    expect(aplicarFiltros(removerCopiasIdenticas(dupla).itens, FILTRO_VAZIO)).toHaveLength(1);
+    expect(aplicarFiltros(removerCopiasIdenticas(dupla).itens, FILTRO_PADRAO)).toHaveLength(1);
   });
 });
 
@@ -517,6 +661,268 @@ describe("redirects legados (next.config.ts)", () => {
     const destinos = [...config.matchAll(/destination:\s*"([^"]+)"/g)].map((m) => m[1]);
     expect(destinos.length).toBeGreaterThan(0);
     for (const destino of destinos) expect(destino).not.toMatch(/aula-\d+/);
+  });
+});
+
+describe("filtros da barra avançada", () => {
+  it("palavra-chave procura no enunciado, no metadado e no código do lote", () => {
+    const itens = [
+      itemEm(1, { enunciado: "Assinale a alternativa com crase." }),
+      itemEm(2, { enunciado: "Sobre a ortografia oficial do idioma…" }),
+      itemEm(3, { banca: "TRT", orgao: null }),
+    ];
+    expect(aplicarFiltros(itens, lerFiltros({ palavra: "crase" }))).toHaveLength(1);
+    // Sem acento e sem caixa: quem digita "ORTOGRAFIA OFICIAL" no celular não
+    // pode receber lista vazia.
+    expect(aplicarFiltros(itens, lerFiltros({ palavra: "ORTOGRAFIA OFICIAL" }))).toHaveLength(1);
+    // Código do lote e metadado declarado também respondem à busca livre.
+    expect(aplicarFiltros(itens, lerFiltros({ palavra: "A14-S01-003" }))).toHaveLength(1);
+    expect(aplicarFiltros(itens, lerFiltros({ palavra: "TRT" }))).toHaveLength(1);
+    expect(aplicarFiltros(itens, lerFiltros({ palavra: "nada assim no lote" }))).toHaveLength(0);
+  });
+
+  it("órgão e cargo filtram pelo que o material declarou, e nem todo item declara", () => {
+    const itens = [
+      itemEm(1, { orgao: "TRT - 15ª Região - SP", cargo: "Analista" }),
+      itemEm(2, { orgao: "trt - 15ª região - sp", cargo: "TÉCNICO" }),
+      itemEm(3, { orgao: null, cargo: null }),
+    ];
+    expect(aplicarFiltros(itens, lerFiltros({ orgao: "TRT - 15ª Região - SP" }))).toHaveLength(2);
+    expect(aplicarFiltros(itens, lerFiltros({ cargo: "técnico" }))).toHaveLength(1);
+    expect(aplicarFiltros(itens, lerFiltros({ orgao: "Inexistente" }))).toHaveLength(0);
+    // A lacuna é medida para a barra dizer quantos não declaram, não para virar
+    // opção falsa "Sem órgão" no select.
+    expect(semFaceta(itens, "orgao")).toBe(1);
+    expect(contagemDaFaceta(itens, "orgao")).toEqual([
+      { valor: "TRT - 15ª Região - SP", total: 2 },
+    ]);
+  });
+
+  it("aba de fixação é o bloco do material sem versão comentada, por cópia canônica", () => {
+    const comentada = itemEm(1, { content_hash: "h1" });
+    const mesmaNaLista = itemEm(2, {
+      content_hash: "h1",
+      secao_tipo: "lista",
+      secao_rotulo: "Lista de Questões - Ortografia",
+    });
+    const soNaLista = itemEm(3, {
+      content_hash: "h2",
+      secao_tipo: "lista",
+      secao_rotulo: "Lista de Questões - Compreensão textual",
+      assunto: "Compreensão textual",
+    });
+    const acervo = removerCopiasIdenticas([comentada, mesmaNaLista, soNaLista]);
+
+    // A questão publicada nos dois blocos não é exercício de fixação: sobra a
+    // cópia comentada, e é ela que a aba mostra.
+    expect(acervo.itens.filter(ehExercicioDeFixacao).map((i) => i.questao.id_local)).toEqual([
+      "A14-S01-003",
+    ]);
+    expect(aplicarFiltros(acervo.itens, lerFiltros({ bloco: "objetivas" }))).toHaveLength(2);
+    expect(aplicarFiltros(acervo.itens, lerFiltros({ bloco: "fixacao" }))).toHaveLength(1);
+    // As abas não são partição: `objetivas` é o acervo inteiro e `fixacao` é um
+    // recorte dele — por isso o total do padrão continua sendo o da tela (docs/31 §7.6).
+    expect(totaisDasAbas(acervo.itens, FILTRO_PADRAO).map((a) => [a.valor, a.total])).toEqual([
+      ["objetivas", 2],
+      ["fixacao", 1],
+    ]);
+    expect(ABAS_CADERNO.map((a) => a.valor)).toEqual(["objetivas", "fixacao"]);
+    // A aba tem de sobreviver ao round-trip da URL, senão o link compartilhado
+    // abriria em "objetivas" o que o aluno viu em "fixação".
+    const query = queryDeFiltros(lerFiltros({ bloco: "fixacao" }));
+    expect(lerFiltros(new URLSearchParams(query)).bloco).toBe("fixacao");
+  });
+
+  it("excluir anuladas e inéditas usa o que o extrator registrou, nada de chute", () => {
+    const itens = [
+      itemEm(1),
+      itemEm(2, { gabarito_metodo: "anulada", avisos: ["gabarito_anulado"] }),
+      itemEm(3, {
+        provenance_status: "inedita_compilador",
+        proveniencia: {
+          estado: "inedita_compilador",
+          origem_gabarito: "compilador",
+          doador_gabarito: null,
+          classificacao_tag: null,
+          tag_crua: null,
+          paginas: [4, 4],
+          secao: 1,
+          grupo: 1,
+          numero_original: 3,
+          editado_por_humano: false,
+        },
+      }),
+    ];
+    // As três têm gabarito de uma letra, então passam no padrão de qualidade: o
+    // que se tira aqui é refinamento, não o filtro de resposta.
+    expect(aplicarFiltros(itens, FILTRO_PADRAO)).toHaveLength(3);
+    expect(aplicarFiltros(itens, lerFiltros({ anuladas: "excluir" }))).toHaveLength(2);
+    expect(aplicarFiltros(itens, lerFiltros({ ineditas: "excluir" }))).toHaveLength(2);
+    expect(
+      aplicarFiltros(itens, lerFiltros({ anuladas: "excluir", ineditas: "excluir" }))
+    ).toHaveLength(1);
+    expect(refinamentosDoContexto(itens, FILTRO_PADRAO)).toEqual({
+      revisao: 0,
+      anuladas: 1,
+      ineditas: 1,
+    });
+
+    // Item sem resposta confirmada cai fora do padrão e volta com `todos` — e é
+    // esse número que a barra mostra ao lado da caixa de incluir revisão.
+    const comRevisao = [...itens, itemEm(4, { quarantined: true })];
+    expect(aplicarFiltros(comRevisao, FILTRO_PADRAO)).toHaveLength(3);
+    expect(aplicarFiltros(comRevisao, lerFiltros({ gabarito: "todos" }))).toHaveLength(4);
+    expect(refinamentosDoContexto(comRevisao, FILTRO_PADRAO).revisao).toBe(1);
+  });
+
+
+
+  it("o total ao lado de cada opção é o que o clique devolve", () => {
+    const itens = [
+      itemEm(1, { assunto: "Pontuação", banca: "FGV" }),
+      itemEm(2, { assunto: "Pontuação", banca: "VUNESP" }),
+      itemEm(3, { assunto: "Ortografia", banca: "FGV" }),
+      itemEm(4, { assunto: "Ortografia", banca: "FGV", quarantined: true }),
+    ];
+    // Sem filtro: o padrão já cortou a quarentena, então "Ortografia (1)" é a
+    // verdade da tela — contar o acervo inteiro diria 2 e o aluno veria 1.
+    expect(opcoesDoContexto(itens, FILTRO_PADRAO).assunto).toEqual([
+      { valor: "Pontuação", total: 2 },
+      { valor: "Ortografia", total: 1 },
+    ]);
+    expect(aplicarFiltros(itens, lerFiltros({ assunto: "Ortografia" }))).toHaveLength(1);
+
+    // Com banca escolhida, a faceta de assunto é contada dentro daquela banca.
+    const comBanca = opcoesDoContexto(itens, lerFiltros({ banca: "FGV" }));
+    expect(comBanca.assunto).toEqual([
+      { valor: "Ortografia", total: 1 },
+      { valor: "Pontuação", total: 1 },
+    ]);
+    // E a própria banca é contada sem a restrição dela, senão sumiria do select
+    // no instante em que o aluno a usasse.
+    expect(comBanca.banca).toEqual([
+      { valor: "FGV", total: 2 },
+      { valor: "VUNESP", total: 1 },
+    ]);
+    // Ligando a revisão, as contagens sobem junto com a lista.
+    expect(
+      opcoesDoContexto(itens, lerFiltros({ gabarito: "todos" })).assunto.map((o) => o.total)
+    ).toEqual([2, 2]);
+    // A contagem é sempre feita sobre o acervo distinto: se alguém cortar a
+    // página antes de contar, o select encolheria a cada clique.
+    expect(Object.keys(opcoesDoContexto(itens, FILTRO_PADRAO)).sort()).toEqual(
+      [...CHAVES_DE_CONTAGEM].sort()
+    );
+  });
+
+  it("as chaves da barra são fechadas, rotuladas e têm caminho de volta", () => {
+    // Ordem contratual de `CHAVES_FILTRO`: taxonomia, metadado de prova, depois
+    // qualidade. Chip, URL compartilhada e teste de rota dependem dela.
+    expect(CHAVES_FILTRO).toEqual([
+      "disciplina",
+      "assunto",
+      "palavra",
+      "banca",
+      "orgao",
+      "cargo",
+      "origem",
+      "ano",
+      "tipo",
+      "bloco",
+      "gabarito",
+      "anuladas",
+      "ineditas",
+    ]);
+    const VALOR: Record<ChaveFiltro, string> = {
+      disciplina: "Direito",
+      assunto: "Pontuação",
+      palavra: "crase",
+      banca: "FGV",
+      orgao: "TRT - 15ª Região - SP",
+      cargo: "Soldado",
+      origem: "aula-14",
+      ano: "2019",
+      tipo: "certo_errado",
+      bloco: "fixacao",
+      gabarito: "todos",
+      anuladas: "excluir",
+      ineditas: "excluir",
+    };
+    // Cobertura por chave: filtro novo sem casa em `alternarFiltro` ou sem rótulo
+    // viraria botão morto na barra e chip sem nome.
+    for (const chave of CHAVES_FILTRO) {
+      const aplicado = alternarFiltro(FILTRO_PADRAO, chave, VALOR[chave]);
+      expect(aplicado[chave]).not.toBe(FILTRO_PADRAO[chave]);
+      expect(filtroEhPadrao(aplicado)).toBe(false);
+      const desligado = semAChave(aplicado, chave);
+      expect(desligado[chave]).toBe(FILTRO_PADRAO[chave]);
+      expect(queryDeFiltros(desligado)).toBe("");
+      expect(chipsDeFiltro(aplicado).find((c) => c.chave === chave)?.rotulo.length).toBeGreaterThan(
+        0
+      );
+    }
+  });
+
+  it("o rodapé nomeia o que não pode ser filtrado, com a fonte da trava", () => {
+    // Filtros do desenho de referência que este acervo não pode responder. A
+    // barra lista nome, motivo e fonte em vez de renderizar caixa muda: caixa que
+    // não filtra nada parece produto pronto e é lacuna de dado.
+    expect(FILTROS_TRAVADOS.map((f) => f.rotulo)).toEqual([
+      "Nível",
+      "Dificuldade",
+      "Área de Formação",
+      "Área de Atuação",
+      "Gabarito Comentado",
+      "Comentários da comunidade",
+      "Meus Comentários",
+      "Minhas Anotações",
+      "Aulas",
+      "Dos meus cadernos",
+      "Dos meus simulados",
+      "Desatualizadas",
+      "Salvar Filtros",
+    ]);
+    for (const travado of FILTROS_TRAVADOS) {
+      expect(travado.motivo.length).toBeGreaterThan(10);
+      // Toda trava aponta um arquivo — a regra da casa (nunca descrever um filtro
+      // sem dizer qual arquivo o define), aplicada ao avesso.
+      expect(travado.fonte).toMatch(/\.(ts|tsx|py)\b/);
+    }
+    // O que o lote declara vira chave, e é isso que a barra oferece.
+    for (const chave of ["palavra", "orgao", "cargo", "bloco", "anuladas", "ineditas"] as const) {
+      expect(CHAVES_FILTRO).toContain(chave);
+    }
+  });
+
+  it("anuladas e inéditas aparecem por medição, não por gosto", () => {
+    // No lote de hoje as anuladas estão todas sem gabarito confiável: enquanto o
+    // padrão de qualidade estiver ligado não há nada para excluir, e a caixa não
+    // surge. É o contrato de `refinamentosDoContexto`, não esconderijo.
+    const anuladaEmQuarentena = itemEm(1, {
+      gabarito_metodo: "anulada",
+      avisos: ["gabarito_anulado"],
+      quarantined: true,
+    });
+    expect(refinamentosDoContexto([anuladaEmQuarentena], FILTRO_PADRAO)).toEqual({
+      revisao: 1,
+      anuladas: 0,
+      ineditas: 0,
+    });
+    expect(
+      refinamentosDoContexto([anuladaEmQuarentena], lerFiltros({ gabarito: "todos" })).anuladas
+    ).toBe(1);
+    // Inéditas: zero hoje, e o predicado já existe para o dia de uma apostila nova.
+    expect(refinamentosDoContexto([itemEm(2)], FILTRO_PADRAO).ineditas).toBe(0);
+  });
+
+  it("aba, chip e paginação montam a mesma query, sempre na mesma ordem", () => {
+    const filtros = lerFiltros({ assunto: "Pontuação", gabarito: "todos", bloco: "fixacao" });
+    expect(queryDeFiltros(filtros)).toBe(
+      "assunto=Pontua%C3%A7%C3%A3o&bloco=fixacao&gabarito=todos"
+    );
+    expect(queryDePagina(filtros, calcularPagina({}, 100))).toBe(queryDeFiltros(filtros));
+    expect(queryDePagina(filtros, calcularPagina({ page: "2" }, 100))).toContain("page=2");
+    expect(lerFiltros(new URLSearchParams(queryDeFiltros(filtros)))).toEqual(filtros);
   });
 });
 

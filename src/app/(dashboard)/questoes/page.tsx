@@ -70,7 +70,7 @@ export default async function QuestoesPage({
                   </span>
                 </span>
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {listagem.acervo.itens.length} questões
+                  {listagem.filtrados.length} questões com gabarito confirmado
                 </span>
               </Link>
             </li>

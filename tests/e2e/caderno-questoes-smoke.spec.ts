@@ -95,25 +95,42 @@ test.describe("Caderno — listagem por matéria", () => {
     expect(await cards.count()).toBeGreaterThan(0);
 
     // A barra de filtros é um formulário GET com selects nativos: o filtro vive
-    // na URL, não em estado de cliente.
+    // na URL, não em estado de cliente. A grade é a do filtro avançado de
+    // QConcursos: palavra-chave + as facetas que o lote declara de verdade.
     const barra = page.locator("form[method='get']");
     await expect(barra).toHaveCount(1);
-    for (const nome of ["disciplina", "assunto", "banca", "ano", "tipo"]) {
+    await expect(barra.locator("input[name='palavra']")).toHaveCount(1);
+    for (const nome of ["disciplina", "assunto", "banca", "orgao", "ano"]) {
       await expect(barra.locator(`select[name='${nome}']`)).toHaveCount(1);
     }
-    await expect(
-      barra.locator("select[name='banca'] option[value='INOVERSASUL']")
-    ).toHaveCount(1);
+    // O que fica dentro do filtro avançado (linha 2 e refinamentos).
+    const avancado = barra.locator("[data-filtro-avancado]");
+    await expect(avancado.locator("select[name='cargo']")).toHaveCount(1);
+    await expect(avancado.locator("select[name='tipo']")).toHaveCount(1);
+    await expect(avancado.locator("select[name='origem']")).toHaveCount(1);
+    // A caixa de qualidade fica fora do bloco avançado: é decisão de tela.
+    await expect(barra.locator("input[name='gabarito']")).toHaveCount(1);
+    await expect(barra.locator("select[name='banca'] option[value='INOVERSASUL']")).toHaveCount(1);
+    // As duas abas do topo, com o total medido de cada uma.
+    await expect(barra.locator("[data-aba]")).toHaveCount(2);
+    await expect(barra.locator("[data-aba='objetivas']")).toContainText("Questões Objetivas");
+    await expect(barra.locator("[data-aba='fixacao']")).toContainText("Exercícios de Fixação");
 
-    // A contagem é a do acervo distinto, não o número de linhas do arquivo: o
-    // PDF publica a mesma questão na seção comentada e na lista de gabaritos.
-    // 1.736 linhas no arquivo → 4 descartadas por violação de forma → 1.732
-    // lidas → 918 questões distintas (814 cópias colapsadas). A asserção é
-    // exata de propósito: se alguém voltar a somar as duas publicações do PDF,
-    // este caso grita. Medido por `scripts/lib/audit-acervo.ts`.
+    // A contagem é a do acervo distinto depois do padrão de qualidade, não o
+    // número de linhas do arquivo: 1.736 linhas → 4 descartadas por violação de
+    // forma → 1.732 lidas → 918 distintas (814 cópias colapsadas) → 886 com
+    // gabarito que o material sustenta. A asserção é exata de propósito: se
+    // alguém voltar a somar as duas publicações do PDF, ou esconder a quarentena
+    // sem dizer, este caso grita. Medido por `scripts/lib/audit-acervo.ts`.
     await expect(page.locator("[data-contagem]")).toHaveText(
-      "Exibindo 1 a 20 de 918 questões"
+      "Exibindo 1 a 20 de 886 questões"
     );
+    // A pendência é dita, não escondida: 32 distintas ficam fora do padrão.
+    await expect(page.locator("[data-pendencia]")).toContainText("918 no acervo inteiro");
+    await expect(page.locator("[data-pendencia]")).toContainText("32 estão em revisão");
+    // Sem filtro aplicado, a linha "Filtrar por" diz isso em vez de inventar chip.
+    await expect(barra.getByText("Filtrar por:")).toBeVisible();
+    await expect(barra.locator("[data-chip]")).toHaveCount(0);
 
     // Página de verdade: 20 cards, não a lista cortada em 60 sem paginação.
     expect(await cards.count()).toBe(20);
@@ -125,6 +142,134 @@ test.describe("Caderno — listagem por matéria", () => {
     await expect(page.getByText(/aula-14/i)).toHaveCount(0);
     await expect(page.locator("body")).not.toContainText(/E2E [0-9a-f]/i);
     await expect(page.locator("body")).not.toContainText("Qual é a pergunta?");
+
+    expect(erros).toEqual([]);
+  });
+
+  test("o padrão já é o gabarito confiável; ?gabarito=todos devolve a revisão", async ({ page }) => {
+    const erros = capturarErros(page);
+    await authenticateBrowser(page);
+
+    await page.goto(CADERNO, { timeout: 90_000 });
+    const barra = page.locator("form[method='get']");
+    // A caixa existe, começa desligada e é ela que decide se a revisão entra.
+    const caixa = barra.locator("input[name='gabarito']");
+    await expect(caixa).toHaveCount(1);
+    await expect(caixa).not.toBeChecked();
+
+    await caixa.check();
+    await barra.getByRole("button", { name: "Filtrar" }).click();
+
+    await page.waitForURL(/gabarito=todos/, { timeout: 60_000 });
+    // 886 + 32 = 918: as distintas sem resposta confirmada voltam todas.
+    await expect(page.locator("[data-contagem]")).toHaveText(
+      "Exibindo 1 a 20 de 918 questões"
+    );
+    await expect(barra.locator("[data-chip='gabarito']")).toContainText("incluindo revisão");
+    // A caixa de qualidade fica fora do `<details>` — é decisão de tela, não
+    // refinamento — e o bloco avançado vem aberto junto, porque é lá que as
+    // anuladas aparecem: com a revisão dentro, há o que excluir.
+    await expect(barra.locator("[data-filtro-avancado]")).toHaveJSProperty("open", true);
+    await expect(barra.locator("input[name='anuladas']")).toBeVisible();
+
+    expect(erros).toEqual([]);
+  });
+
+  test("aba de fixação é o bloco “Lista de Questões” do material", async ({ page }) => {
+    const erros = capturarErros(page);
+    await authenticateBrowser(page);
+
+    await page.goto(CADERNO, { timeout: 90_000 });
+    const aba = page.locator("[data-aba='fixacao']");
+    // O número prometido na aba é medido, não decorado.
+    const anunciado = Number(/\d+/.exec((await aba.innerText()).replace(/\D+/g, " "))?.[0] ?? -1);
+    expect(anunciado).toBe(138);
+
+    await aba.click();
+    await page.waitForURL(/bloco=fixacao/, { timeout: 60_000 });
+    await expect(page.locator("[data-contagem]")).toHaveText(
+      `Exibindo 1 a 20 de ${anunciado} questões`
+    );
+    // O chip diz a aba em palavras legíveis, e o × devolve a aba padrão.
+    await expect(page.locator("[data-chip='bloco']")).toContainText("Exercícios de Fixação");
+    // Fixação é subconjunto: as objetivas continuam prometendo o acervo inteiro.
+    await expect(page.locator("[data-aba='objetivas']")).toContainText("886");
+
+    await page.locator("[data-chip='bloco'] a").click();
+    await page.waitForURL((url) => !url.searchParams.has("bloco"), { timeout: 60_000 });
+    await expect(page.locator("[data-contagem]")).toHaveText(
+      "Exibindo 1 a 20 de 886 questões"
+    );
+
+    expect(erros).toEqual([]);
+  });
+
+  test("palavra-chave, órgão e × do chip vivem todos na URL", async ({ page }) => {
+    const erros = capturarErros(page);
+    await authenticateBrowser(page);
+
+    await page.goto(CADERNO, { timeout: 90_000 });
+    const barra = page.locator("form[method='get']");
+    await barra.locator("input[name='palavra']").fill("crase");
+    await barra.getByRole("button", { name: "Filtrar" }).click();
+
+    await page.waitForURL(/palavra=crase/, { timeout: 60_000 });
+    // Medido no lote: 34 distintas com gabarito confirmado mencionam "crase".
+    await expect(page.locator("[data-contagem]")).toContainText("de 34 questões");
+    await expect(page.locator("[data-chip='palavra']")).toContainText("crase");
+    // O campo volta marcado com o que está na URL: o estado é o endereço.
+    await expect(barra.locator("input[name='palavra']")).toHaveValue("crase");
+
+    // Órgão: a faceta que o desenho de referência pede e o lote declara. O total
+    // anunciado na opção tem que ser o total da tela depois do clique.
+    const primeiraOpcao = barra.locator("select[name='orgao'] option").nth(1);
+    const valor = await primeiraOpcao.getAttribute("value");
+    expect(valor).toBeTruthy();
+    const anunciado = Number(/\((\d+)\)/.exec(await primeiraOpcao.innerText())?.[1] ?? -1);
+    expect(anunciado).toBeGreaterThan(0);
+
+    await barra.locator("select[name='orgao']").selectOption(valor!);
+    await barra.getByRole("button", { name: "Filtrar" }).click();
+    await page.waitForURL(/orgao=/, { timeout: 60_000 });
+    await expect(page.locator("[data-contagem]")).toContainText(`de ${anunciado} questões`);
+    await expect(page.locator("[data-chip='orgao']")).toBeVisible();
+
+    // O × desliga só aquela chave. A espera é pela ausência de `palavra`, não
+    // pela presença de `banca`: a URL atual já tinha banca, e esperar por ela
+    // passaria antes de a navegação acontecer.
+    await page.goto(`${CADERNO}?banca=INPI&palavra=crase`, { timeout: 90_000 });
+    await expect(page.locator("[data-chip='palavra']")).toBeVisible();
+    await page.locator("[data-chip='palavra'] a").click();
+    await page.waitForURL((url) => !url.searchParams.has("palavra"), { timeout: 60_000 });
+    expect(page.url()).toMatch(/banca=INPI/);
+    await expect(page.locator("[data-chip='banca']")).toBeVisible();
+    await expect(page.locator("[data-chip='palavra']")).toHaveCount(0);
+
+    expect(erros).toEqual([]);
+  });
+
+  test("a contagem ao lado da opção é a do clique, em qualquer modo", async ({ page }) => {
+    const erros = capturarErros(page);
+    await authenticateBrowser(page);
+
+    // Auto-consistência em dois contextos: com o padrão de qualidade e com a
+    // revisão dentro. Faceta contada no acervo inteiro mentiria no segundo caso.
+    for (const query of ["", "?gabarito=todos"]) {
+      await page.goto(`${CADERNO}${query}`, { timeout: 90_000 });
+      const anunciado = await page
+        .locator("select[name='assunto'] option")
+        .filter({ hasText: /^Pontuação \(\d+\)$/ })
+        .innerText();
+      const total = Number(/\((\d+)\)/.exec(anunciado)?.[1] ?? -1);
+      expect(total).toBeGreaterThan(0);
+
+      await page.selectOption("select[name='assunto']", "Pontuação");
+      await page.locator("form[method='get']").getByRole("button", { name: "Filtrar" }).click();
+      await page.waitForURL(/assunto=/, { timeout: 60_000 });
+      await expect(page.locator("[data-contagem]")).toHaveText(
+        `Exibindo 1 a 20 de ${total} questões`
+      );
+    }
 
     expect(erros).toEqual([]);
   });
@@ -174,7 +319,7 @@ test.describe("Caderno — listagem por matéria", () => {
     expect(erros).toEqual([]);
   });
 
-  test("?gabarito=confiavel esconde quarentena e item sem resposta", async ({ page }) => {
+  test("?gabarito=confiavel continua valendo: hoje é o padrão da tela", async ({ page }) => {
     const erros = capturarErros(page);
     await authenticateBrowser(page);
 
@@ -184,10 +329,13 @@ test.describe("Caderno — listagem por matéria", () => {
 
     const total = await cards.count();
     expect(total).toBeGreaterThan(0);
-    // 886 é o que o material sustenta como resposta; os outros 34 ficam de fora.
+    // 886 é o que o material sustenta como resposta; as outras 32 distintas ficam
+    // de fora — e o link antigo que pedia o filtro chega na mesma tela limpa.
     await expect(page.locator("[data-contagem]")).toHaveText(
       "Exibindo 1 a 20 de 886 questões"
     );
+    expect(page.url()).toContain("gabarito=confiavel");
+    await expect(page.locator("[data-chip]")).toHaveCount(0);
     // Selo de quarentena é o único badge âmbar do card; com o filtro ele some.
     await expect(page.getByText("Gabarito inconclusivo")).toHaveCount(0);
     await expect(page.getByText("Estrutura incompleta")).toHaveCount(0);
@@ -233,14 +381,48 @@ test.describe("Caderno — listagem por matéria", () => {
     await authenticateBrowser(page);
 
     await page.goto(CADERNO, { timeout: 90_000 });
+    // Modalidade mora na linha 2, dentro do filtro avançado: o `<details>` é o
+    // interruptor simples/avançado, e abrir é um clique nativo, sem ilha de cliente.
+    await page.locator("[data-filtro-avancado] > summary").click();
+    await expect(page.locator("[data-filtro-avancado]")).toHaveJSProperty("open", true);
     await page.selectOption("select[name='tipo']", "certo_errado");
     await page.getByRole("button", { name: "Filtrar" }).click();
 
     await page.waitForURL(/tipo=certo_errado/, { timeout: 60_000 });
     const cards = page.locator("article");
     await expect(cards.first()).toBeVisible();
-    // O select volta marcado com o valor da URL: o estado é o endereço.
+    // O select volta marcado com o valor da URL: o estado é o endereço. E o bloco
+    // avançado vem aberto, porque filtro escondido em barra fechada é filtro que
+    // o aluno não vê aplicado.
     await expect(page.locator("select[name='tipo']")).toHaveValue("certo_errado");
+    await expect(page.locator("[data-filtro-avancado]")).toHaveAttribute("open", "");
+    await expect(page.locator("[data-chip='tipo']")).toContainText("Certo/Errado");
+
+    expect(erros).toEqual([]);
+  });
+
+  test("um link que usa a linha 2 chega com o filtro avançado aberto", async ({ page }) => {
+    const erros = capturarErros(page);
+    await authenticateBrowser(page);
+
+    // Modalidade é linha 2. Um link assim não pode chegar com o controle fechado:
+    // o aluno veria o chip do filtro sem o select que o aplica.
+    await page.goto(`${CADERNO}?tipo=certo_errado`, { timeout: 90_000 });
+    await expect(page.locator("[data-filtro-avancado]")).toHaveJSProperty("open", true);
+    await expect(page.locator("select[name='tipo']")).toHaveValue("certo_errado");
+    await expect(page.locator("[data-chip='tipo']")).toContainText("Certo/Errado");
+    // A contagem anunciada no select e a da tela são a mesma medida.
+    const rotulo = await page
+      .locator("select[name='tipo'] option[value='certo_errado']")
+      .innerText();
+    const anunciado = Number(/\((\d+)\)/.exec(rotulo)?.[1] ?? -1);
+    expect(anunciado).toBeGreaterThan(0);
+    await expect(page.locator("[data-contagem]")).toContainText(`de ${anunciado} questões`);
+
+    // Palavra-chave é linha 1, visível: chegar por ela não abre o avançado.
+    await page.goto(`${CADERNO}?palavra=crase`, { timeout: 90_000 });
+    await expect(page.locator("[data-filtro-avancado]")).toHaveJSProperty("open", false);
+    await expect(page.locator("input[name='palavra']")).toHaveValue("crase");
 
     expect(erros).toEqual([]);
   });
