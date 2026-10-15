@@ -9,6 +9,12 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+
+import {
+  SCRIPT_DB_BLOCKED_EXIT_CODE,
+  guardScriptDatabaseTargetOrExit,
+  mergeDatabaseEnv,
+} from "./lib/db-safety.mjs";
 import sql from "postgres";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -86,6 +92,15 @@ function splitStatements(text) {
 const statements = splitStatements(withoutComments);
 
 console.log(`Aplicando ${statements.length} statements de ${target}...`);
+
+// Guarda fail-closed: nenhuma conexao e aberta sem provar que o destino e banco de
+// teste isolado. Politica autoritativa em src/lib/db/env-guard.ts; o espelho para
+// scripts .mjs e scripts/lib/db-safety.mjs, com paridade vigiada por teste.
+const decisionEnv = mergeDatabaseEnv({ readFileSync }, process.env, root, [".env", ".env.production"]);
+const dbVerdict = guardScriptDatabaseTargetOrExit("apply-migration", url, decisionEnv);
+if (!dbVerdict.safe) {
+  process.exit(SCRIPT_DB_BLOCKED_EXIT_CODE);
+}
 
 const s = sql(url, { max: 1 });
 let ok = 0;
