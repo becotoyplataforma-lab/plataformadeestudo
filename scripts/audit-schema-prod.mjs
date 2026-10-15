@@ -8,7 +8,11 @@
  *   3. Todos os enums customizados (pg_type onde typtype='e')
  *
  * Uso:
- *   node scripts/audit-schema-prod.mjs [--out <arquivo.json>]
+ *   node scripts/audit-schema-prod.mjs --confirm-production=<ref> [--out <arquivo.json>]
+ *
+ * Sem --confirm-production a nomear o mesmo project ref do destino, nenhuma conexão é
+ * aberta (bloqueio com exit code 4). Além disso a sessão é travada em read-only e o
+ * valor é confirmado pelo servidor antes de qualquer SELECT.
  *
  * Se --out for omitido, imprime no stdout.
  */
@@ -16,6 +20,8 @@ import postgres from "postgres";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { PRODUCTION_CONFIRM_EXIT_CODE, guardProductionTargetOrExit, mergeDatabaseEnv } from "./lib/db-safety.mjs";
+import { assertReadOnlySession } from "./lib/prod-readonly.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_DIR = path.resolve(__dirname, "..");
@@ -34,10 +40,21 @@ if (!match) {
 }
 const DATABASE_URL = match[1].trim();
 
+// ---- Guarda de produção: nenhuma conexão antes de o operador nomear o projeto ----
+// As chaves da decisão vêm do mesmo .env.production de onde saiu a DATABASE_URL: sem
+// PROD_SUPABASE_PROJECT_REF no ambiente não há como provar que o destino é produção.
+const decisionEnv = mergeDatabaseEnv(fs, process.env, PROJECT_DIR, [".env.production"]);
+const verdict = guardProductionTargetOrExit("audit-schema-prod", DATABASE_URL, { env: decisionEnv });
+if (!verdict.allowed) {
+  process.exit(PRODUCTION_CONFIRM_EXIT_CODE);
+}
+
 // ---- Conecta ----
 const sql = postgres(DATABASE_URL, { max: 1, connect_timeout: 15 });
 
 try {
+  // Este script é leitura pura: a sessão é travada em read-only e o servidor confirma o valor.
+  await assertReadOnlySession(sql);
   // 1. Tabelas do schema public
   const tables = await sql.unsafe(`
     SELECT table_name

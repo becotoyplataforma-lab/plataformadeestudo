@@ -363,3 +363,205 @@ export function mergeDatabaseEnv(fs, env, root, files) {
   }
   return merged;
 }
+
+/* ------------------------------------------------------------------ *
+ * RAMO DE PRODUCAO                                                     *
+ * ------------------------------------------------------------------ *
+ * Alguns scripts existem PARA tocar producao: auditoria de schema, diagnostico do
+ * ledger e carimbo manual. O guard acima recusaria esses destinos sempre, entao eles
+ * precisam de outra politica, e nao de uma excecao silenciosa. A regra continua
+ * fail-closed, mas inverte a prova: o operador precisa NOMEAR o projeto antes de
+ * qualquer conexao, e o nome precisa bater com o ref resolvido do URL e com o ref de
+ * producao configurado.
+ *
+ *   node scripts/<x>.mjs --confirm-production=<project-ref>
+ *
+ * e, se o script escreve, tambem --allow-production-write. A URL nunca e ecoada.
+ *
+ * IMPORTANTE: este ramo nao altera evaluateScriptDatabaseSafety(). A matriz paridade
+ * do guard TypeScript continua vigiada por script-db-safety-parity.test.ts.
+ */
+
+export const PRODUCTION_CONFIRM_REQUIRED = "PRODUCTION_CONFIRM_REQUIRED";
+
+/** Codigo de saida distinto do 3 do guard de teste: bloqueio por falta de confirmacao. */
+export const PRODUCTION_CONFIRM_EXIT_CODE = 4;
+
+export const PRODUCTION_CONFIRM_FLAG = "--confirm-production=";
+export const PRODUCTION_WRITE_FLAG = "--allow-production-write";
+
+/** Fallback para CI, onde o argv pode ficar em logs: o valor vem do ambiente. */
+export const PRODUCTION_CONFIRM_ENV_KEY = "PRODUCTION_CONFIRM_REF";
+
+/** Project ref no mesmo formato do guard TypeScript: 20 caracteres [a-z0-9]. */
+export function isProjectRef(value) {
+  return typeof value === "string" && PROJECT_REF_PATTERN.test(value.trim().toLowerCase());
+}
+
+/** Le as flags de confirmacao do argv (e o fallback do ambiente). Nunca le segredos. */
+export function readProductionConfirmation(argv = process.argv, env = process.env) {
+  const flags = Array.isArray(argv) ? argv : [];
+  let confirmRef;
+  let allowWrite = false;
+  for (const arg of flags) {
+    if (typeof arg !== "string") continue;
+    if (arg.startsWith(PRODUCTION_CONFIRM_FLAG)) {
+      confirmRef = arg.slice(PRODUCTION_CONFIRM_FLAG.length).trim().toLowerCase();
+    } else if (arg === PRODUCTION_WRITE_FLAG) {
+      allowWrite = true;
+    }
+  }
+  if (confirmRef === undefined) {
+    const fromEnv = trimmed(env[PRODUCTION_CONFIRM_ENV_KEY]).toLowerCase();
+    if (fromEnv.length > 0) confirmRef = fromEnv;
+  }
+  return {
+    confirmRef: confirmRef !== undefined && confirmRef.length > 0 ? confirmRef : undefined,
+    allowWrite,
+  };
+}
+
+/**
+ * Veredito de producao. Nao abre conexao e nao imprime nada: quem decide o que fazer com
+ * o resultado e o script, sempre antes de chamar o driver. Resolvido por identidade de
+ * URL (incluindo pooler, onde o ref vive no usuario), nunca por substring do texto.
+ */
+export function evaluateProductionTarget(rawUrl, env = process.env, options = {}) {
+  const argv = options.argv !== undefined ? options.argv : process.argv;
+  const writes = options.writes === true;
+  const url = rawUrl !== undefined ? rawUrl : pick(env, "DATABASE_URL");
+  const productionRef =
+    options.productionRef !== undefined ? options.productionRef : productionProjectRefFromEnv(env);
+  const base = {
+    hostname: undefined,
+    database: undefined,
+    projectRef: undefined,
+    productionProjectRef: productionRef || undefined,
+    writes,
+  };
+
+  if (!url) return Object.assign({}, base, { allowed: false, reason: "DATABASE_URL ausente" });
+
+  const identity = identify(url);
+  if (!identity || !identity.hostname) {
+    return Object.assign({}, base, { allowed: false, reason: "DATABASE_URL invalida ou nao interpretavel" });
+  }
+
+  const info = Object.assign({}, base, {
+    hostname: identity.hostname,
+    database: identity.database,
+    projectRef: identity.projectRef,
+  });
+
+  if (!identity.projectRef) {
+    return Object.assign({}, info, {
+      allowed: false,
+      reason: "project ref nao identificavel no destino: recuso sem saber em que projeto entraria",
+    });
+  }
+  if (!productionRef) {
+    return Object.assign({}, info, {
+      allowed: false,
+      reason: "PROD_SUPABASE_PROJECT_REF ausente: nao ha como provar que este destino e a producao configurada",
+    });
+  }
+  if (identity.projectRef !== productionRef) {
+    return Object.assign({}, info, {
+      allowed: false,
+      reason:
+        "destino nao e o projeto de producao configurado; para banco de teste use guardScriptDatabaseTargetOrExit",
+    });
+  }
+
+  const confirmation = readProductionConfirmation(argv, env);
+  if (confirmation.confirmRef === undefined) {
+    return Object.assign({}, info, {
+      allowed: false,
+      reason: "falta " + PRODUCTION_CONFIRM_FLAG + "<ref> a nomear o projeto de producao",
+    });
+  }
+  if (!isProjectRef(confirmation.confirmRef)) {
+    return Object.assign({}, info, {
+      allowed: false,
+      reason: "confirmacao nao e um project ref valido (20 caracteres a-z0-9)",
+    });
+  }
+  if (confirmation.confirmRef !== identity.projectRef) {
+    return Object.assign({}, info, {
+      allowed: false,
+      reason: "confirmacao nomeia um ref distinto do destino real",
+    });
+  }
+  if (writes && !confirmation.allowWrite) {
+    return Object.assign({}, info, {
+      allowed: false,
+      reason: "este script escreve; falta " + PRODUCTION_WRITE_FLAG,
+    });
+  }
+
+  return Object.assign({}, info, {
+    allowed: true,
+    reason: writes ? "producao confirmada para escrita" : "producao confirmada, apenas leitura",
+  });
+}
+
+/** Linha de log segura: host, database e refs. Nunca usuario, senha ou URL. */
+export function describeProductionTarget(target, verdict) {
+  return [
+    "prod-guard",
+    "target=" + target,
+    "host=" + (verdict.hostname || "-"),
+    "database=" + (verdict.database || "-"),
+    "ref=" + (verdict.projectRef || "-"),
+    "prodRef=" + (verdict.productionProjectRef || "-"),
+    "writes=" + (verdict.writes === true),
+    "allowed=" + verdict.allowed,
+    "reason=" + verdict.reason,
+  ].join(" ");
+}
+
+/** Erro de dominio do ramo de producao: alvo e motivo, nunca credencial. */
+export class ProductionConfirmationError extends Error {
+  constructor(target, reason) {
+    super(
+      [
+        "Producao nao confirmada para \"" + target + "\": " + reason + ".",
+        "Passe " + PRODUCTION_CONFIRM_FLAG + "<ref>" + " e, havendo escrita, " + PRODUCTION_WRITE_FLAG + ".",
+        "Nenhuma conexao sera aberta.",
+      ].join(" "),
+    );
+    this.name = "ProductionConfirmationError";
+    this.code = PRODUCTION_CONFIRM_REQUIRED;
+    this.target = target;
+    this.reason = reason;
+  }
+}
+
+/** Para chamadores que preferem excecao (testes, wrappers). */
+export function assertProductionTarget(target, rawUrl, env = process.env, options = {}) {
+  const verdict = evaluateProductionTarget(rawUrl, env, options);
+  if (!verdict.allowed) {
+    throw new ProductionConfirmationError(target, verdict.reason);
+  }
+  return verdict;
+}
+
+/**
+ * Porta de entrada dos scripts de producao: imprime o veredito log-safe e devolve
+ * allowed=false com codigo de saida 4 antes de QUALQUER conexao. Use no topo, logo
+ * apos resolver a DATABASE_URL, e aborte o script quando allowed for false.
+ */
+export function guardProductionTargetOrExit(target, rawUrl, options = {}) {
+  const env = options.env !== undefined ? options.env : process.env;
+  const verdict = evaluateProductionTarget(rawUrl, env, options);
+  const line = describeProductionTarget(target, verdict);
+  if (verdict.allowed) {
+    console.log(line);
+    return verdict;
+  }
+  console.error(line);
+  console.error("[" + target + "] BLOCKED " + PRODUCTION_CONFIRM_REQUIRED + ": " + verdict.reason);
+  console.error("Nenhuma conexao sera aberta.");
+  process.exitCode = PRODUCTION_CONFIRM_EXIT_CODE;
+  return verdict;
+}

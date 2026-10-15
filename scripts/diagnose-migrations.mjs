@@ -7,13 +7,19 @@
  * 3. Compara e mostra quais batem e quais divergem
  *
  * Uso:
- *   node scripts/diagnose-migrations.mjs
+ *   node scripts/diagnose-migrations.mjs --confirm-production=<ref>
+ *
+ * Este script é leitura pura, mas liga-se ao banco de produção. Sem a confirmação do
+ * project ref nenhuma conexão é aberta (exit code 4) e a sessão é travada em read-only
+ * com confirmação do servidor antes do primeiro SELECT.
  */
 import crypto from "node:crypto";
 import postgres from "postgres";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { PRODUCTION_CONFIRM_EXIT_CODE, guardProductionTargetOrExit, mergeDatabaseEnv } from "./lib/db-safety.mjs";
+import { assertReadOnlySession } from "./lib/prod-readonly.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_DIR = path.resolve(__dirname, "..");
@@ -22,7 +28,15 @@ const PROJECT_DIR = path.resolve(__dirname, "..");
 const envFile = path.join(PROJECT_DIR, ".env.production");
 const envContent = fs.readFileSync(envFile, "utf8");
 const match = envContent.match(/^DATABASE_URL=(.+)$/m);
-const DATABASE_URL = match[1].trim();
+const DATABASE_URL = match ? match[1].trim() : "";
+
+// ---- Guarda de produção: nenhuma conexão antes de o operador nomear o projeto ----
+// O .env.production é a fonte das duas peças da decisão: a URL e o ref de produção.
+const decisionEnv = mergeDatabaseEnv(fs, process.env, PROJECT_DIR, [".env.production"]);
+const verdict = guardProductionTargetOrExit("diagnose-migrations", DATABASE_URL, { env: decisionEnv });
+if (!verdict.allowed) {
+  process.exit(PRODUCTION_CONFIRM_EXIT_CODE);
+}
 
 // ---- Lê o journal ----
 const journalPath = path.join(PROJECT_DIR, "drizzle", "meta", "_journal.json");
@@ -43,6 +57,8 @@ for (const entry of journal.entries) {
 const sql = postgres(DATABASE_URL, { max: 1, connect_timeout: 15 });
 
 try {
+  // Leitura pura: a sessão é travada em read-only e o servidor confirma o valor.
+  await assertReadOnlySession(sql);
   console.log("🔌 Conectado ao banco de produção.\n");
 
   // 1. Entradas existentes na tabela

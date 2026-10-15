@@ -8,12 +8,18 @@
  * verifica as entradas inseridas.
  *
  * Uso:
- *   node scripts/apply-stamp-migrations.mjs
+ *   node scripts/apply-stamp-migrations.mjs --confirm-production=<ref> --allow-production-write
+ *
+ * ESCREVE no ledger de produção. Por isso exige duas confirmações explícitas: o ref do
+ * projeto no destino (que tem de bater com o ref resolvido da DATABASE_URL e com
+ * PROD_SUPABASE_PROJECT_REF) e a flag de escrita. Sem qualquer delas nenhuma conexão é
+ * aberta, com exit code 4.
  */
 import postgres from "postgres";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { PRODUCTION_CONFIRM_EXIT_CODE, guardProductionTargetOrExit, mergeDatabaseEnv } from "./lib/db-safety.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_DIR = path.resolve(__dirname, "..");
@@ -31,6 +37,17 @@ if (!match) {
   process.exit(1);
 }
 const DATABASE_URL = match[1].trim();
+
+// ---- Guarda de produção: escreve no ledger, logo exige ref + flag de escrita ----
+// O ref comparado vem do mesmo .env.production que forneceu a DATABASE_URL.
+const decisionEnv = mergeDatabaseEnv(fs, process.env, PROJECT_DIR, [".env.production"]);
+const verdict = guardProductionTargetOrExit("apply-stamp-migrations", DATABASE_URL, {
+  env: decisionEnv,
+  writes: true,
+});
+if (!verdict.allowed) {
+  process.exit(PRODUCTION_CONFIRM_EXIT_CODE);
+}
 
 // ---- Lê o SQL de carimbo ----
 const stampFile = path.join(PROJECT_DIR, "scripts", "stamp-migrations.sql");
