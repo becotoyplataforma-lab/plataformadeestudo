@@ -10,6 +10,7 @@ import { createHash } from "crypto";
 import { DocumentRepository } from "../repositories/document.repository";
 import { storageBackend } from "../storage/backend";
 import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
+import { MIME_TO_DOCUMENT_TYPE, TEXT_EXTRACTABLE_MIME_TYPES } from "../format-contract";
 import { DEFAULT_FREE_LIMITS } from "@/lib/billing/types";
 
 // ============================================================
@@ -39,21 +40,13 @@ export interface IngestionOutput {
 // Constantes
 // ============================================================
 
-const ALLOWED_MIME_TYPES = [
-  "text/plain",
-  "text/markdown",
-  "text/html",
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-] as const;
+/**
+ * MIMEs aceitos no upload: contrato unico de formatos, o mesmo lido pelo MCP
+ * e pelo extrator. Formato sem extrator fica bloqueado nas tres camadas.
+ */
+export const ALLOWED_MIME_TYPES = TEXT_EXTRACTABLE_MIME_TYPES;
 
-const MIME_TO_TYPE: Record<string, string> = {
-  "text/plain": "txt",
-  "text/markdown": "markdown",
-  "text/html": "html",
-  "application/pdf": "pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-};
+const MIME_TO_TYPE: Record<string, string> = MIME_TO_DOCUMENT_TYPE;
 
 const MAX_FILE_SIZE_FREE = 25 * 1024 * 1024; // 25 MB
 

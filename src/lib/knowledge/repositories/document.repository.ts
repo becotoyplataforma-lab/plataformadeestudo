@@ -4,9 +4,31 @@
  * Camada de persistência para o agregado Document.
  * Toda query passa por aqui (DD-004: Repository Pattern obrigatório).
  */
-import { eq, and, isNull, or, sql, sum } from "drizzle-orm";
+import { eq, and, isNull, or, sql, sum, inArray } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import { documents } from "@/db/schema/knowledge";
+import {
+  documentAccessCondition,
+  type DocumentAccessScope,
+} from "../security/document-access";
+
+/**
+ * Estagios do pipeline de conversao, na ordem em que o documento anda.
+ * `chunked` e o ponto de espera honesto quando nao ha servico de embeddings:
+ * o conteudo esta pronto e pesquisavel por FTS, mas a busca vetorial segue
+ * pendente. `indexed` afirma que existe vetor no banco.
+ */
+export const PIPELINE_STATUSES = [
+  "pending",
+  "processing",
+  "processed",
+  "chunked",
+  "indexing",
+  "indexed",
+  "failed",
+] as const;
+
+export type PipelineStatus = (typeof PIPELINE_STATUSES)[number];
 
 export const DocumentRepository = {
   /** Buscar documento por ID (apenas ativos). */
@@ -138,6 +160,41 @@ export const DocumentRepository = {
     return row?.n ?? 0;
   },
 
+  /**
+   * Contagem por estagio do pipeline: fila operacional do operador.
+   * So documentos ativos (deleted_at IS NULL) contam.
+   */
+  async countByPipelineStatus(): Promise<Array<{ status: string; count: number }>> {
+    const rows = await db
+      .select({ status: documents.status, count: sql<number>`count(*)::int` })
+      .from(documents)
+      .where(isNull(documents.deletedAt))
+      .groupBy(documents.status);
+    return rows.map((r) => ({ status: r.status, count: r.count }));
+  },
+
+  /**
+   * Documentos parados em um conjunto de estagios, do mais antigo ao mais
+   * novo: e a ordem em que uma retomada de lote deve tentar.
+   */
+  async listByPipelineStatuses(
+    statuses: readonly PipelineStatus[],
+    limit = 50
+  ) {
+    if (statuses.length === 0) return [];
+    return db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          isNull(documents.deletedAt),
+          inArray(documents.status, [...statuses])
+        )
+      )
+      .orderBy(sql`${documents.createdAt} ASC`)
+      .limit(limit);
+  },
+
   /** Soft delete. */
   async softDelete(id: string) {
     const [row] = await db
@@ -159,6 +216,49 @@ export const DocumentRepository = {
       .offset(offset);
   },
 
+  /**
+   * Documentos que o usuario pode ler: os proprios mais os compartilhados com o
+   * escopo dele (cargo ou edital vigente). Uma unica consulta com limite, e sem
+   * tocar em document_chunks: o texto integral so sai por rota autorizada.
+   */
+  async listAccessible(scope: DocumentAccessScope, limit = 50, offset = 0) {
+    return db
+      .select()
+      .from(documents)
+      .where(and(isNull(documents.deletedAt), documentAccessCondition(scope)))
+      .orderBy(sql`${documents.createdAt} DESC`)
+      .limit(limit)
+      .offset(offset);
+  },
+
+  /** Contar documentos legiveis no escopo (paginacao segura). */
+  async countAccessible(scope: DocumentAccessScope): Promise<number> {
+    const [row] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documents)
+      .where(and(isNull(documents.deletedAt), documentAccessCondition(scope)));
+    return row?.n ?? 0;
+  },
+
+  /**
+   * Buscar um documento ja filtrado pela autorizacao: devolve null para
+   * inexistente, excluido ou fora do escopo, entao a pagina nao precisa decidir
+   * sozinha o que mostrar nem vaza existencia de id de outro usuario.
+   */
+  async findByIdAccessible(id: string, scope: DocumentAccessScope) {
+    const [row] = await db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.id, id),
+          isNull(documents.deletedAt),
+          documentAccessCondition(scope)
+        )
+      )
+      .limit(1);
+    return row ?? null;
+  },
   /** Contar documentos ativos do usuário (quota maxDocuments, best-effort). */
   async countActiveByUser(userId: string): Promise<number> {
     const [row] = await db

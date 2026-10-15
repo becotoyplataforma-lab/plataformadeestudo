@@ -9,10 +9,11 @@
  * "chunked" (conteúdo pronto, busca vetorial pendente) — NÃO é falha.
  */
 import "server-only";
+import { redactSecrets } from "@/lib/observability";
 import { DocumentRepository } from "../repositories/document.repository";
 import { DocumentStorageService } from "../storage.service";
 import { DocumentExtractionService, ExtractionError } from "./extraction.service";
-import { ChunkService } from "./chunk.service";
+import { ChunkService, type PageRange } from "./chunk.service";
 import { EmbeddingService } from "./embedding.service";
 import { embeddingClient } from "../embedding/client";
 
@@ -32,6 +33,26 @@ export interface PipelineResult {
   embeddingCount: number;
   pageCount: number | null;
   embeddingConfigured: boolean;
+}
+
+/** Separador usado ao juntar paginas normalizadas (fonte unica das fronteiras). */
+const PAGE_JOIN = "\n\n";
+
+/**
+ * Fronteiras de pagina em offsets do texto obtido por join(pages, PAGE_JOIN).
+ * Pagina vazia mantem faixa propria (comprimento zero) para a numeracao nao
+ * deslocar: pagina 7 de um PDF continua pagina 7, mesmo sem texto extraido.
+ */
+function rangesFromPages(pages: string[]): PageRange[] {
+  const ranges: PageRange[] = [];
+  let cursor = 0;
+  for (let i = 0; i < pages.length; i += 1) {
+    const start = cursor;
+    const end = cursor + pages[i].length;
+    ranges.push({ page: i + 1, start, end });
+    cursor = end + PAGE_JOIN.length;
+  }
+  return ranges;
 }
 
 function normalizeText(text: string): string {
@@ -63,12 +84,25 @@ export const DocumentPipelineService = {
         doc.storagePath,
         doc.storageBackend as "r2" | "supabase" | undefined
       );
-      const { text, pageCount } = await DocumentExtractionService.extract(
+      const extracted = await DocumentExtractionService.extract(
         buffer,
         doc.mimeType ?? "",
         doc.type
       );
-      const normalized = normalizeText(text);
+      // Normalizacao pagina a pagina. Se o texto inteiro fosse normalizado de
+      // uma vez, as fronteiras de pagina calculadas sobre o texto cru nao
+      // valeriam mais para o texto final e cada chunk passaria a citar a
+      // pagina errada - que e pior do que nao citar pagina nenhuma.
+      const normalizedPages =
+        extracted.pages && extracted.pages.length > 0
+          ? extracted.pages.map((page) => normalizeText(page))
+          : null;
+      const normalized =
+        normalizedPages !== null
+          ? normalizedPages.join(PAGE_JOIN)
+          : normalizeText(extracted.text);
+      const pageRanges =
+        normalizedPages === null ? undefined : rangesFromPages(normalizedPages);
 
       // Item 8 (OCR): PDFs escaneados não têm camada de texto. Detecta e
       // sinaliza em vez de falhar genericamente.
@@ -90,7 +124,7 @@ export const DocumentPipelineService = {
           "Nenhum texto extraído. Se for PDF escaneado, é necessário OCR (não configurado)."
         );
       }
-      if ((pageCount ?? 0) > 1 && normalized.length < 60) {
+      if ((extracted.pageCount ?? 0) > 1 && normalized.length < 60) {
         await DocumentRepository.updateMetadata(documentId, { ocr_needed: true });
         throw new PipelineError(
           "EMPTY_TEXT",
@@ -102,6 +136,7 @@ export const DocumentPipelineService = {
         documentId,
         text: normalized,
         documentType: doc.type,
+        pageRanges,
       });
 
       const embeddingConfigured = embeddingClient.isConfigured();
@@ -111,7 +146,10 @@ export const DocumentPipelineService = {
       if (embeddingConfigured) {
         const emb = await EmbeddingService.embedDocument({ documentId });
         embeddingCount = emb.generatedCount + emb.cachedCount;
-        status = "indexed";
+        // So declara "indexed" quem ficou com vetor no banco. Sem nenhum
+        // embedding gerado o documento permanece "chunked": pesquisavel
+        // por FTS, indexacao vetorial pendente, reexecucao possivel.
+        status = embeddingCount > 0 ? "indexed" : "chunked";
       } else {
         await DocumentRepository.updateMetadata(documentId, {
           embedding_skipped: true,
@@ -124,7 +162,7 @@ export const DocumentPipelineService = {
         status,
         chunkCount: chunkResult.chunkCount,
         embeddingCount,
-        pageCount: pageCount ?? null,
+        pageCount: extracted.pageCount ?? null,
         processedAt: new Date(),
         processingError: null,
       });
@@ -134,12 +172,12 @@ export const DocumentPipelineService = {
         status,
         chunkCount: chunkResult.chunkCount,
         embeddingCount,
-        pageCount: pageCount ?? null,
+        pageCount: extracted.pageCount ?? null,
         embeddingConfigured,
       };
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Falha desconhecida no processamento.";
+        redactSecrets(error instanceof Error ? error.message : "Falha desconhecida no processamento.");
       await DocumentRepository.updatePipeline(documentId, {
         status: "failed",
         processingError: message,

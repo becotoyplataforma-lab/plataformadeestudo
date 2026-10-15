@@ -14,12 +14,27 @@ import { DocumentChunkRepository } from "../repositories/chunk.repository";
 // Tipos
 // ============================================================
 
+/**
+ * Faixa de texto que pertence a uma pagina do documento de origem.
+ * start e inclusive, end e exclusive, sempre em offsets do texto ja normalizado.
+ */
+export interface PageRange {
+  page: number;
+  start: number;
+  end: number;
+}
+
 export interface ChunkInput {
   documentId: string;
   text: string;
   documentType: string;
   chunkSize?: number;
   overlap?: number;
+  /**
+   * Fronteiras de pagina (PDF). Ausente = documento sem pagina real, e o
+   * metadata do chunk fica sem chave nenhuma de pagina.
+   */
+  pageRanges?: PageRange[];
 }
 
 export interface ChunkData {
@@ -192,6 +207,31 @@ function structuralChunk(text: string, chunkSize: number, overlap: number): Chun
 // Service
 // ============================================================
 
+/**
+ * Pagina de origem do trecho [start,end).
+ *
+ * Regras: sem faixas nao ha chave de pagina (nao se inventa pagina de TXT);
+ * trecho que atravessa paginas ganha page (inicio) e page_end (fim), porque
+ * esconder a travessia faria a citacao apontar para uma pagina errada.
+ */
+function pageMetadataFor(
+  pageRanges: PageRange[] | undefined,
+  start: number,
+  end: number
+): Record<string, unknown> {
+  if (!pageRanges || pageRanges.length === 0) return {};
+  const touched = pageRanges.filter((r) => start < r.end && end > r.start);
+  if (touched.length === 0) return {};
+  const first = touched[0];
+  const last = touched[touched.length - 1];
+  const meta: Record<string, unknown> = { page: first.page };
+  if (last.page !== first.page) {
+    meta.page_end = last.page;
+    meta.pages = touched.map((r) => r.page);
+  }
+  return meta;
+}
+
 export const ChunkService = {
   /**
    * Orquestrar chunking completo.
@@ -203,6 +243,7 @@ export const ChunkService = {
       documentType,
       chunkSize = DEFAULT_CHUNK_SIZE,
       overlap = DEFAULT_OVERLAP,
+      pageRanges,
     } = input;
 
     if (!text || text.trim().length === 0) {
@@ -219,9 +260,19 @@ export const ChunkService = {
       chunksData = fixedChunk(text, chunkSize, overlap);
     }
 
-    // 2. Atribuir documentId
+    // 2. Atribuir documentId e a pagina de origem de cada trecho
     for (const chunk of chunksData) {
       chunk.documentId = documentId;
+      const rawStart = chunk.metadata.char_start;
+      const rawEnd = chunk.metadata.char_end;
+      const pageMeta = pageMetadataFor(
+        pageRanges,
+        typeof rawStart === "number" ? rawStart : 0,
+        typeof rawEnd === "number" ? rawEnd : 0
+      );
+      if (Object.keys(pageMeta).length > 0) {
+        chunk.metadata = { ...chunk.metadata, ...pageMeta };
+      }
     }
 
     // 3. Soft delete chunks antigos

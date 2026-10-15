@@ -9,6 +9,7 @@
 import "server-only";
 import { createRequire } from "node:module";
 import mammoth from "mammoth";
+import { describeExtractionRejection, hasTextExtractor } from "../format-contract";
 
 // pdf-parse v1: importamos o lib/pdf-parse.js diretamente (não o index.js),
 // pois o index.js tem um bloco de debug que tenta ler um arquivo de teste
@@ -37,6 +38,13 @@ const pdfParse = require("pdf-parse/lib/pdf-parse.js") as (
 export interface ExtractionResult {
   text: string;
   pageCount?: number;
+  /**
+   * Texto de cada pagina do PDF, na ordem real (indice 0 = pagina 1).
+   * So aparece em formatos que tem pagina de verdade: TXT, MD, HTML e DOCX
+   * ficam sem este campo porque neles nao existe referencia de pagina, e o
+   * chunker nao pode inventar uma.
+   */
+  pages?: string[];
   /** Texto da primeira página (PDF) — útil para extrair título/cabeçalho. */
   firstPageText?: string;
 }
@@ -69,6 +77,7 @@ async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
   // problema do Turbopack com o import() dinâmico do pdfjs-dist.
   // Capturamos o texto da primeira página via pagerender para extrair o título.
   let firstPageText: string | undefined;
+  const pageTexts: string[] = [];
   const result = await pdfParse(buffer, {
     pagerender: async (pageData: { getTextContent: (o?: unknown) => Promise<{ items: Array<{ str: string; transform: number[] }> }> }) => {
       const textContent = await pageData.getTextContent();
@@ -82,6 +91,7 @@ async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
         }
         lastY = item.transform[5];
       }
+      pageTexts.push(text);
       if (firstPageText === undefined) {
         firstPageText = text;
       }
@@ -91,6 +101,7 @@ async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
   return {
     text: result.text,
     pageCount: result.numpages,
+    pages: pageTexts,
     firstPageText,
   };
 }
@@ -113,6 +124,14 @@ export const DocumentExtractionService = {
     type: string
   ): Promise<ExtractionResult> {
     try {
+      // Guarda de formato: sem extrator, o binario viraria texto lixo no indice.
+      if (!hasTextExtractor(type, mimeType)) {
+        throw new ExtractionError(
+          "UNSUPPORTED_FORMAT",
+          describeExtractionRejection(type, mimeType),
+        );
+      }
+
       if (type === "pdf" || mimeType === "application/pdf") {
         return await extractPdf(buffer);
       }

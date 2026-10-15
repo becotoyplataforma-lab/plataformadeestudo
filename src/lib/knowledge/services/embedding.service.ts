@@ -59,7 +59,10 @@ export const EmbeddingService = {
 
     if (!embeddingClient.isConfigured()) {
       // Não bloqueia o documento: registra o estado para retry quando configurar.
-      await DocumentRepository.updateStatus(documentId, "indexed");
+      // Sem servico de embeddings nao existe vetor nenhum. Escrever "indexed"
+      // aqui seria declarar uma indexacao que nao aconteceu. O documento
+      // permanece "chunked": texto pronto, busca vetorial pendente.
+      await DocumentRepository.updateStatus(documentId, "chunked");
       throw new EmbeddingClientError(
         "Serviço de embeddings não configurado (EMBEDDING_API_URL ausente)."
       );
@@ -77,7 +80,13 @@ export const EmbeddingService = {
     const pendingChunks = allChunks.filter((c) => !existingIds.has(c.id));
 
     if (pendingChunks.length === 0) {
-      await DocumentRepository.updateStatus(documentId, "indexed");
+      // Nada pendente so e indice pronto se existe vetor registrado; um
+      // documento sem chunk nenhum fica "chunked" para nao inflar a
+      // contagem de conteudo indexado.
+      await DocumentRepository.updateStatus(
+        documentId,
+        existingIds.size > 0 ? "indexed" : "chunked"
+      );
       return {
         documentId,
         results: [],
@@ -178,8 +187,16 @@ export const EmbeddingService = {
       }
     }
 
-    // 6. Atualizar status final
-    await DocumentRepository.updateStatus(documentId, "indexed");
+    // 6. Status final honesto: "indexed" so quando sobrou vetor no banco.
+    // Batch que falha inteiro deixa o documento como "chunked" (pendente
+    // de indexacao e reexecutavel) em vez de afirmar um indice vazio.
+    // generatedCount e cachedCount sao sucessos; failedCount e disjoint, nao se
+    // subtrai dele.
+    const vectorsStored = generatedCount + cachedCount;
+    await DocumentRepository.updateStatus(
+      documentId,
+      vectorsStored > 0 ? "indexed" : "chunked"
+    );
 
     return {
       documentId,
