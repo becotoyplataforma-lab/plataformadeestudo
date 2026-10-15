@@ -16,9 +16,20 @@
  *     endpoint exposto em produção.
  *   - Se algo falhar, apenas registra aviso e segue (não bloqueia os testes).
  */
+import { loadEnvConfig } from "@next/env";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import postgres from "postgres";
+import { assertNonProductionDatabaseUrl } from "../../src/lib/db/env-guard";
+
+loadEnvConfig(process.cwd());
+
+const E2E_ALLOWED_DOMAINS = ["@test.local", "@e2e.local"] as const;
+
+function isAllowedE2eEmail(email: string): boolean {
+  const value = email.trim().toLowerCase();
+  return E2E_ALLOWED_DOMAINS.some(function (domain) { return value.endsWith(domain); });
+}
 
 /**
  * Resolve a DATABASE_URL: da env ou do .env local (para os E2E não precisarem
@@ -42,6 +53,22 @@ export default async function globalSetup() {
   const dbUrl = resolveDatabaseUrl();
   if (!email || !dbUrl) {
     console.log("[E2E-SETUP] Sem E2E_USER_EMAIL/DATABASE_URL — cleanup pulado.");
+    return;
+  }
+
+  if (!isAllowedE2eEmail(email)) {
+    console.warn(
+      "[E2E-SETUP] E-mail fora da allowlist de teste (" +
+        E2E_ALLOWED_DOMAINS.join(", ") +
+        ") - cleanup destrutivo bloqueado."
+    );
+    return;
+  }
+
+  try {
+    assertNonProductionDatabaseUrl("e2e-cleanup", dbUrl);
+  } catch (guardError) {
+    console.warn("[E2E-SETUP] " + (guardError as Error).message);
     return;
   }
 

@@ -84,3 +84,18 @@ comentarios_*_LOCAL.json
 __pycache__/
 *.pyc
 .venv/
+
+# Sucata de sessao na RAIZ: dumps de saida de ferramenta (tsc/eslint/vitest/
+# playwright), sondas avulsas de HTTP e banco, e scripts descartaveis. As
+# regras sao ancoradas em / de proposito: o extrator tem _*.py e _*.mjs
+# legitimos em subpastas (agents/pdf_question_extractor/tests/_gerar_golden.mjs),
+# e uma regra sem ancora os ignoraria silenciosamente no futuro.
+/_*.txt
+/_*.py
+/_*.mjs
+/_*.log
+
+# Relatorios e checklists de rodada: retrato pontual de uma maquina, com SHA e
+# data no cabecalho. A documentacao definitiva e versionada vive em docs/.
+/RELATORIO-*.md
+/CHECKLIST-LANCAMENTO-MVP.md
