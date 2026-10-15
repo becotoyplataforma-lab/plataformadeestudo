@@ -20,9 +20,14 @@ import {
   PRODUCTION_CONFIRM_REQUIRED,
   PRODUCTION_WRITE_FLAG,
   ProductionConfirmationError,
+  SCRIPT_DB_BLOCKED_EXIT_CODE,
+  STORAGE_ORIGIN_DIVERGE,
+  STORAGE_ORIGIN_EXIT_CODE,
   assertProductionTarget,
   describeProductionTarget,
   evaluateProductionTarget,
+  evaluateStorageOrigin,
+  guardDataTargetEitherWayOrExit,
   guardProductionTargetOrExit,
   isProjectRef,
   readProductionConfirmation,
@@ -390,5 +395,184 @@ describe("scripts de producao aplicam a guarda antes de conectar", () => {
       expect(trava, nome).toBeGreaterThan(-1);
       expect(trava, nome).toBeGreaterThan(fonte.indexOf("postgres(DATABASE_URL"));
     }
+  });
+});
+
+describe("origem de storage tem de ser o mesmo projecto do banco", () => {
+  const STOR_PROD = "https://" + PROD_REF + ".supabase.co";
+  const STOR_TESTE = "https://" + TEST_REF + ".supabase.co";
+  const STOR_OUTRO = "https://" + OTHER_REF + ".supabase.co";
+
+  it("bate quando os dois refs sao o mesmo projecto", () => {
+    expect(evaluateStorageOrigin(PROD_URL, STOR_PROD).ok).toBe(true);
+    const pooler = evaluateStorageOrigin(POOLER_URL, STOR_PROD);
+    expect(pooler.ok).toBe(true);
+    expect(pooler.dbRef).toBe(PROD_REF);
+  });
+
+  it("diverge quando storage e banco sao projectos diferentes", () => {
+    const v = evaluateStorageOrigin(TEST_URL, STOR_PROD);
+    expect(v.ok).toBe(false);
+    expect(v.reason).toContain("divergem");
+    expect(v.storageRef).toBe(PROD_REF);
+  });
+
+  it("recusa banco sem ref (local ou externo): nada e comparavel", () => {
+    const v = evaluateStorageOrigin(LOCAL_URL, STOR_PROD);
+    expect(v.ok).toBe(false);
+    expect(v.reason).toContain("sem project ref");
+  });
+
+  it("recusa storage ausente ou invalida", () => {
+    expect(evaluateStorageOrigin(PROD_URL, undefined).ok).toBe(false);
+    expect(evaluateStorageOrigin(PROD_URL, "").reason).toContain("SUPABASE_URL");
+    expect(evaluateStorageOrigin(PROD_URL, "nao-e-url").ok).toBe(false);
+    expect(evaluateStorageOrigin("isso-nao-e-uma-url", STOR_PROD).ok).toBe(false);
+  });
+
+  it("motivos nunca trazem credencial", () => {
+    const pares: Array<[string, string | undefined]> = [
+      [PROD_URL, STOR_PROD],
+      [POOLER_URL, STOR_OUTRO],
+      [LOCAL_URL, STOR_TESTE],
+      ["", ""],
+    ];
+    for (const [db, st] of pares) {
+      const v = evaluateStorageOrigin(db, st);
+      expect(v.reason).not.toContain(SECRET);
+      expect(v.reason).not.toContain("://");
+    }
+  });
+});
+
+describe("veredito composto: teste livre ou producao nomeada", () => {
+  let exitCodeAnterior: typeof process.exitCode;
+  const saida = { log: [] as string[], erro: [] as string[] };
+  const envTeste: NodeJS.ProcessEnv = {
+    NODE_ENV: "test",
+    VITEST: "true",
+    PROD_SUPABASE_PROJECT_REF: PROD_REF,
+    SAFE_TEST_DATABASE_REFS: TEST_REF,
+  };
+  const envProd: NodeJS.ProcessEnv = { NODE_ENV: "production", PROD_SUPABASE_PROJECT_REF: PROD_REF };
+  const stor = (ref: string) => "https://" + ref + ".supabase.co";
+
+  beforeEach(() => {
+    exitCodeAnterior = process.exitCode;
+    process.exitCode = undefined;
+    saida.log = [];
+    saida.erro = [];
+    vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => {
+      saida.log.push(a.map(String).join(" "));
+    });
+    vi.spyOn(console, "error").mockImplementation((...a: unknown[]) => {
+      saida.erro.push(a.map(String).join(" "));
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    process.exitCode = exitCodeAnterior;
+  });
+
+  it("banco de teste aprovado passa sem ceremonya", () => {
+    const r = guardDataTargetEitherWayOrExit("migrate-storage-r2", TEST_URL, {
+      env: envTeste,
+      storageUrl: stor(TEST_REF),
+      argv: argv(),
+    });
+    expect(r.modo).toBe("teste");
+    expect(process.exitCode).toBeUndefined();
+    expect(saida.erro).toStrictEqual([]);
+    expect(saida.log[0]).toContain("modo=teste");
+  });
+
+  it("banco de teste com storage de producao bloqueia por origem", () => {
+    const r = guardDataTargetEitherWayOrExit("migrate-storage-r2", TEST_URL, {
+      env: envTeste,
+      storageUrl: stor(PROD_REF),
+      argv: argv(),
+    });
+    expect(r.modo).toBe("bloqueado");
+    expect(process.exitCode).toBe(STORAGE_ORIGIN_EXIT_CODE);
+    const texto = saida.erro.join("\n");
+    expect(texto).toContain("BLOCKED " + STORAGE_ORIGIN_DIVERGE);
+    expect(texto).not.toContain(SECRET);
+  });
+
+  it("producao sem nomeacao bloqueia com 4 e explica os dois caminhos", () => {
+    const r = guardDataTargetEitherWayOrExit("migrate-storage-r2", PROD_URL, {
+      env: envProd,
+      storageUrl: stor(PROD_REF),
+      argv: argv(),
+    });
+    expect(r.modo).toBe("bloqueado");
+    expect(process.exitCode).toBe(PRODUCTION_CONFIRM_EXIT_CODE);
+    const texto = saida.erro.join("\n");
+    expect(texto).toContain("BLOCKED NON_PRODUCTION_DATABASE_REQUIRED e PRODUCTION_CONFIRM_REQUIRED");
+    expect(texto).toContain(PRODUCTION_CONFIRM_FLAG);
+    expect(texto).not.toContain("://");
+  });
+
+  it("producao nomeada passa e anuncia o modo", () => {
+    const r = guardDataTargetEitherWayOrExit("migrate-storage-r2", PROD_URL, {
+      env: envProd,
+      storageUrl: stor(PROD_REF),
+      argv: argv(confirm(PROD_REF)),
+    });
+    expect(r.modo).toBe("producao");
+    expect(process.exitCode).toBeUndefined();
+    expect(saida.log[0]).toContain("modo=producao");
+    expect(saida.log.join("\n")).not.toContain(SECRET);
+  });
+
+  it("producao nomeada com storage de outro projecto continua bloqueada", () => {
+    const r = guardDataTargetEitherWayOrExit("migrate-storage-r2", PROD_URL, {
+      env: envProd,
+      storageUrl: stor(OTHER_REF),
+      argv: argv(confirm(PROD_REF)),
+    });
+    expect(r.modo).toBe("bloqueado");
+    expect(process.exitCode).toBe(STORAGE_ORIGIN_EXIT_CODE);
+  });
+
+  it("destino externo sem marca bloqueia com 3, nao com 4", () => {
+    const r = guardDataTargetEitherWayOrExit(
+      "migrate-storage-r2",
+      "postgresql://app:" + SECRET + "@pg.example.com:5432/appdb",
+      { env: envProd, argv: argv(confirm(PROD_REF)) },
+    );
+    expect(r.modo).toBe("bloqueado");
+    expect(process.exitCode).toBe(SCRIPT_DB_BLOCKED_EXIT_CODE);
+  });
+
+  it("sem storageUrl a origem nao e exigida", () => {
+    const r = guardDataTargetEitherWayOrExit("outro-script", TEST_URL, { env: envTeste, argv: argv() });
+    expect(r.modo).toBe("teste");
+    expect(r.origem.ok).toBe(true);
+  });
+});
+
+describe("o script de migracao aplica a guarda antes de qualquer rede", () => {
+  const fonte = readFileSync(join(process.cwd(), "scripts", "migrate-storage-r2.mjs"), "utf8");
+
+  it("importa e chama o veredito composto com a origem de storage", () => {
+    expect(fonte).toContain("./lib/db-safety.mjs");
+    expect(fonte).toContain("guardDataTargetEitherWayOrExit(");
+    expect(fonte).toContain("storageUrl: process.env.SUPABASE_URL");
+    expect(fonte).toContain("guarda.modo");
+  });
+
+  it("a guarda vem antes da conexao, do fetch e do createDbClient", () => {
+    const guarda = fonte.indexOf("guardDataTargetEitherWayOrExit(");
+    expect(guarda).toBeGreaterThan(-1);
+    expect(fonte.indexOf("postgres(process.env.DATABASE_URL")).toBeGreaterThan(guarda);
+    expect(fonte.indexOf("await fetch(url")).toBeGreaterThan(guarda);
+    expect(fonte.indexOf("createDbClient()")).toBeGreaterThan(guarda);
+  });
+
+  it("declara-se somente leitura perante a guarda", () => {
+    expect(fonte).toContain("writes: false");
+    expect(fonte).not.toContain("writes: true");
   });
 });

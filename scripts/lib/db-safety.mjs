@@ -565,3 +565,131 @@ export function guardProductionTargetOrExit(target, rawUrl, options = {}) {
   process.exitCode = PRODUCTION_CONFIRM_EXIT_CODE;
   return verdict;
 }
+
+/* ------------------------------------------------------------------ *
+ * VEREDITO COMPOSTO (testes OU producao confirmada) + ORIGEM DE STORAGE
+ * ------------------------------------------------------------------ *
+ * Serve os scripts de migracao de dados, que precisam dos dois caminhos: o ensaio corre
+ * num banco de teste isolado sem cerimonia, e o mesmo comando contra producao exige que o
+ * operador nomeie o projecto. Nada disso e permissivo: entre os dois vereditos, todo
+ * destino fica coberto.
+ *
+ * A segunda prova e especifica de migracao de storage: DATABASE_URL e SUPABASE_URL sao
+ * variaveis independentes, por isso um dry-run podia listar metadados de um banco e ir
+ * baixar os ficheiros reais a OUTRO projecto. Comparar os dois refs fecha essa porta.
+ */
+
+export const STORAGE_ORIGIN_DIVERGE = "STORAGE_ORIGIN_DIVERGE";
+export const STORAGE_ORIGIN_EXIT_CODE = 5;
+
+/** Compara a origem de storage com a origem do banco, por project ref. */
+export function evaluateStorageOrigin(rawDbUrl, rawStorageUrl) {
+  const db = identify(rawDbUrl);
+  const st = identify(rawStorageUrl);
+  if (!db || !db.hostname) {
+    return { ok: false, reason: "DATABASE_URL invalida: nao ha como comparar origens", dbRef: undefined, storageRef: undefined };
+  }
+  if (!st || !st.hostname) {
+    return {
+      ok: false,
+      reason: "SUPABASE_URL invalida ou ausente: origem de storage nao identificavel",
+      dbRef: db.projectRef,
+      storageRef: undefined,
+    };
+  }
+  if (!st.projectRef) {
+    return {
+      ok: false,
+      reason: "SUPABASE_URL sem project ref: nao ha como comparar origens",
+      dbRef: db.projectRef,
+      storageRef: undefined,
+    };
+  }
+  if (!db.projectRef) {
+    return {
+      ok: false,
+      reason: "DATABASE_URL sem project ref (host local ou externo): storage nao e comparavel por ref",
+      dbRef: undefined,
+      storageRef: st.projectRef,
+    };
+  }
+  if (st.projectRef !== db.projectRef) {
+    return {
+      ok: false,
+      reason: "origens divergem: storage no ref " + st.projectRef + ", banco no ref " + db.projectRef,
+      dbRef: db.projectRef,
+      storageRef: st.projectRef,
+    };
+  }
+  return { ok: true, reason: "storage e banco no mesmo projecto", dbRef: db.projectRef, storageRef: st.projectRef };
+}
+
+function bloqueiaOrigem(target, origem) {
+  console.error(
+    [
+      "origin-guard",
+      "target=" + target,
+      "dbRef=" + (origem.dbRef || "-"),
+      "storageRef=" + (origem.storageRef || "-"),
+      "ok=" + origem.ok,
+      "reason=" + origem.reason,
+    ].join(" "),
+  );
+  console.error("[" + target + "] BLOCKED " + STORAGE_ORIGIN_DIVERGE + ": " + origem.reason);
+  console.error("Nenhuma conexao sera aberta e nenhum ficheiro sera lido.");
+  process.exitCode = STORAGE_ORIGIN_EXIT_CODE;
+}
+
+/**
+ * Devolve modo "teste", "producao" ou "bloqueado". O chamador aborta quando modo e
+ * "bloqueado": o codigo de saida ja ficou definido aqui, sempre antes de qualquer rede.
+ */
+export function guardDataTargetEitherWayOrExit(target, rawDbUrl, options = {}) {
+  const env = options.env !== undefined ? options.env : process.env;
+  const writes = options.writes === true;
+  const precisaOrigem = options.storageUrl !== undefined;
+  const origem = (dbUrl) => (precisaOrigem ? evaluateStorageOrigin(dbUrl, options.storageUrl) : { ok: true, reason: "sem storage a comparar" });
+
+  const teste = evaluateScriptDatabaseSafety(rawDbUrl, env);
+  if (teste.safe) {
+    const o = origem(rawDbUrl);
+    if (!o.ok) {
+      bloqueiaOrigem(target, o);
+      return { modo: "bloqueado", verdict: teste, origem: o };
+    }
+    console.log(describeScriptDatabaseTarget(target, rawDbUrl, env) + " modo=teste");
+    return { modo: "teste", verdict: teste, origem: o };
+  }
+
+  const prod = evaluateProductionTarget(rawDbUrl, env, {
+    writes,
+    argv: options.argv,
+    productionRef: options.productionRef,
+  });
+  if (!prod.allowed) {
+    console.error(describeScriptDatabaseTarget(target, rawDbUrl, env));
+    console.error(describeProductionTarget(target, prod));
+    console.error(
+      "[" + target + "] BLOCKED " + NON_PRODUCTION_DATABASE_REQUIRED + " e " + PRODUCTION_CONFIRM_REQUIRED + ": " +
+        teste.reason + " | " + prod.reason,
+    );
+    console.error(
+      "Ou aprove um banco de teste em SAFE_TEST_DATABASE_REFS, ou confirme a producao com " +
+        PRODUCTION_CONFIRM_FLAG + "<ref>.",
+    );
+    const eProducao =
+      prod.projectRef !== undefined &&
+      prod.productionProjectRef !== undefined &&
+      prod.projectRef === prod.productionProjectRef;
+    process.exitCode = eProducao ? PRODUCTION_CONFIRM_EXIT_CODE : SCRIPT_DB_BLOCKED_EXIT_CODE;
+    return { modo: "bloqueado", verdict: prod, origem: { ok: false, reason: "banco bloqueado antes da origem" } };
+  }
+
+  const o = origem(rawDbUrl);
+  if (!o.ok) {
+    bloqueiaOrigem(target, o);
+    return { modo: "bloqueado", verdict: prod, origem: o };
+  }
+  console.log(describeProductionTarget(target, prod) + " modo=producao");
+  return { modo: "producao", verdict: prod, origem: o };
+}

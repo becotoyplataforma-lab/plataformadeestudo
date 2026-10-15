@@ -9,6 +9,7 @@
  *   (opcional) R2_ENDPOINT — default https://<account>.r2.cloudflarestorage.com
  */
 import "server-only";
+import { redactSecrets } from "@/lib/observability";
 import {
   S3Client,
   PutObjectCommand,
@@ -130,7 +131,7 @@ export const R2StorageService = {
       }
       throw new R2StorageError(
         "HEAD_FAILED",
-        error instanceof Error ? error.message : "Falha ao consultar objeto no R2."
+        redactSecrets(error instanceof Error ? error.message : "Falha ao consultar objeto no R2.")
       );
     }
   },
@@ -153,7 +154,7 @@ export const R2StorageService = {
     } catch (error) {
       throw new R2StorageError(
         "HEAD_FAILED",
-        error instanceof Error ? error.message : "Falha ao consultar objeto no R2."
+        redactSecrets(error instanceof Error ? error.message : "Falha ao consultar objeto no R2.")
       );
     }
   },

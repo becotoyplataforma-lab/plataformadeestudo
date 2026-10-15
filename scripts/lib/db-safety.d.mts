@@ -141,3 +141,37 @@ export declare function guardProductionTargetOrExit(
   rawUrl?: string,
   options?: ProductionTargetOptions,
 ): ProductionTargetVerdict;
+
+/** Veredito composto para scripts de migracao: banco de teste OU producao confirmada. */
+export declare const STORAGE_ORIGIN_DIVERGE: "STORAGE_ORIGIN_DIVERGE";
+export declare const STORAGE_ORIGIN_EXIT_CODE: 5;
+
+export type StorageOriginVerdict = {
+  ok: boolean;
+  reason: string;
+  dbRef?: string;
+  storageRef?: string;
+};
+
+export type DataTargetGuardOptions = ProductionTargetOptions & {
+  storageUrl?: string;
+};
+
+export type DataTargetMode = "teste" | "producao" | "bloqueado";
+
+export type DataTargetGuardResult = {
+  modo: DataTargetMode;
+  verdict: ScriptDatabaseVerdict | ProductionTargetVerdict;
+  origem: StorageOriginVerdict;
+};
+
+export declare function evaluateStorageOrigin(
+  rawDbUrl?: string,
+  rawStorageUrl?: string,
+): StorageOriginVerdict;
+
+export declare function guardDataTargetEitherWayOrExit(
+  target: string,
+  rawDbUrl?: string,
+  options?: DataTargetGuardOptions,
+): DataTargetGuardResult;

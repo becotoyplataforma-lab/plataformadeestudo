@@ -58,6 +58,16 @@ import { resolveStorageBackend, StorageBackendError } from "@/lib/knowledge/stor
 
 const envBackup = { ...process.env };
 
+/** Captura o codigo de StorageBackendError sem depender de matching de mensagem. */
+function backendErrorCode(env: { STORAGE_BACKEND?: string; NODE_ENV?: string }): string {
+  try {
+    resolveStorageBackend(env);
+    return "OK";
+  } catch (error) {
+    return error instanceof StorageBackendError ? error.code : "OUTRO_ERRO";
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.STORAGE_BACKEND;
@@ -67,6 +77,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   process.env = { ...envBackup };
 });
 
@@ -94,6 +105,41 @@ describe("resolveStorageBackend (backend explícito)", () => {
 
   it("rejeita valor inválido", () => {
     expect(() => resolveStorageBackend({ STORAGE_BACKEND: "s3" })).toThrow(StorageBackendError);
+  });
+
+  it("produção sem STORAGE_BACKEND falha com código STORAGE_BACKEND_REQUIRED", () => {
+    expect(backendErrorCode({ NODE_ENV: "production" })).toBe("STORAGE_BACKEND_REQUIRED");
+  });
+
+  it("STORAGE_BACKEND presente mas vazio conta como ausente em produção", () => {
+    expect(backendErrorCode({ STORAGE_BACKEND: "", NODE_ENV: "production" })).toBe(
+      "STORAGE_BACKEND_REQUIRED"
+    );
+    expect(backendErrorCode({ STORAGE_BACKEND: "   ", NODE_ENV: "production" })).toBe(
+      "STORAGE_BACKEND_REQUIRED"
+    );
+  });
+
+  it("valor inválido tem código próprio em qualquer ambiente", () => {
+    expect(backendErrorCode({ STORAGE_BACKEND: "s3" })).toBe("STORAGE_BACKEND_INVALID");
+    expect(backendErrorCode({ STORAGE_BACKEND: "s3", NODE_ENV: "production" })).toBe(
+      "STORAGE_BACKEND_INVALID"
+    );
+  });
+
+  it("normaliza caixa e espaços do valor explícito", () => {
+    expect(resolveStorageBackend({ STORAGE_BACKEND: " R2 " })).toBe("r2");
+    expect(resolveStorageBackend({ STORAGE_BACKEND: "Supabase" })).toBe("supabase");
+  });
+
+  it("produção com backend explícito não falha: o fail-fast é só para ausente", () => {
+    expect(backendErrorCode({ STORAGE_BACKEND: "r2", NODE_ENV: "production" })).toBe("OK");
+    expect(backendErrorCode({ STORAGE_BACKEND: "supabase", NODE_ENV: "production" })).toBe("OK");
+  });
+
+  it("fora de produção o default continua supabase sem exigir configuração", () => {
+    expect(backendErrorCode({ NODE_ENV: "test" })).toBe("OK");
+    expect(resolveStorageBackend({ NODE_ENV: "development" })).toBe("supabase");
   });
 });
 
@@ -160,6 +206,45 @@ describe("DocumentStorageService — backend explícito", () => {
     expect(mocks.supabaseRemove).toHaveBeenCalledTimes(1);
     expect(mocks.r2Remove).not.toHaveBeenCalled();
   });
+
+  it("download() de documento r2 sem credencial falha explícito (sem fallback)", async () => {
+    process.env.STORAGE_BACKEND = "supabase";
+    await expect(DocumentStorageService.download("u/d/f.pdf", "r2")).rejects.toMatchObject({
+      code: "R2_NOT_CONFIGURED",
+    });
+    expect(mocks.supabaseDownload).not.toHaveBeenCalled();
+    expect(mocks.r2Download).not.toHaveBeenCalled();
+  });
+
+  it("remove() de documento r2 sem credencial falha explícito (sem fallback)", async () => {
+    process.env.STORAGE_BACKEND = "supabase";
+    await expect(DocumentStorageService.remove("u/d/f.pdf", "r2")).rejects.toMatchObject({
+      code: "R2_NOT_CONFIGURED",
+    });
+    expect(mocks.supabaseRemove).not.toHaveBeenCalled();
+    expect(mocks.r2Remove).not.toHaveBeenCalled();
+  });
+
+  it("produção sem STORAGE_BACKEND derruba o upload antes de tocar em storage", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    await expect(DocumentStorageService.upload(uploadInput)).rejects.toMatchObject({
+      code: "STORAGE_BACKEND_REQUIRED",
+    });
+    expect(mocks.supabaseUpload).not.toHaveBeenCalled();
+    expect(mocks.r2Upload).not.toHaveBeenCalled();
+    expect(mocks.supabaseGetBucket).not.toHaveBeenCalled();
+  });
+
+  it("download de documento sem backend gravado segue o backend global", async () => {
+    process.env.STORAGE_BACKEND = "supabase";
+    mocks.supabaseDownload.mockResolvedValue({
+      data: new Blob([Buffer.from("ok")]),
+      error: null,
+    });
+    const buf = await DocumentStorageService.download("u/d/f.pdf", undefined);
+    expect(buf).toEqual(Buffer.from("ok"));
+    expect(mocks.supabaseDownload).toHaveBeenCalledWith("u/d/f.pdf");
+  });
 });
 
 describe("DocumentStorageService — ensureBucket", () => {
@@ -177,5 +262,61 @@ describe("DocumentStorageService — ensureBucket", () => {
     process.env.R2_SECRET_ACCESS_KEY = "s";
     await DocumentStorageService.ensureBucket();
     expect(mocks.r2Ensure).toHaveBeenCalled();
+  });
+
+  it("r2 sem credencial → R2_NOT_CONFIGURED, nunca Supabase", async () => {
+    process.env.STORAGE_BACKEND = "r2";
+    await expect(DocumentStorageService.ensureBucket()).rejects.toMatchObject({
+      code: "R2_NOT_CONFIGURED",
+    });
+    expect(mocks.r2Ensure).not.toHaveBeenCalled();
+    expect(mocks.supabaseGetBucket).not.toHaveBeenCalled();
+  });
+
+  it("bucket já existente não é erro (ensureBucket é idempotente)", async () => {
+    process.env.STORAGE_BACKEND = "supabase";
+    mocks.supabaseGetBucket.mockResolvedValue({ data: null, error: null });
+    mocks.supabaseEnsure.mockResolvedValue({ error: { message: "Bucket already exists" } });
+    await DocumentStorageService.ensureBucket();
+    expect(mocks.supabaseEnsure).toHaveBeenCalledWith("documents", expect.anything());
+  });
+
+  it("falha do bucket é redigida: credencial nunca vai para a mensagem do erro", async () => {
+    process.env.STORAGE_BACKEND = "supabase";
+    mocks.supabaseGetBucket.mockResolvedValue({ data: null, error: null });
+    mocks.supabaseEnsure.mockResolvedValue({
+      error: {
+        message: "connect failed postgres://service_role:SENHA_VAZA@db.example.supabase.co/postgres",
+      },
+    });
+
+    let err: { code?: string; message?: string } | null = null;
+    try {
+      await DocumentStorageService.ensureBucket();
+    } catch (error) {
+      err = error as { code?: string; message?: string };
+    }
+
+    expect(err?.code).toBe("BUCKET_FAILED");
+    expect(err?.message).not.toContain("SENHA_VAZA");
+    expect(err?.message).toContain("[redigido]");
+  });
+
+  it("falha de download é redigida (chave de acesso fica fora da mensagem)", async () => {
+    process.env.STORAGE_BACKEND = "supabase";
+    mocks.supabaseDownload.mockResolvedValue({
+      data: null,
+      error: { message: "access_key: AKIA1234567890SECRET bucket documents" },
+    });
+
+    let err: { code?: string; message?: string } | null = null;
+    try {
+      await DocumentStorageService.download("u/d/f.pdf", "supabase");
+    } catch (error) {
+      err = error as { code?: string; message?: string };
+    }
+
+    expect(err?.code).toBe("DOWNLOAD_FAILED");
+    expect(err?.message).not.toContain("AKIA1234567890SECRET");
   });
 });

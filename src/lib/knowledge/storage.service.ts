@@ -15,6 +15,7 @@
  * Caminho: {userId}/{documentId}/{fileName}
  */
 import "server-only";
+import { redactSecrets } from "@/lib/observability";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   R2StorageService,
@@ -42,7 +43,7 @@ async function supabaseEnsureBucket(): Promise<void> {
       fileSizeLimit: 25 * 1024 * 1024,
     });
     if (error && !error.message.toLowerCase().includes("already exists")) {
-      throw new StorageError("BUCKET_FAILED", error.message);
+      throw new StorageError("BUCKET_FAILED", redactSecrets(error.message));
     }
   }
 }
@@ -62,7 +63,7 @@ async function supabaseUpload(input: {
       contentType: input.mimeType,
       upsert: true,
     });
-  if (error) throw new StorageError("UPLOAD_FAILED", error.message);
+  if (error) throw new StorageError("UPLOAD_FAILED", redactSecrets(error.message));
   return path;
 }
 
@@ -71,7 +72,7 @@ async function supabaseDownload(storagePath: string): Promise<Buffer> {
     .storage.from(BUCKET)
     .download(storagePath);
   if (error || !data) {
-    throw new StorageError("DOWNLOAD_FAILED", error?.message ?? "Arquivo não encontrado");
+    throw new StorageError("DOWNLOAD_FAILED", redactSecrets(error?.message ?? "Arquivo não encontrado"));
   }
   return Buffer.from(await data.arrayBuffer());
 }
@@ -80,7 +81,7 @@ async function supabaseRemove(storagePath: string): Promise<void> {
   const { error } = await createAdminClient()
     .storage.from(BUCKET)
     .remove([storagePath]);
-  if (error) throw new StorageError("REMOVE_FAILED", error.message);
+  if (error) throw new StorageError("REMOVE_FAILED", redactSecrets(error.message));
 }
 
 /** Backend de storage ativo (EXPLÍCITO — sem fallback automático). */
