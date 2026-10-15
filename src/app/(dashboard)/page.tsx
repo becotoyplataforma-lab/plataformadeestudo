@@ -10,6 +10,8 @@ import { DashboardStats, QuickActions } from "@/components/dashboard/dashboard-s
 import { EvolutionChart } from "@/components/dashboard/evolution-chart";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
+import { accessScopeFromProfile } from "@/lib/knowledge/security/document-access";
+import { resolveCourseScope, type CourseScope } from "@/lib/knowledge/security/course-scope";
 import { LessonRepository } from "@/lib/study/repositories/lesson.repository";
 import { WeaknessAnalysisService } from "@/lib/study/services/weakness-analysis.service";
 import { contests, positions } from "@/db/schema/contest";
@@ -23,15 +25,27 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [summary, bySubject, evolution, profile, docs, lessons, weakness] = await Promise.all([
+  const [summary, bySubject, evolution, profile, lessons, weakness] = await Promise.all([
     getDashboardSummary(session.user.id),
     getPerformanceBySubject(session.user.id),
     getEvolution(session.user.id, 30),
     getProfile(session.user.id),
-    DocumentRepository.listByUser(session.user.id, 10),
     LessonRepository.listForStudent(session.user.id, 8),
     WeaknessAnalysisService.analyze(session.user.id, { minAttempts: 1, maxAccuracy: 0.7 }),
   ]);
+
+  // Apostilas visiveis no dashboard: as proprias + as compartilhadas com o
+  // cargo ou o edital vigente do aluno. Mesmo filtro usado pela busca e pela
+  // tela de apostilas, resolvido a partir do perfil autenticado.
+  const courseScope = await resolveCourseScope(profile).catch(
+      (): CourseScope => ({})
+    );
+  const docs = await DocumentRepository.listAccessible(
+    accessScopeFromProfile(session.user.id, profile, {
+      editalId: courseScope.editalId ?? null,
+    }),
+    10
+  );
 
   // Concurso/cargo do aluno (quando configurado no perfil)
   const [contestRow] = profile?.contest_id

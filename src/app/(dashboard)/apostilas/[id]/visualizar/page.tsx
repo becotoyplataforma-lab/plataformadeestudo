@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { ApostilaTransformService } from "@/lib/knowledge/services/apostila-transform.service";
+import { resolveAccessScope } from "@/lib/knowledge/security/document-access";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,13 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const doc = await DocumentRepository.findById(id).catch(() => null);
+  const session = await auth();
+  const doc = session?.user?.id
+    ? await DocumentRepository.findByIdAccessible(
+        id,
+        await resolveAccessScope(session.user.id, session.user.email)
+      ).catch(() => null)
+    : null;
   return {
     title: doc ? `${doc.title} — Versão em Fases` : "Apostila em Fases",
     robots: { index: false, follow: false },
@@ -33,8 +40,12 @@ export default async function ApostilaVisualizarPage({
   if (!session?.user?.id) redirect("/login");
 
   const { id } = await params;
-  const doc = await DocumentRepository.findById(id);
-  if (!doc || doc.userId !== session.user.id) notFound();
+  const accessScope = await resolveAccessScope(
+    session.user.id,
+    session.user.email
+  );
+  const doc = await DocumentRepository.findByIdAccessible(id, accessScope);
+  if (!doc) notFound();
 
   const html = await ApostilaTransformService.downloadTransformed(id);
 

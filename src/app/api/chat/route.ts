@@ -18,7 +18,14 @@ import {
 import { getProfile } from "@/lib/db/repositories/perfil";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { DocumentChunkRepository } from "@/lib/knowledge/repositories/chunk.repository";
-import { isDocInUserScope } from "@/lib/knowledge/security/course-scope";
+import {
+  resolveCourseScope,
+  type CourseScope,
+} from "@/lib/knowledge/security/course-scope";
+import {
+  accessScopeFromProfile,
+  canAccessDocument,
+} from "@/lib/knowledge/security/document-access";
 import type { AIModel, ChatMessage } from "@/lib/ai/types";
 
 // TODO: migrar rate limiter para Redis/Upstash quando escalar para múltiplas réplicas
@@ -105,7 +112,13 @@ export async function POST(req: Request) {
   let contextoRag = "";
   if (document_id) {
     const doc = await DocumentRepository.findById(document_id).catch(() => null);
-    if (doc && doc.userId === userId && (await isDocInUserScope(doc, profile))) {
+    const courseScope = await resolveCourseScope(profile).catch(
+      (): CourseScope => ({})
+    );
+    const accessScope = accessScopeFromProfile(userId, profile, {
+      editalId: courseScope.editalId ?? null,
+    });
+    if (doc && canAccessDocument(doc, accessScope)) {
       const chunks = await DocumentChunkRepository.listByDocument(document_id).catch(() => []);
       if (chunks.length > 0) {
         contextoRag = `Conteúdo da apostila "${doc.title}":\n${chunks

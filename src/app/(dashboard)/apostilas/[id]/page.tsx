@@ -8,6 +8,8 @@ import { DocumentRepository } from "@/lib/knowledge/repositories/document.reposi
 import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
 import { questions } from "@/db/schema/study";
 import { GerarQuestoes } from "@/components/apostilas/gerar-questoes";
+import { getAdminSession } from "@/lib/administration/session";
+import { resolveAccessScope } from "@/lib/knowledge/security/document-access";
 
 // Metadata dinâmica: título da apostila no <title> (área autenticada, noindex).
 export async function generateMetadata({
@@ -16,7 +18,15 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const doc = await DocumentRepository.findById(id).catch(() => null);
+  const session = await auth();
+  // O titulo so aparece para quem pode ler: sem sessao ou sem acesso, o
+  // metadata fica generico e nao confirma a existencia do id.
+  const doc = session?.user?.id
+    ? await DocumentRepository.findByIdAccessible(
+        id,
+        await resolveAccessScope(session.user.id, session.user.email)
+      ).catch(() => null)
+    : null;
   return {
     title: doc ? doc.title : "Apostila",
     robots: { index: false, follow: false },
@@ -32,8 +42,19 @@ export default async function ApostilaDetailPage({
   if (!session?.user?.id) redirect("/login");
 
   const { id } = await params;
-  const doc = await DocumentRepository.findById(id);
-  if (!doc || doc.userId !== session.user.id) notFound();
+  const accessScope = await resolveAccessScope(
+    session.user.id,
+    session.user.email
+  );
+  const admin = await getAdminSession().catch(() => null);
+  const doc = await DocumentRepository.findByIdAccessible(id, {
+    ...accessScope,
+    isStaff: Boolean(admin),
+  });
+  if (!doc) notFound();
+  // Gerar questoes escreve questoes a partir do material: acao de quem e dono
+  // (ou admin). O aluno le e pergunta ao Professor IA.
+  const canManage = doc.userId === session.user.id || Boolean(admin);
 
   const subjects = await DocumentSubjectRepository.listByDocument(id).catch(() => []);
   const relatedQuestions = await db
@@ -83,9 +104,17 @@ export default async function ApostilaDetailPage({
         >
           Resolver questões
         </Link>
+        {doc.storagePath ? (
+          <a
+            href={`/api/knowledge/documents/${doc.id}/download`}
+            className="rounded-xl bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 ring-1 ring-inset ring-white/10 hover:bg-white/10"
+          >
+            Baixar arquivo original
+          </a>
+        ) : null}
       </div>
 
-      <GerarQuestoes documentId={doc.id} />
+      {canManage ? <GerarQuestoes documentId={doc.id} /> : null}
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-sm font-medium text-slate-200">Matérias</p>

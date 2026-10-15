@@ -9,6 +9,8 @@ import { contests, positions } from "@/db/schema/contest";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { DocumentSubjectRepository } from "@/lib/knowledge/repositories/junction.repository";
 import { ApostilasList, type ApostilaListItem } from "@/components/apostilas/apostilas-list";
+import { accessScopeFromProfile } from "@/lib/knowledge/security/document-access";
+import { resolveCourseScope, type CourseScope } from "@/lib/knowledge/security/course-scope";
 
 export const metadata: Metadata = { title: "Apostilas" };
 
@@ -16,7 +18,17 @@ export default async function ApostilasPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const docs = await DocumentRepository.listByUser(session.user.id, 100);
+  // Perfil e escopo resolvidos uma unica vez: a mesma leitura alimenta a lista
+  // compartilhada e o badge de concurso/cargo mais abaixo.
+  const profile = await getProfile(session.user.id).catch(() => null);
+  const courseScope = await resolveCourseScope(profile).catch(
+      (): CourseScope => ({})
+    );
+  const accessScope = accessScopeFromProfile(session.user.id, profile, {
+    editalId: courseScope.editalId ?? null,
+  });
+  // Apostilas proprias + as compartilhadas com o cargo/edital do usuario.
+  const docs = await DocumentRepository.listAccessible(accessScope, 100);
   const links = await DocumentSubjectRepository.listSubjectsByDocuments(
     docs.map((d) => d.id)
   );
@@ -51,7 +63,7 @@ export default async function ApostilasPage() {
   }));
 
   // Concurso/cargo do aluno (mesma fonte do badge "Estudando para" do dashboard).
-  const profile = await getProfile(session.user.id);
+  // (perfil ja lido no topo da pagina)
   const [contestRow] = profile?.contest_id
     ? await db
         .select()

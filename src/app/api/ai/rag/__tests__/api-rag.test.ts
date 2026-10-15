@@ -29,6 +29,31 @@ vi.mock("@/lib/knowledge/security/course-scope", () => ({
   resolveCourseScope: (...args: unknown[]) => mockResolveCourseScope(...args),
 }));
 
+const mockCheckLimit = vi.fn();
+const mockRecord = vi.fn();
+const mockResolveUserLimits = vi.fn();
+const mockCanUseModel = vi.fn();
+
+// Quota e limites vêm de Billing/ai_usage. Sem mock, os testes de escopo dependeriam
+// de banco; aqui eles são fronteira explícita e controlada.
+vi.mock("@/lib/ai/services/usage.service", () => ({
+  UsageService: {
+    checkLimit: (...args: unknown[]) => mockCheckLimit(...args),
+    record: (...args: unknown[]) => mockRecord(...args),
+    estimateCost: () => 0,
+  },
+}));
+
+vi.mock("@/lib/billing/services/limits.resolver", () => ({
+  resolveUserLimits: (...args: unknown[]) => mockResolveUserLimits(...args),
+}));
+
+vi.mock("@/lib/billing/services/entitlement.service", () => ({
+  EntitlementService: {
+    canUseModel: (...args: unknown[]) => mockCanUseModel(...args),
+  },
+}));
+
 import { POST } from "@/app/api/ai/rag/route";
 
 function makeRequest(body: unknown): NextRequest {
@@ -44,6 +69,20 @@ const UUID = "00000000-0000-0000-0000-000000000001";
 describe("POST /api/ai/rag", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // A rota é desativada por padrão: estes casos exercitam o caminho habilitado (opt-in).
+    process.env.RAG_API_DISABLED = "false";
+    mockCheckLimit.mockResolvedValue({
+      canSend: true,
+      status: { messagesUsed: 1, tokensIn: 100, tokensOut: 20, totalTokens: 120 },
+    });
+    mockResolveUserLimits.mockResolvedValue({
+      maxMessages: 500,
+      maxTokens: 1_000_000,
+      maxQuestionsPerDay: 200,
+      maxDocuments: 20,
+      allowPro: true,
+    });
+    mockCanUseModel.mockResolvedValue(true);
     // Defaults: usuário sem curso → nenhum filtro inventado.
     mockGetProfile.mockResolvedValue(null);
     mockResolveCourseScope.mockResolvedValue({});

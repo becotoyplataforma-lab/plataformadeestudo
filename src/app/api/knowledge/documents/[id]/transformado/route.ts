@@ -9,6 +9,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { ApostilaTransformService } from "@/lib/knowledge/services/apostila-transform.service";
+import {
+  canAccessDocument,
+  resolveAccessScope,
+} from "@/lib/knowledge/security/document-access";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +28,11 @@ export async function GET(
 
     const { id } = await params;
     const doc = await DocumentRepository.findById(id);
-    if (!doc || doc.userId !== session.user.id) {
+    const accessScope = await resolveAccessScope(
+      session.user.id,
+      session.user.email
+    );
+    if (!doc || !canAccessDocument(doc, accessScope)) {
       return NextResponse.json({ error: "Documento não encontrado" }, { status: 404 });
     }
 

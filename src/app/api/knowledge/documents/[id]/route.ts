@@ -9,6 +9,10 @@ import { auth } from "@/lib/auth/auth";
 import { getAdminSession } from "@/lib/administration/session";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { mapDocumentToDto } from "@/lib/dto/knowledge.dto";
+import {
+  canAccessDocument,
+  resolveAccessScope,
+} from "@/lib/knowledge/security/document-access";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,7 +30,8 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
     }
 
     const admin = await getAdminSession().catch(() => null);
-    if (doc.userId !== session.user.id && !admin) {
+    const scope = await resolveAccessScope(session.user.id, session.user.email);
+    if (!canAccessDocument(doc, { ...scope, isStaff: Boolean(admin) })) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
 

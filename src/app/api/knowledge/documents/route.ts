@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { mapDocumentToDto } from "@/lib/dto/knowledge.dto";
+import { resolveAccessScope } from "@/lib/knowledge/security/document-access";
 
 export async function GET() {
   try {
@@ -15,8 +16,11 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const documents = await DocumentRepository.listByUser(session.user.id);
-    return NextResponse.json(documents.map(mapDocumentToDto));
+    // Mesma politica da busca: proprios + compartilhados com o escopo do
+    // usuario, com limite fixo.
+    const scope = await resolveAccessScope(session.user.id, session.user.email);
+    const rows = await DocumentRepository.listAccessible(scope, 100);
+    return NextResponse.json(rows.map(mapDocumentToDto));
   } catch (error) {
     console.error("[knowledge/documents] Erro:", error);
     return NextResponse.json(

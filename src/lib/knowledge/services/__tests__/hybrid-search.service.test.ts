@@ -315,3 +315,84 @@ describe("HybridSearchService — busca vetorial (pgvector)", () => {
     expect(mockEmbed).not.toHaveBeenCalled();
   });
 });
+
+describe("HybridSearchService - escopo de compartilhamento (piloto B1/B2)", () => {
+  it("documento compartilhado entra na busca pelo cargo do aluno", async () => {
+    mockDbSelect.mockReturnValueOnce(makeQuery([]));
+
+    await HybridSearchService.search({
+      query: "qualquer",
+      userId: "aluno-1",
+      filters: { positionId: "pos-A" },
+    });
+
+    const firstQuery = mockDbSelect.mock.results[0]?.value as { where?: unknown };
+    const whereSpy = (firstQuery?.where as unknown as { mock?: { calls: unknown[][] } })?.mock;
+    const sqlText = whereSpy?.calls?.[0]?.[0] ? renderSql(whereSpy.calls[0][0]) : "";
+
+    expect(sqlText).toContain(`"user_id"`);
+    expect(sqlText).toContain(`"position_id"`);
+    expect(sqlText.toLowerCase()).toContain(" or ");
+  });
+
+  it("edital vigente abre o compartilhamento por edital", async () => {
+    mockDbSelect.mockReturnValueOnce(makeQuery([]));
+
+    await HybridSearchService.search({
+      query: "qualquer",
+      userId: "aluno-1",
+      filters: { editalId: "edital-A" },
+    });
+
+    const firstQuery = mockDbSelect.mock.results[0]?.value as { where?: unknown };
+    const whereSpy = (firstQuery?.where as unknown as { mock?: { calls: unknown[][] } })?.mock;
+    const sqlText = whereSpy?.calls?.[0]?.[0] ? renderSql(whereSpy.calls[0][0]) : "";
+
+    expect(sqlText).toContain(`"edital_id"`);
+  });
+
+  it("usuario sem escopo resolvido so ve os proprios documentos", async () => {
+    mockDbSelect.mockReturnValueOnce(makeQuery([]));
+
+    await HybridSearchService.search({ query: "qualquer", userId: "aluno-1" });
+
+    const firstQuery = mockDbSelect.mock.results[0]?.value as { where?: unknown };
+    const whereSpy = (firstQuery?.where as unknown as { mock?: { calls: unknown[][] } })?.mock;
+    const sqlText = whereSpy?.calls?.[0]?.[0] ? renderSql(whereSpy.calls[0][0]) : "";
+
+    expect(sqlText).toContain(`"user_id"`);
+    expect(sqlText).not.toContain(`"position_id"`);
+    expect(sqlText).not.toContain(`"edital_id"`);
+  });
+
+  it("admin nao recebe filtro de posse na consulta de documentos", async () => {
+    mockDbSelect.mockReturnValueOnce(makeQuery([]));
+
+    await HybridSearchService.search({
+      query: "qualquer",
+      userId: "adm-1",
+      filters: { isStaff: true },
+    });
+
+    const firstQuery = mockDbSelect.mock.results[0]?.value as { where?: unknown };
+    const whereSpy = (firstQuery?.where as unknown as { mock?: { calls: unknown[][] } })?.mock;
+    const sqlText = whereSpy?.calls?.[0]?.[0] ? renderSql(whereSpy.calls[0][0]) : "";
+
+    expect(sqlText).not.toContain(`"user_id"`);
+    expect(sqlText).toContain(`"status"`);
+  });
+
+  it("documentIds fecha o conjunto ja autorizado sem abrir acesso novo", async () => {
+    mockDbSelect.mockReturnValueOnce(makeQuery([{ id: "doc-1", title: "Apostila" }]));
+
+    const out = await HybridSearchService.search({
+      query: "qualquer",
+      userId: "aluno-1",
+      filters: { documentIds: ["doc-2"] },
+    });
+
+    expect(out.results).toHaveLength(0);
+    // o conjunto filtrado ficou vazio antes de qualquer consulta de chunks
+    expect(mockDbSelect).toHaveBeenCalledTimes(1);
+  });
+});

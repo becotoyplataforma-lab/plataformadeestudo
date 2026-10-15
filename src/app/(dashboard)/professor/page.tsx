@@ -8,6 +8,8 @@ import { getProfile } from "@/lib/db/repositories/perfil";
 import { getAiUsage } from "@/lib/ai/limits";
 import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
+import { accessScopeFromProfile } from "@/lib/knowledge/security/document-access";
+import { resolveCourseScope, type CourseScope } from "@/lib/knowledge/security/course-scope";
 import { ChatClient } from "@/components/professor/chat-client";
 
 export const metadata: Metadata = {
@@ -19,7 +21,7 @@ export default async function ProfessorPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [sessions, profile, usage, subjects, docs] = await Promise.all([
+  const [sessions, profile, usage, subjects] = await Promise.all([
     listSessions(session.user.id),
     getProfile(session.user.id),
     resolveUserLimits(session.user.id).then((limits) =>
@@ -29,8 +31,19 @@ export default async function ProfessorPage() {
       .select({ id: knowledgeSubjects.id, name: knowledgeSubjects.name })
       .from(knowledgeSubjects)
       .orderBy(knowledgeSubjects.name),
-    DocumentRepository.listByUser(session.user.id, 50),
   ]);
+
+  // O seletor de contexto do Professor IA mostra o que o aluno pode ler:
+  // material proprio e material compartilhado com o cargo/edital dele.
+  const courseScope = await resolveCourseScope(profile).catch(
+    (): CourseScope => ({})
+  );
+  const docs = await DocumentRepository.listAccessible(
+    accessScopeFromProfile(session.user.id, profile, {
+      editalId: courseScope.editalId ?? null,
+    }),
+    50
+  );
 
   return (
     <ChatClient

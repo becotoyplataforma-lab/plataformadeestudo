@@ -15,6 +15,10 @@ import {
   embeddings,
 } from "@/db/schema/knowledge";
 import { embeddingClient } from "../embedding/client";
+import {
+  documentAccessCondition,
+  type DocumentAccessScope,
+} from "../security/document-access";
 
 // ============================================================
 // Tipos
@@ -28,17 +32,27 @@ export interface SearchFilters {
   dateFrom?: string;
   dateTo?: string;
   /**
-   * Isolamento por curso/cargo: quando presente, restringe a busca a documentos
-   * vinculados a este cargo (documents.position_id). Resolvido no backend a
+   * Escopo de compartilhamento: documentos com este cargo (documents.position_id)
+   * ficam visiveis para o usuario mesmo sem ser o dono. Resolvido no backend a
    * partir do perfil autenticado — nunca aceito do cliente como autoridade.
    */
   positionId?: string;
   /**
-   * Isolamento por edital: quando presente, restringe a busca a documentos
-   * vinculados a este edital (documents.edital_id). Usado como fallback quando
+   * Escopo de compartilhamento por edital: documentos vinculados a este edital
+   * (documents.edital_id) ficam visiveis para o usuario. Fallback usado quando
    * o aluno não tem cargo selecionado (edital vigente do concurso).
    */
   editalId?: string;
+  /**
+   * Restringe a busca a estes ids de documento. Fecha o conjunto ja autorizado
+   * pelo escopo e nunca abre acesso novo.
+   */
+  documentIds?: string[];
+  /**
+   * Admin resolvido no backend pela rota, a partir da sessao administrativa.
+   * Nunca vem do navegador.
+   */
+  isStaff?: boolean;
 }
 
 export interface SearchInput {
@@ -112,31 +126,36 @@ export const HybridSearchService = {
       return { results: [], totalHits: 0, queryTimeMs: 0, vectorSearchEnabled: false };
     }
 
-    // 1. Obter IDs de documentos do usuário (status prontos para busca textual:
-    //    `chunked` quando não há embeddings configurados, `indexed` quando há)
-    const userDocs = await db
+    // 1. Documentos visiveis: os proprios MAIS os compartilhados com o cargo
+    // ou edital resolvido no backend a partir do perfil autenticado. Admin ve
+    // tudo. Quem nao tem escopo resolvido fica so com os proprios documentos,
+    // entao sharing nunca e padrao implicito. Status aceitos: chunked (busca
+    // textual sem embeddings) e indexed.
+    const accessScope: DocumentAccessScope = {
+      userId,
+      positionId: filters.positionId ?? null,
+      editalId: filters.editalId ?? null,
+      isStaff: filters.isStaff === true,
+    };
+
+    const visibleDocs = await db
       .select({ id: documents.id, title: documents.title })
       .from(documents)
       .where(
         and(
-          eq(documents.userId, userId),
           isNull(documents.deletedAt),
           inArray(documents.status, [...SEARCHABLE_DOCUMENT_STATUSES]),
-          // Isolamento por curso/cargo/edital (resolvido no backend via perfil).
-          ...(filters.positionId
-            ? [eq(documents.positionId, filters.positionId)]
-            : []),
-          ...(filters.editalId ? [eq(documents.editalId, filters.editalId)] : [])
+          documentAccessCondition(accessScope)
         )
       );
 
-    const userDocIds = userDocs.map((d) => d.id);
-    if (userDocIds.length === 0) {
+    const visibleDocIds = visibleDocs.map((d) => d.id);
+    if (visibleDocIds.length === 0) {
       return { results: [], totalHits: 0, queryTimeMs: Date.now() - startedAt, vectorSearchEnabled: false };
     }
 
     // Aplicar filtros
-    let filteredDocIds = userDocIds;
+    let filteredDocIds = visibleDocIds;
 
     if (filters.subjectId) {
       const subjectDocs = await db
@@ -149,6 +168,11 @@ export const HybridSearchService = {
 
     if (filters.documentId) {
       filteredDocIds = filteredDocIds.filter((id) => id === filters.documentId);
+    }
+
+    if (filters.documentIds) {
+      const wanted = new Set(filters.documentIds);
+      filteredDocIds = filteredDocIds.filter((id) => wanted.has(id));
     }
 
     if (filteredDocIds.length === 0) {
@@ -308,7 +332,7 @@ export const HybridSearchService = {
         .where(eq(documentChunks.id, c.chunkId))
         .limit(1);
 
-      const doc = userDocs.find((d) => d.id === c.documentId);
+      const doc = visibleDocs.find((d) => d.id === c.documentId);
 
       // Buscar matéria associada
       const [subj] = await db
