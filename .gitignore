@@ -99,3 +99,7 @@ __pycache__/
 # data no cabecalho. A documentacao definitiva e versionada vive em docs/.
 /RELATORIO-*.md
 /CHECKLIST-LANCAMENTO-MVP.md
+
+# Saida do CLI de ingestao de apostilas (scripts/ingest-apostilas.ts): copias por
+# lote, manifestos e hash. Regeneravel e especifico da maquina, nunca se commita.
+.apostilas-work/
