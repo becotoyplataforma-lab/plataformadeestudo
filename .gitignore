@@ -35,6 +35,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+# exceto o template de exemplo (sem segredos reais)
+!.env.example
 
 # infra — produção (nunca commitar segredos/backups/certificados)
 /infra/.env.production
@@ -74,9 +76,25 @@ supabase/.temp
 
 print/
 
+# Log local do dev server
+/dev.log
+.apostilas-work/
 
-# Artefatos locais do extrator da Aula 14 (docs/30): o comentario de material de
-# terceiro nunca e publicado, importado nem versionado.
+# binarios de material didatico: nunca entram no repositorio
+/*.pdf
+/*.docx
+/*.epub
+
+# logs de execucao de qualquer ferramenta
+*.log
+
+# saida da medicao calibrada de catalogo (docs/27): dump opcional, nao versionar
+/probe.json
+/*.probe.json
+/database/knowledge/tmp/
+
+# Comentário de material de terceiro: referência local de revisão. Nunca
+# publicado, nunca importado, nunca versionado (agents/pdf_question_extractor).
 comentarios_*_LOCAL.json
 .aula14_linhas_limpas.json
 
@@ -93,6 +111,7 @@ __pycache__/
 /_*.txt
 /_*.py
 /_*.mjs
+/_*.ts
 /_*.log
 
 # Relatorios e checklists de rodada: retrato pontual de uma maquina, com SHA e
@@ -100,6 +119,8 @@ __pycache__/
 /RELATORIO-*.md
 /CHECKLIST-LANCAMENTO-MVP.md
 
-# Saida do CLI de ingestao de apostilas (scripts/ingest-apostilas.ts): copias por
-# lote, manifestos e hash. Regeneravel e especifico da maquina, nunca se commita.
-.apostilas-work/
+# Worktrees de validacao criados dentro do proprio repositorio (.wt-b1 ate .wt-b4).
+# Sem esta regra, um "git add ." commita uma copia inteira da arvore (931 arquivos)
+# como pasta comum — foi o risco que os blocos B1-B4 correram a cada validacao.
+/.wt-*/
+
