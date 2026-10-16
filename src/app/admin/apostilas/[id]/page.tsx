@@ -76,6 +76,14 @@ export default async function AdminApostilaDetailPage({
         >
           Revisar questões da apostila
         </Link>
+        {doc.storagePath ? (
+          <a
+            href={`/api/knowledge/documents/${doc.id}/download`}
+            className="rounded-xl bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 ring-1 ring-inset ring-white/10 hover:bg-white/10"
+          >
+            Baixar arquivo original
+          </a>
+        ) : null}
       </div>
     </div>
   );

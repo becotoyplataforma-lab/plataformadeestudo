@@ -2,6 +2,7 @@ import { db } from "@/lib/db/drizzle";
 import { aiUsage } from "@/db/schema/ai";
 import { sql } from "drizzle-orm";
 import { KimiService } from "@/lib/ai/kimi";
+import { ModelRouterClient } from "@/lib/ai/modelrouter";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -10,14 +11,25 @@ export default async function AdminIaPage() {
   const deepseek = Boolean(process.env.DEEPSEEK_API_KEY);
   const embedding = Boolean(process.env.EMBEDDING_API_URL);
   const kimiConfigured = KimiService.isConfigured();
+  const modelRouterConfigured = ModelRouterClient.isConfigured();
   let kimiModels: string[] = [];
   let kimiError: string | null = null;
+  let modelRouterModels: string[] = [];
+  let modelRouterError: string | null = null;
 
   if (kimiConfigured) {
     try {
       kimiModels = await KimiService.listModels();
     } catch {
       kimiError = "Não foi possível consultar os modelos Kimi.";
+    }
+  }
+
+  if (modelRouterConfigured) {
+    try {
+      modelRouterModels = await ModelRouterClient.listModels();
+    } catch {
+      modelRouterError = "Não foi possível consultar os modelos ModelRouter.";
     }
   }
 
@@ -32,6 +44,7 @@ export default async function AdminIaPage() {
   const items = [
     { label: "DeepSeek (geração de texto)", ok: deepseek, hint: "DEEPSEEK_API_KEY" },
     { label: "Kimi / Moonshot", ok: kimiConfigured && !kimiError, hint: "KIMI_API_KEY" },
+    { label: "ModelRouter (gateway)", ok: modelRouterConfigured && !modelRouterError, hint: "MODELROUTER_API_KEY" },
     { label: "Embeddings (busca vetorial)", ok: embedding, hint: "EMBEDDING_API_URL" },
   ];
 
@@ -78,6 +91,28 @@ export default async function AdminIaPage() {
         ) : (
           <p className="mt-3 text-sm text-slate-500">
             {kimiConfigured ? "A API não retornou modelos." : "Configure KIMI_API_KEY para carregar os modelos."}
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-slate-200">Modelos ModelRouter disponíveis</p>
+          <span className="text-xs text-slate-500">{env.MODELROUTER_BASE_URL ?? "https://modelrouter.id/v1"}</span>
+        </div>
+        {modelRouterError ? (
+          <p className="mt-3 text-sm text-rose-300">{modelRouterError}</p>
+        ) : modelRouterModels.length > 0 ? (
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {modelRouterModels.map((model) => (
+              <li key={model} className="rounded-lg border border-white/10 px-3 py-2 font-mono text-xs text-slate-300">
+                {model}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-slate-500">
+            {modelRouterConfigured ? "A API não retornou modelos." : "Configure MODELROUTER_API_KEY para carregar os modelos."}
           </p>
         )}
       </div>
