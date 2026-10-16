@@ -67,30 +67,9 @@ export async function POST(req: Request) {
 
     const supabase = createAdminClient();
 
-    // Verifica se já existe — tratando erro da consulta para não lançar 500
-    // (listUsers pode retornar data nulo; antes, existing?.users.some() estourava TypeError).
-    const { data: existing, error: listError } =
-      await supabase.auth.admin.listUsers();
-
-    if (listError || !existing) {
-      console.error(
-        "[register] Falha ao consultar usuários existentes:",
-        listError?.message
-      );
-      return apiError(
-        503,
-        "Serviço temporariamente indisponível. Tente novamente em instantes."
-      );
-    }
-
-    const already = existing.users.some(
-      (u: { email?: string | null }) =>
-        u.email?.toLowerCase() === email.toLowerCase()
-    );
-    if (already) {
-      return apiError(409, "Este e-mail já está cadastrado.");
-    }
-
+    // O Supabase e a unica fonte autoritativa de unicidade de e-mail.
+    // listUsers() nao serve como pre-checagem: pagina (cerca de 50 usuarios), deixa
+    // duplicados passarem e abre janela de corrida entre consultar e criar.
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -99,7 +78,30 @@ export async function POST(req: Request) {
     });
 
     if (error) {
-      return apiError(400, error.message);
+      const providerStatus = (error as { status?: number }).status ?? 0;
+      const providerMessage = error.message ?? "";
+      const isDuplicate =
+        providerStatus === 422 ||
+        /already exists|already registered|user already/i.test(providerMessage);
+
+      if (isDuplicate) {
+        return apiError(409, "Este e-mail já está cadastrado.");
+      }
+
+      // A mensagem crua do provedor fica no log do servidor, nunca no cliente.
+      console.error("[register] provedor de auth recusou o cadastro:", {
+        status: providerStatus,
+        code: (error as unknown as { code?: string }).code,
+      });
+      return apiError(
+        providerStatus >= 400 && providerStatus < 500 ? 400 : 502,
+        "Não foi possível concluir o cadastro. Tente novamente."
+      );
+    }
+
+    if (!data?.user) {
+      console.error("[register] provedor nao retornou o usuario criado.");
+      return apiError(502, "Não foi possível concluir o cadastro. Tente novamente.");
     }
 
     return apiOk(

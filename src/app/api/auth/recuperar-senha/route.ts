@@ -1,6 +1,8 @@
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 import { apiError, apiOk } from "@/lib/api/helpers";
+import { requestPasswordRecovery } from "@/lib/auth/password-recovery";
+import { publicEnv } from "@/lib/env";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { getClientIP } from "@/lib/security/client-ip";
 
@@ -14,8 +16,18 @@ const MAX_PER_IP = 5;
 
 /**
  * POST /api/auth/recuperar-senha
- * Envia e-mail de redefinição de senha via Supabase Auth.
- * Rate limit por e-mail e por IP (anti brute-force / abuso de e-mail).
+ *
+ * Pede ao Supabase Auth o envio oficial do e-mail de redefinição
+ * (resetPasswordForEmail). Antes desta correção a rota chamava
+ * admin.generateLink(), que apenas constrói o link: nenhum e-mail era enviado e a
+ * interface prometia "enviamos um link". Agora:
+ *
+ * - o link aponta para /redefinir-senha, onde a troca é concluída;
+ * - enquanto o transporte não estiver confirmado pelo ambiente
+ *   (PASSWORD_RECOVERY_ENABLED=true), a rota responde 503 em vez de prometer;
+ * - e-mail existente e inexistente produzem exatamente a mesma resposta, porque o
+ *   GoTrue não distingue os dois para clientes anônimos;
+ * - nenhuma mensagem crua do provedor, link ou token chega ao cliente nem ao log.
  */
 export async function POST(req: Request) {
   try {
@@ -42,15 +54,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = createAdminClient();
-    const { error } = await supabase.auth.admin.generateLink({
-      type: "recovery",
+    const result = await requestPasswordRecovery({
       email,
+      createClient: () =>
+        createClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        }),
     });
 
-    if (error) {
-      // Não revela se o e-mail existe — resposta genérica
-      console.warn("[recuperar-senha]", error.message);
+    if (result.status === "unavailable") {
+      return apiError(
+        503,
+        PASSWORD_RECOVERY_MESSAGE
+      );
     }
 
     return apiOk({ ok: true });
@@ -58,3 +74,7 @@ export async function POST(req: Request) {
     return apiError(500, "Erro interno.");
   }
 }
+
+/** Mensagem única para indisponibilidade: não revela cadastro nem configuração. */
+const PASSWORD_RECOVERY_MESSAGE =
+  "A recuperação de senha por e-mail ainda não está ativa neste ambiente. Solicite a redefinição à administração.";

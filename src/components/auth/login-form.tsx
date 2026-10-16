@@ -79,7 +79,7 @@ export function LoginForm({ callbackUrl = "/dashboard" }: { callbackUrl?: string
             />
           </svg>
         )}
-        Entrar com Google
+        Continuar com Google
       </Button>
 
       <div className="flex items-center gap-3">

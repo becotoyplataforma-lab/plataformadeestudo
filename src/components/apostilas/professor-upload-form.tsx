@@ -6,6 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+interface McpProviderOption {
+  id: string;
+  label: string;
+  version: string;
+  description: string;
+  capabilities: string[];
+  isDefault: boolean;
+}
+
+interface McpProvidersPayload {
+  defaultProviderId?: string;
+  providers?: McpProviderOption[];
+}
+
 interface Subject {
   id: string;
   name: string;
@@ -21,6 +35,13 @@ export function ProfessorUploadForm() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [subjectId, setSubjectId] = useState("");
+  const [mcpProviders, setMcpProviders] = useState<McpProviderOption[]>([]);
+  const [mcpProviderId, setMcpProviderId] = useState("");
+  const [defaultMcpId, setDefaultMcpId] = useState("");
+  const selectedMcp = mcpProviders.find(function (provider) {
+    return provider.id === (mcpProviderId || defaultMcpId);
+  });
+
   const [transformar, setTransformar] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -34,6 +55,18 @@ export function ProfessorUploadForm() {
       .catch(() => setSubjects([]));
   }, []);
 
+  // Busca os provedores MCP disponiveis. Se a lista falhar, o upload segue com o
+  // comportamento padrao do servidor: a tela nunca bloqueia o envio.
+  useEffect(() => {
+    fetch("/api/knowledge/mcp-providers")
+      .then(function (response) { return response.json(); })
+      .then(function (data: McpProvidersPayload) {
+        setMcpProviders(Array.isArray(data?.providers) ? data.providers : []);
+        setDefaultMcpId(typeof data?.defaultProviderId === "string" ? data.defaultProviderId : "");
+      })
+      .catch(function () { setMcpProviders([]); });
+  }, []);
+
   const onSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -45,6 +78,7 @@ export function ProfessorUploadForm() {
         const fd = new FormData();
         fd.append("file", file);
         if (subjectId) fd.append("subject_id", subjectId);
+        if (mcpProviderId) fd.append("mcp_provider_id", mcpProviderId);
         fd.append("transformar", transformar ? "true" : "false");
         const res = await fetch("/api/knowledge/upload", { method: "POST", body: fd });
         const data = await res.json();
@@ -65,7 +99,7 @@ export function ProfessorUploadForm() {
         setBusy(false);
       }
     },
-    [file, subjectId, transformar, router]
+    [file, subjectId, transformar, mcpProviderId, router]
   );
 
   return (
@@ -95,6 +129,28 @@ export function ProfessorUploadForm() {
               </option>
             ))}
           </select>
+          <select
+            value={mcpProviderId}
+            onChange={(e) => setMcpProviderId(e.target.value)}
+            className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-200"
+          >
+            <option value="">MCP padrao do sistema</option>
+            {mcpProviders.map(function (provider) {
+              return (
+                <option key={provider.id} value={provider.id}
+                  disabled={!provider.capabilities.includes("ingest")}>
+                  {provider.label} ({provider.version})
+                </option>
+              );
+            })}
+          </select>
+          {selectedMcp ? (
+            <p className="text-xs text-slate-500">
+              Capacidades: {selectedMcp.capabilities.join(", ")}
+              {selectedMcp.isDefault ? " - padrao do sistema" : null}
+            </p>
+          ) : null}
+
           <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-300">
             <input
               type="checkbox"

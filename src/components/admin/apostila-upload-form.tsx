@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScopeSelect } from "@/components/admin/scope-select";
+
+interface McpOption {
+  id: string;
+  label: string;
+}
+
+interface McpPayload {
+  providers?: McpOption[];
+}
 
 interface Subject {
   id: string;
@@ -20,8 +30,17 @@ export function ApostilaUploadForm() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mcpProviders, setMcpProviders] = useState<McpOption[]>([]);
+  const [mcpProviderId, setMcpProviderId] = useState("");
+  const [positionId, setPositionId] = useState("");
 
   useEffect(() => {
+    fetch("/api/knowledge/mcp-providers")
+      .then((r) => r.json())
+      .then((data: McpPayload) =>
+        setMcpProviders(Array.isArray(data?.providers) ? data.providers : []),
+      )
+      .catch(() => setMcpProviders([]));
     fetch("/api/knowledge/subjects")
       .then((r) => r.json())
       .then((data) => setSubjects(Array.isArray(data) ? data : []))
@@ -40,6 +59,9 @@ export function ApostilaUploadForm() {
         fd.append("file", file);
         if (subjectId) fd.append("subject_id", subjectId);
         fd.append("transformar", transformar ? "true" : "false");
+        if (mcpProviderId) fd.append("mcp_provider_id", mcpProviderId);
+        // Escopo de compartilhamento: a rota valida o cargo e herda o edital.
+        if (positionId) fd.append("position_id", positionId);
         const res = await fetch("/api/knowledge/upload", { method: "POST", body: fd });
         const data = await res.json();
         if (!res.ok) {
@@ -59,7 +81,7 @@ export function ApostilaUploadForm() {
         setBusy(false);
       }
     },
-    [file, subjectId, transformar, router]
+    [file, subjectId, transformar, mcpProviderId, positionId, router]
   );
 
   return (
@@ -87,6 +109,23 @@ export function ApostilaUploadForm() {
               </option>
             ))}
           </select>
+          <select
+            value={mcpProviderId}
+            onChange={(ev) => setMcpProviderId(ev.target.value)}
+            aria-label="MCP de processamento"
+            className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-200"
+          >
+            <option value="">MCP de processamento: padrao do sistema</option>
+            {mcpProviders.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.label}
+              </option>
+            ))}
+          </select>
+          <ScopeSelect
+            positionId={positionId}
+            onPositionChange={setPositionId}
+          />
           <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-300">
             <input
               type="checkbox"

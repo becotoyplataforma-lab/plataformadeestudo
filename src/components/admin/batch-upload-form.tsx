@@ -5,11 +5,24 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScopeSelect } from "@/components/admin/scope-select";
 
 interface Subject {
   id: string;
   name: string;
 }
+interface McpOption {
+  id: string;
+  label: string;
+  capabilities: string[];
+  isDefault: boolean;
+}
+
+interface McpPayload {
+  defaultProviderId?: string;
+  providers?: McpOption[];
+}
+
 interface FileResult {
   fileName: string;
   documentId?: string;
@@ -26,6 +39,18 @@ export function BatchUploadForm() {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<FileResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mcpProviders, setMcpProviders] = useState<McpOption[]>([]);
+  const [mcpProviderId, setMcpProviderId] = useState("");
+  const [positionId, setPositionId] = useState("");
+
+  useEffect(() => {
+    fetch("/api/knowledge/mcp-providers")
+      .then((r) => r.json())
+      .then((data: McpPayload) =>
+        setMcpProviders(Array.isArray(data?.providers) ? data.providers : []),
+      )
+      .catch(() => setMcpProviders([]));
+  }, []);
 
   useEffect(() => {
     fetch("/api/admin/subjects")
@@ -43,6 +68,9 @@ export function BatchUploadForm() {
     try {
       const fd = new FormData();
       fd.append("subject_id", subjectId);
+      if (mcpProviderId) fd.append("mcp_provider_id", mcpProviderId);
+      // Escopo de compartilhamento: a rota valida o cargo e herda o edital.
+      if (positionId) fd.append("position_id", positionId);
       files.forEach((f) => fd.append("files", f));
       const res = await fetch("/api/admin/apostilas/batch", { method: "POST", body: fd });
       const data = await res.json();
@@ -52,6 +80,7 @@ export function BatchUploadForm() {
       }
       setResults(Array.isArray(data?.results) ? data.results : []);
       setFiles([]);
+      setPositionId("");
       router.refresh();
     } catch {
       setError("Erro de rede ao enviar o lote.");
@@ -89,6 +118,23 @@ export function BatchUploadForm() {
               </option>
             ))}
           </select>
+          <select
+            value={mcpProviderId}
+            onChange={(e) => setMcpProviderId(e.target.value)}
+            aria-label="MCP de processamento"
+            className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-200"
+          >
+            <option value="">MCP de processamento: padrao do sistema</option>
+            {mcpProviders.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.label} - {provider.id}
+              </option>
+            ))}
+          </select>
+          <ScopeSelect
+            positionId={positionId}
+            onPositionChange={setPositionId}
+          />
           <Button type="submit" disabled={busy || files.length === 0 || !subjectId}>
             {busy
               ? "Enviando e processando..."
