@@ -14,10 +14,38 @@ vi.mock("@/lib/payments/mercadopago", () => ({
 
 const mockFindByProviderId = vi.fn();
 const mockCreatePayment = vi.fn();
+const mockClaimPayment = vi.fn();
+const mockAttachSubscription = vi.fn();
+
+/**
+ * Trava de esqueleto de mock (FASE C).
+ *
+ * Em producao PaymentRepository.claim() devolve "rows[0] ?? null": nunca
+ * undefined. O servico, porem, le qualquer valor falsy como "perdi a corrida"
+ * e responde duplicate=true. Um claim() NAO SEMEADO no teste nao falhava como
+ * erro de mock -- virava decisao de negocio legitima, e a entrega era registrada
+ * como duplicada sem nenhum banco ter decidido isso. Foi a regressao da FASE B
+ * (6 testes vermelhos por motivo alheio ao contrato). O wrapper abaixo recusa o
+ * silencio: sem implementacao ele explode apontando o mock, em vez de deixar
+ * undefined virar duplicate=true.
+ */
+function claimWithSeedGuard(...args: unknown[]) {
+  if (!mockClaimPayment.getMockImplementation()) {
+    throw new Error(
+      "MOCK_CLAIM_NOT_SEEDED: PaymentRepository.claim sem implementacao no teste - " +
+        'semeie mockClaimPayment.mockResolvedValue({ id: "pay-new" }) para reivindicacao ' +
+        'vitoriosa ou mockResolvedValue(null) para perda de corrida'
+    );
+  }
+  return mockClaimPayment(...args);
+}
+
 vi.mock("../../repositories/payment.repository", () => ({
   PaymentRepository: {
     findByProviderId: (...args: unknown[]) => mockFindByProviderId(...args),
     create: (...args: unknown[]) => mockCreatePayment(...args),
+    claim: (...args: unknown[]) => claimWithSeedGuard(...args),
+    attachSubscription: (...args: unknown[]) => mockAttachSubscription(...args),
     findByUser: vi.fn(),
   },
 }));
@@ -140,6 +168,8 @@ describe("mapMpStatus", () => {
     expect(mapMpStatus("rejected")).toBe("rejected");
     expect(mapMpStatus("cancelled")).toBe("cancelled");
     expect(mapMpStatus("refunded")).toBe("refunded");
+    expect(mapMpStatus("charged_back")).toBe("refunded");
+    expect(mapMpStatus("in_mediation")).toBe("pending");
     expect(mapMpStatus("desconhecido")).toBe("pending");
   });
 });
@@ -168,6 +198,26 @@ describe("WebhookService.handleNotification", () => {
     mockFindActiveByUser.mockResolvedValue(null);
     mockFindByPreapprovalId.mockResolvedValue(null);
     mockUpdateSub.mockResolvedValue({ ...ACTIVE_SUB, endsAt: new Date() });
+    // claim() e a trava de idempotencia do webhook. Por default ele CONSEGUE
+    // reivindicar o evento e devolve a linha nova do ledger (id "pay-new").
+    // Sem este default o mock devolvia undefined, o !claimed derrubava o fluxo
+    // e a ativacao/renovacao nunca era exercitada de verdade (FASE B4).
+    mockClaimPayment.mockResolvedValue({ id: "pay-new" });
+  });
+
+  it("trava de esqueleto: claim sem seed explode, nao vira duplicate", async () => {
+    // A regressao da FASE B: sem seed, claim() devolvia undefined, o !claimed do
+    // servico respondia duplicate=true e a suite provava o contrario do que
+    // pretendia. Aqui a falha e explicita e aponta o mock (claimWithSeedGuard).
+    mockClaimPayment.mockReset();
+
+    await expect(
+      WebhookService.handleNotification({ data: { id: 123 } })
+    ).rejects.toThrow(/MOCK_CLAIM_NOT_SEEDED/);
+
+    expect(mockClaimPayment).not.toHaveBeenCalled();
+    expect(mockCreateSub).not.toHaveBeenCalled();
+    expect(mockCancelActive).not.toHaveBeenCalled();
   });
 
   it("pagamento approved ativa a assinatura e persiste o evento", async () => {
@@ -182,7 +232,7 @@ describe("WebhookService.handleNotification", () => {
     expect(mockCreateSub).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "u1", planId: "p-pro", status: "active" })
     );
-    expect(mockCreatePayment).toHaveBeenCalledWith(
+    expect(mockClaimPayment).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "u1",
         provider: "mercadopago",
@@ -190,9 +240,10 @@ describe("WebhookService.handleNotification", () => {
         amountCents: 1990,
         currency: "BRL",
         status: "approved",
-        subscriptionId: "s1",
+        subscriptionId: null,
       })
     );
+    expect(mockAttachSubscription).toHaveBeenCalledWith("pay-new", "s1");
   });
 
   it("idempotência: pagamento já processado não reaplica", async () => {
@@ -203,7 +254,7 @@ describe("WebhookService.handleNotification", () => {
 
     expect(result).toMatchObject({ duplicate: true, processed: false });
     expect(mockCreateSub).not.toHaveBeenCalled();
-    expect(mockCreatePayment).not.toHaveBeenCalled();
+    expect(mockClaimPayment).not.toHaveBeenCalled();
   });
 
   it("notificação sem payment id é ignorada", async () => {
@@ -239,9 +290,11 @@ describe("WebhookService.handleNotification", () => {
     expect(result.status).toBe("pending");
     expect(result.processed).toBe(true);
     expect(mockCreateSub).not.toHaveBeenCalled();
-    expect(mockCreatePayment).toHaveBeenCalledWith(
+    expect(mockClaimPayment).toHaveBeenCalledWith(
       expect.objectContaining({ status: "pending", subscriptionId: null })
     );
+    // Sem assinatura aprovada, nada e vinculado ao ledger.
+    expect(mockAttachSubscription).not.toHaveBeenCalled();
   });
 
   it("lança INVALID_SIGNATURE quando a assinatura do webhook é inválida", async () => {
@@ -416,9 +469,10 @@ describe("WebhookService.handleNotification", () => {
     // Renovação: não cria nova assinatura, apenas atualiza a existente.
     expect(mockCreateSub).not.toHaveBeenCalled();
     expect(mockUpdateSub).toHaveBeenCalled();
-    expect(mockCreatePayment).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "u1", subscriptionId: "s1", status: "approved" })
+    expect(mockClaimPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1", subscriptionId: null, status: "approved" })
     );
+    expect(mockAttachSubscription).toHaveBeenCalledWith("pay-new", "s1");
   });
 
   it("pagamento recorrente sem assinatura ativa ATIVA (1º ciclo)", async () => {
@@ -429,5 +483,161 @@ describe("WebhookService.handleNotification", () => {
     });
     expect(result).toMatchObject({ processed: true, status: "approved" });
     expect(mockCreateSub).toHaveBeenCalled();
+  });
+
+  it("corrida de entrega duplicada: claim perdido não ativa, renova nem vincula", async () => {
+    mockFindByProviderId.mockReset();
+    mockClaimPayment.mockReset();
+    mockFindByProviderId
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(EXISTING_PAYMENT);
+    mockClaimPayment.mockResolvedValue(null);
+
+    const result = await WebhookService.handleNotification({ data: { id: 123 } });
+
+    expect(result).toMatchObject({ duplicate: true, processed: false, status: "approved" });
+    expect(mockClaimPayment).toHaveBeenCalledTimes(1);
+    expect(mockCancelActive).not.toHaveBeenCalled();
+    expect(mockCreateSub).not.toHaveBeenCalled();
+    expect(mockUpdateSub).not.toHaveBeenCalled();
+    expect(mockAttachSubscription).not.toHaveBeenCalled();
+  });
+
+  it("ordem: reivindica o evento no ledger antes de qualquer efeito de negócio", async () => {
+    const order: string[] = [];
+    mockClaimPayment.mockImplementation(async () => {
+      order.push("claim");
+      return { id: "pay-new" };
+    });
+    mockCancelActive.mockImplementation(async () => {
+      order.push("cancelActive");
+      return [];
+    });
+    mockCreateSub.mockImplementation(async () => {
+      order.push("activate");
+      return ACTIVE_SUB;
+    });
+    mockAttachSubscription.mockImplementation(async () => {
+      order.push("attach");
+      return { ...EXISTING_PAYMENT, subscriptionId: "s1" };
+    });
+
+    await WebhookService.handleNotification({ data: { id: 123 } });
+
+    expect(order).toEqual(["claim", "cancelActive", "activate", "attach"]);
+  });
+
+  it("estorno (charged_back) entra como refunded e não ativa assinatura", async () => {
+    mockGetPayment.mockResolvedValue({
+      id: 123,
+      status: "charged_back",
+      external_reference: "pro:u1",
+      transaction_amount: 19.9,
+    });
+
+    const result = await WebhookService.handleNotification({ data: { id: 123 } });
+
+    expect(result).toMatchObject({ processed: true, duplicate: false, status: "refunded" });
+    expect(mockClaimPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ providerId: "123", status: "refunded", subscriptionId: null })
+    );
+    expect(mockCreateSub).not.toHaveBeenCalled();
+    expect(mockUpdateSub).not.toHaveBeenCalled();
+    expect(mockAttachSubscription).not.toHaveBeenCalled();
+  });
+
+  it("valor efetivo: tem precedência o transaction_amount confirmado pelo provedor", async () => {
+    mockGetPayment.mockResolvedValue({
+      id: 123,
+      status: "approved",
+      external_reference: "pro:u1",
+      transaction_amount: 25,
+    });
+
+    await WebhookService.handleNotification({ data: { id: 123 } });
+
+    expect(mockClaimPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amountCents: 2500 })
+    );
+  });
+
+  it("sem transaction_amount usa o preço oficial do plano; a promoção é ignorada", async () => {
+    mockGetPayment.mockResolvedValue({
+      id: 123,
+      status: "approved",
+      external_reference: "pro:u1",
+    });
+
+    await WebhookService.handleNotification({ data: { id: 123 } });
+
+    const claim = mockClaimPayment.mock.calls[0][0];
+    expect(claim.amountCents).toBe(PRO_PLAN.priceCents);
+    expect(claim.amountCents).not.toBe(PRO_PLAN.promoPriceCents);
+  });
+
+  it("paidAt vem de date_approved do provedor, não do instante do webhook", async () => {
+    mockGetPayment.mockResolvedValue({
+      id: 123,
+      status: "approved",
+      external_reference: "pro:u1",
+      transaction_amount: 19.9,
+      date_approved: "2026-10-01T12:00:00.000Z",
+    });
+
+    await WebhookService.handleNotification({ data: { id: 123 } });
+
+    const claim = mockClaimPayment.mock.calls[0][0];
+    expect(claim.paidAt).toEqual(new Date("2026-10-01T12:00:00.000Z"));
+  });
+
+  it("providerId do ledger é o id confirmado pelo provedor, não o id do body", async () => {
+    await WebhookService.handleNotification({ data: { id: 555 } });
+
+    expect(mockGetPayment).toHaveBeenCalledWith("555");
+    expect(mockClaimPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ providerId: "123" })
+    );
+  });
+
+  it("external_reference sem usuário é ignorada antes de reivindicar o evento", async () => {
+    mockGetPayment.mockResolvedValue({
+      id: 123,
+      status: "approved",
+      external_reference: "pro",
+      transaction_amount: 19.9,
+    });
+
+    const result = await WebhookService.handleNotification({ data: { id: 123 } });
+
+    expect(result).toMatchObject({ ignored: true, processed: false });
+    expect(mockClaimPayment).not.toHaveBeenCalled();
+    expect(mockCreateSub).not.toHaveBeenCalled();
+  });
+
+  it("subscription_preapproval com external_reference inválida não ativa assinatura", async () => {
+    mockGetPreapproval.mockResolvedValue({
+      id: "pre-1",
+      status: "authorized",
+      external_reference: null,
+    });
+
+    const result = await WebhookService.handleNotification({
+      type: "subscription_preapproval",
+      data: { id: "pre-1" },
+    });
+
+    expect(result).toMatchObject({ ignored: true, processed: false });
+    expect(mockCreateSub).not.toHaveBeenCalled();
+    expect(mockClaimPayment).not.toHaveBeenCalled();
+  });
+
+  it("não vincula o ledger quando a assinatura não nasce (activate devolve null)", async () => {
+    mockCreateSub.mockResolvedValue(null);
+
+    const result = await WebhookService.handleNotification({ data: { id: 123 } });
+
+    expect(result).toMatchObject({ processed: true, status: "approved" });
+    expect(mockClaimPayment).toHaveBeenCalledTimes(1);
+    expect(mockAttachSubscription).not.toHaveBeenCalled();
   });
 });

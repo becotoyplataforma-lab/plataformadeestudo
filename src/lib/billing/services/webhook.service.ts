@@ -45,6 +45,12 @@ export function mapMpStatus(status: string): PaymentStatus {
       return "cancelled";
     case "refunded":
       return "refunded";
+    // Estorno do cartão: o dinheiro voltou. Registrar como pendente manteria
+    // a assinatura ativa com uma cobranca reversa no ledger.
+    case "charged_back":
+      return "refunded";
+    case "in_mediation":
+      return "pending";
     default:
       return "pending";
   }
@@ -217,6 +223,40 @@ export const WebhookService = {
       return { received: true, processed: false, ignored: true, duplicate: false, status };
     }
 
+    // Valor efetivo da cobranca: o que o provedor informou; sem isso, o preco
+    // oficial do plano (nunca o valor do payload nao confirmado).
+    const amountCents =
+      payment.transaction_amount !== undefined
+        ? Math.round(payment.transaction_amount * 100)
+        : plan.priceCents;
+
+    // Reivindica o evento ANTES de qualquer efeito de negocio. A unicidade de
+    // provider_id e a trava contra entrega duplicada concorrente: se outra
+    // notificacao do mesmo pagamento ja reclamou a linha, esta aqui devolve
+    // duplicidade sem tocar em assinatura.
+    const claimed = await PaymentRepository.claim({
+      userId,
+      subscriptionId: null,
+      provider: "mercadopago",
+      providerId,
+      amountCents,
+      currency: "BRL",
+      status,
+      externalReference: payment.external_reference ?? null,
+      paidAt: payment.date_approved ? new Date(payment.date_approved) : null,
+    });
+
+    if (!claimed) {
+      const raced = await PaymentRepository.findByProviderId(providerId);
+      return {
+        received: true,
+        processed: false,
+        ignored: false,
+        duplicate: true,
+        status: raced?.status ?? status,
+      };
+    }
+
     // Atualiza a assinatura:
     //  - approved + já tem assinatura ativa → renova (estende ciclo).
     //  - approved + sem assinatura ativa → ativa (1º ciclo).
@@ -232,23 +272,11 @@ export const WebhookService = {
       }
     }
 
-    // Persiste o evento (pagamento) — imutável.
-    const amountCents =
-      payment.transaction_amount !== undefined
-        ? Math.round(payment.transaction_amount * 100)
-        : plan.priceCents;
-    await PaymentRepository.create({
-      userId,
-      subscriptionId,
-      provider: "mercadopago",
-      providerId,
-      amountCents,
-      currency: "BRL",
-      status,
-      externalReference: payment.external_reference ?? null,
-      paidAt: payment.date_approved ? new Date(payment.date_approved) : null,
-    });
-
+    // O ledger e imutavel menos pelo vinculo: a assinatura so nasce depois do
+    // evento, entao ele e ligado em um update pontual.
+    if (claimed.id && subscriptionId) {
+      await PaymentRepository.attachSubscription(claimed.id, subscriptionId);
+    }
     return { received: true, processed: true, ignored: false, duplicate: false, status };
   },
 };
