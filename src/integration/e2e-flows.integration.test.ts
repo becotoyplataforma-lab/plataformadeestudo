@@ -8,7 +8,6 @@
 import { describe, it, expect, vi, afterAll } from "vitest";
 import { db } from "@/lib/db/drizzle";
 import { questions, questionAttempts, studyTasks } from "@/db/schema/study";
-import { knowledgeSubjects } from "@/db/schema/knowledge";
 
 const mockChatCompletion = vi.fn();
 vi.mock("@/lib/ai/deepseek", async (importOriginal) => {
@@ -30,26 +29,32 @@ import { HybridSearchService } from "@/lib/knowledge/services/hybrid-search.serv
 import { EntitlementService } from "@/lib/billing/services/entitlement.service";
 import { AggregationService } from "@/lib/analytics/services/aggregation.service";
 import { UsageRepository } from "@/lib/ai/repositories/usage.repository";
-import { hasDb, createTestUser, deleteTestUser, startOfDay } from "./helpers";
+import { hasDb, createTestUser, deleteTestUser, createTestSubject, deleteTestSubject, startOfDay } from "./helpers";
 
 describe.skipIf(!hasDb)("E2E — fluxos principais (Postgres real)", () => {
   const users: string[] = [];
+  const subjects: string[] = [];
 
   afterAll(async () => {
     await Promise.all(users.map((id) => deleteTestUser(id)));
+    await Promise.all(subjects.map((id) => deleteTestSubject(id)));
   });
 
   it("fluxo Study → Analytics: responder questões e concluir tarefa gera KPIs", async () => {
     const userId = await createTestUser();
     users.push(userId);
 
-    const [subject] = await db
-      .insert(knowledgeSubjects)
-      .values({ name: `E2E ${userId.slice(0, 8)}`, slug: `e2e-${userId.slice(0, 8)}` })
-      .returning();
+    // Matéria e questão de teste entram no mesmo registro de limpeza: sem isso
+    // ficam órfãs e publicadas, e a tela do aluno passa a listar "E2E …".
+    const subjectId = await createTestSubject(
+      `E2E ${userId.slice(0, 8)}`,
+      `e2e-${userId.slice(0, 8)}`
+    );
+    subjects.push(subjectId);
+
     const [question] = await db
       .insert(questions)
-      .values({ knowledgeSubjectId: subject.id, nivel: "facil", enunciado: "P?", gabarito: "A", status: "publicada", isPublic: true })
+      .values({ knowledgeSubjectId: subjectId, nivel: "facil", enunciado: "P?", gabarito: "A", status: "publicada", isPublic: true })
       .returning();
     await db.insert(questionAttempts).values({ userId, questionId: question.id, selectedLetter: "A", isCorrect: true });
     await db.insert(studyTasks).values({ userId, title: "Estudar", scheduledDate: new Date(), durationMin: 30, status: "concluida", completedAt: new Date() });

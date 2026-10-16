@@ -5,12 +5,12 @@
 import { describe, it, expect, afterAll, beforeAll } from "vitest";
 import { db } from "@/lib/db/drizzle";
 import { questions, questionAttempts, studyTasks } from "@/db/schema/study";
-import { knowledgeSubjects } from "@/db/schema/knowledge";
 import { AggregationService } from "@/lib/analytics/services/aggregation.service";
-import { hasDb, createTestUser, deleteTestUser } from "./helpers";
+import { hasDb, createTestUser, deleteTestUser, createTestSubject, deleteTestSubject } from "./helpers";
 
 describe.skipIf(!hasDb)("Analytics — integração real", () => {
   const users: string[] = [];
+  const subjects: string[] = [];
   let userId: string;
 
   beforeAll(async () => {
@@ -18,15 +18,19 @@ describe.skipIf(!hasDb)("Analytics — integração real", () => {
     userId = await createTestUser();
     users.push(userId);
 
-    const [subject] = await db
-      .insert(knowledgeSubjects)
-      .values({ name: `Matéria ${userId.slice(0, 8)}`, slug: `materia-${userId.slice(0, 8)}` })
-      .returning();
+    // Matéria e questão de teste precisam do mesmo registro de limpeza que o
+    // usuário: `knowledge_subjects` e `questions` não têm `user_id`, e sem isto
+    // cada execução deixa catálogo órfão publicado para o aluno ver.
+    const subjectId = await createTestSubject(
+      `Matéria ${userId.slice(0, 8)}`,
+      `materia-${userId.slice(0, 8)}`
+    );
+    subjects.push(subjectId);
 
     const [question] = await db
       .insert(questions)
       .values({
-        knowledgeSubjectId: subject.id,
+        knowledgeSubjectId: subjectId,
         nivel: "medio",
         enunciado: "Qual é a pergunta?",
         gabarito: "A",
@@ -52,6 +56,7 @@ describe.skipIf(!hasDb)("Analytics — integração real", () => {
 
   afterAll(async () => {
     await Promise.all(users.map((id) => deleteTestUser(id)));
+    await Promise.all(subjects.map((id) => deleteTestSubject(id)));
   });
 
   it("resumo agrega tentativas, taxa e tempo de estudo", async () => {
