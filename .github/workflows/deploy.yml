@@ -21,6 +21,15 @@ on:
       - "next.config.ts"
       - "tsconfig.json"
       - "prompts/**"
+      # drizzle/ vai dentro da imagem (estagio migrator, COPY . .): uma migracao
+      # commitada sozinha tambem precisa subir, senao o schema do servidor diverge do codigo.
+      - "drizzle/**"
+      # sql/ fica fora da imagem (.dockerignore) mas sobe para o APP_DIR e alimenta o
+      # seed/scripts de operador; uma alteracao commitada precisa chegar na VPS.
+      - "sql/**"
+      # scripts/ vai para a imagem (nao esta no .dockerignore) e para o APP_DIR: db-guard,
+      # MCP server e ingestao dependem dele.
+      - "scripts/**"
   workflow_dispatch:
 
 concurrency:
@@ -79,7 +88,11 @@ jobs:
           port: ${{ secrets.VPS_PORT || '22' }}
           # drizzle/ precisa subir: o estágio migrator (Dockerfile) faz COPY . .
           # e roda drizzle-kit migrate. Sem isso, as migrations não chegam na VPS.
-          source: "src,infra,drizzle,prompts,package.json,package-lock.json,next.config.ts,tsconfig.json,tailwind.config.ts,postcss.config.mjs,components.json,eslint.config.mjs"
+          # sql/ e scripts/ tambem sobem, para alinhar o APP_DIR com os triggers do topo:
+          # um commit isolado de sql/ ou scripts/ propaga mesmo os ficheiros (seed + scripts
+          # de operador: audit-schema-prod, apply-migration, db-guard). scripts/ vai para a
+          # imagem via COPY . .; sql/ fica fora da imagem (.dockerignore) e corre no host.
+          source: "src,infra,drizzle,sql,scripts,prompts,package.json,package-lock.json,next.config.ts,tsconfig.json,tailwind.config.ts,postcss.config.mjs,components.json,eslint.config.mjs"
           target: /tmp/concursoai-deploy
 
       - name: Aplicar e fazer deploy
