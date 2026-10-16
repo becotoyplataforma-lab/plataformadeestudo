@@ -1,0 +1,2009 @@
+{
+  "schema_version": 1,
+  "kind": "catalog-read-only-snapshot",
+  "purpose": "preservar o estado do catalogo antes de qualquer catalogacao historica (FASE 3)",
+  "seed_compatible": false,
+  "destructive": false,
+  "generator": "scripts/catalog-snapshot.mjs",
+  "phase": "FASE 2D",
+  "started_at": "2026-10-03T16:25:25.822Z",
+  "generated_at": "2026-10-03T16:25:33.055Z",
+  "database": {
+    "source": "DATABASE_URL (redigido: URL, host, usuario, senha, token e project ref nunca sao gravados)",
+    "project_ref": "REDACTED",
+    "read_only_confirmed": "on",
+    "read_only_mechanism": "BEGIN + SET TRANSACTION READ ONLY como primeira instrucao + SHOW transaction_read_only",
+    "statements_executed": "SELECT apenas (6 tabelas em allowlist + information_schema de FKs)"
+  },
+  "scope": {
+    "tables": [
+      "contests",
+      "editais",
+      "knowledge_subjects",
+      "knowledge_topics",
+      "notice_subjects",
+      "notice_topics"
+    ],
+    "ordering": "ORDER BY id ASC",
+    "filter": "sem filtro: todas as linhas, inclusive deleted_at nao nulo"
+  },
+  "counts": {
+    "contests": {
+      "total": 3,
+      "live": 3
+    },
+    "editais": {
+      "total": 2,
+      "live": 2
+    },
+    "knowledge_subjects": {
+      "total": 33,
+      "live": 33
+    },
+    "knowledge_topics": {
+      "total": 31,
+      "live": 31
+    },
+    "notice_subjects": {
+      "total": 6,
+      "live": 6
+    },
+    "notice_topics": {
+      "total": 12,
+      "live": 12
+    }
+  },
+  "link_coverage": {
+    "knowledge_topics_live": 31,
+    "notice_topics_live": 12,
+    "notice_topics_linked_to_knowledge": 0,
+    "notice_topics_unlinked_to_knowledge": 12,
+    "notice_topics_with_parent": 0,
+    "notice_topics_with_weight": 0,
+    "knowledge_subjects_total": 33,
+    "knowledge_subjects_without_live_topics": 31
+  },
+  "analysis": {
+    "knowledge_topics_per_subject": [
+      {
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "name": "Direito Constitucional",
+        "slug": "direito-constitucional",
+        "status": "active",
+        "live": true,
+        "topics_total": 18,
+        "topics_live": 18,
+        "topics_with_parent": 5
+      },
+      {
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "name": "Português",
+        "slug": "portugues",
+        "status": "active",
+        "live": true,
+        "topics_total": 13,
+        "topics_live": 13,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "fe11de41-0b08-43af-9cdb-cdfb0bc272b4",
+        "name": "Administração Pública",
+        "slug": "administracao-publica",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "7a36765e-15b2-4edc-b9fe-e4ece29d9349",
+        "name": "Atualidades",
+        "slug": "atualidades",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "2240c79e-eaf0-4bc8-a7e0-fcab376c837a",
+        "name": "Contabilidade",
+        "slug": "contabilidade",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000003",
+        "name": "Direito Administrativo",
+        "slug": "direito-administrativo",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "96b03cd8-1fb3-4a23-926d-3a5c190b545e",
+        "name": "Direito Ambiental",
+        "slug": "direito-ambiental",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "6ffdc44e-d20c-4dfa-90c6-3e91ab9c76ba",
+        "name": "Direito Civil",
+        "slug": "direito-civil",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "816266d0-3809-4694-a961-966326e9b9da",
+        "name": "Direito do Trabalho",
+        "slug": "direito-do-trabalho",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "f7bada76-4beb-48b3-9df3-a863088a419a",
+        "name": "Direito Empresarial",
+        "slug": "direito-empresarial",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "8bc950bc-5efe-4371-9b44-0bc74767cdf4",
+        "name": "Direito Penal",
+        "slug": "direito-penal",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "fdcef14e-590d-4b37-8758-85ce777b8186",
+        "name": "Direito Previdenciário",
+        "slug": "direito-previdenciario",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "4e559c4e-bff1-4658-b61e-4063ebd46179",
+        "name": "Direito Processual Civil",
+        "slug": "direito-processual-civil",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "a5f0bae0-436f-44a8-99c4-6bad1ee54e55",
+        "name": "Direito Processual do Trabalho",
+        "slug": "direito-processual-do-trabalho",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "59f150b0-fdc3-4dbc-b50b-62ee096ea658",
+        "name": "Direito Processual Penal",
+        "slug": "direito-processual-penal",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "ef7c3ee2-3d07-4309-8e50-abc8f59f6838",
+        "name": "Direito Tributário",
+        "slug": "direito-tributario",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "d802beb2-e5a5-4e5d-945a-cfc4908b9c7b",
+        "name": "Direitos Humanos",
+        "slug": "direitos-humanos",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "bd542e8b-87c5-419c-afca-076f6ffc1ab6",
+        "name": "E2E 58f07a7b",
+        "slug": "e2e-58f07a7b",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "b778b2cc-8f86-4dc5-91ab-01940fd660c6",
+        "name": "E2E 7c0707db",
+        "slug": "e2e-7c0707db",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "90c7f2cc-c6d5-4b60-9d5b-aaa3be131576",
+        "name": "E2E a73eb286",
+        "slug": "e2e-a73eb286",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "b3900c66-b293-41c1-887c-0f08ba7d9b15",
+        "name": "E2E d02819b4",
+        "slug": "e2e-d02819b4",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "2aa718e8-a799-485a-a694-ced257c33967",
+        "name": "Economia",
+        "slug": "economia",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "38189cfa-b9a3-4753-b5f5-34554a70257e",
+        "name": "Estatística",
+        "slug": "estatistica",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "08de4af6-4d35-459a-b263-14b45dcee26e",
+        "name": "Ética no Serviço Público",
+        "slug": "etica-no-servico-publico",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000005",
+        "name": "Informática",
+        "slug": "informatica",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "56f56d02-9294-489a-8bfe-8ba28285e39a",
+        "name": "Legislação Especial",
+        "slug": "legislacao-especial",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "95bb8b59-60ad-4c52-bf05-bc718cbb6353",
+        "name": "Matemática",
+        "slug": "matematica",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "e20846e0-1449-4b50-afd8-62994bdcdfd2",
+        "name": "Matéria 1baad6ab",
+        "slug": "materia-1baad6ab",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "ecbeb2dc-c0cf-412c-9252-dfea1bb33e5a",
+        "name": "Matéria 5e9f8f3f",
+        "slug": "materia-5e9f8f3f",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "13b6b7c3-aea6-49e0-84ae-a062261b183b",
+        "name": "Matéria 9ef494b9",
+        "slug": "materia-9ef494b9",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "8b59108d-45ec-4df9-a977-fe5d927a3c1d",
+        "name": "Matéria f72f758c",
+        "slug": "materia-f72f758c",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000004",
+        "name": "Raciocínio Lógico",
+        "slug": "raciocinio-logico",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      },
+      {
+        "knowledge_subject_id": "3d007b39-4b4f-4344-8e23-ccad6a67755f",
+        "name": "Redação",
+        "slug": "redacao",
+        "status": "active",
+        "live": true,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_with_parent": 0
+      }
+    ],
+    "notice_topics_per_subject": [
+      {
+        "notice_subject_id": "aaaaaaaa-0000-4000-8000-000000000502",
+        "name": "Direito Administrativo",
+        "status": "active",
+        "live": true,
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000003",
+        "metadata": null,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_linked_to_knowledge": 0,
+        "topics_with_parent": 0,
+        "topics_with_weight": 0,
+        "topics": []
+      },
+      {
+        "notice_subject_id": "aaaaaaaa-0000-4000-8000-000000000501",
+        "name": "Direito Constitucional",
+        "status": "active",
+        "live": true,
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "metadata": null,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_linked_to_knowledge": 0,
+        "topics_with_parent": 0,
+        "topics_with_weight": 0,
+        "topics": []
+      },
+      {
+        "notice_subject_id": "aaaaaaaa-0000-4000-8000-000000000504",
+        "name": "Informática",
+        "status": "active",
+        "live": true,
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000005",
+        "metadata": null,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_linked_to_knowledge": 0,
+        "topics_with_parent": 0,
+        "topics_with_weight": 0,
+        "topics": []
+      },
+      {
+        "notice_subject_id": "a8558000-e47a-40f0-8c60-c4c2451b9688",
+        "name": "Matemática",
+        "status": "active",
+        "live": true,
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000305",
+        "knowledge_subject_id": "95bb8b59-60ad-4c52-bf05-bc718cbb6353",
+        "metadata": null,
+        "topics_total": 5,
+        "topics_live": 5,
+        "topics_linked_to_knowledge": 0,
+        "topics_with_parent": 0,
+        "topics_with_weight": 0,
+        "topics": [
+          {
+            "id": "4b9ef240-fd19-406c-9ef5-6bb4412dee4a",
+            "name": "Geometria Plana (Cálculo de áreas e perímetros de figuras básicas)",
+            "normalized_name": "geometria plana calculo de areas e perimetros de figuras basicas",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}"
+          },
+          {
+            "id": "9052d4ca-3617-47fa-a0e9-1e422dfc8577",
+            "name": "Álgebra (Equações de 1º e 2º graus, sistemas e funções)",
+            "normalized_name": "algebra equacoes de 1º e 2º graus sistemas e funcoes",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}"
+          },
+          {
+            "id": "a6ade1ff-b742-4b42-af7d-7804a32ce04a",
+            "name": "Razão e Proporção (Regra de três simples/composta, porcentagem e juros simples)",
+            "normalized_name": "razao e proporcao regra de tres simples composta porcentagem e juros simples",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}"
+          },
+          {
+            "id": "e81e05cc-f1c3-437e-9d65-9b296fa8d747",
+            "name": "Análise Combinatória e Probabilidade (Princípio multiplicativo, arranjos e combinações)",
+            "normalized_name": "analise combinatoria e probabilidade principio multiplicativo arranjos e combinacoes",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}"
+          },
+          {
+            "id": "fb5c8fef-dcf3-4c14-8242-b4ffb8a126e2",
+            "name": "Aritmética Básica (Operações com números reais, frações e decimais)",
+            "normalized_name": "aritmetica basica operacoes com numeros reais fracoes e decimais",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}"
+          }
+        ]
+      },
+      {
+        "notice_subject_id": "aaaaaaaa-0000-4000-8000-000000000503",
+        "name": "Português",
+        "status": "active",
+        "live": true,
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "metadata": null,
+        "topics_total": 0,
+        "topics_live": 0,
+        "topics_linked_to_knowledge": 0,
+        "topics_with_parent": 0,
+        "topics_with_weight": 0,
+        "topics": []
+      },
+      {
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "name": "Português",
+        "status": "active",
+        "live": true,
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000305",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "metadata": null,
+        "topics_total": 7,
+        "topics_live": 7,
+        "topics_linked_to_knowledge": 0,
+        "topics_with_parent": 0,
+        "topics_with_weight": 0,
+        "topics": [
+          {
+            "id": "0e3dd3d4-353e-41c8-a7fd-2ed4011ec83a",
+            "name": "Pontuação (Uso da vírgula, dois-pontos, etc.)",
+            "normalized_name": "pontuacao uso da virgula dois pontos etc",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}"
+          },
+          {
+            "id": "450c1668-615c-481e-b68c-ee7aec524d21",
+            "name": "Regência Nominal e Verbal e Uso do Sinal de Crase",
+            "normalized_name": "regencia nominal e verbal e uso do sinal de crase",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}"
+          },
+          {
+            "id": "52853ffa-f130-46ca-beee-6253e7d187ab",
+            "name": "Morfologia (Classes de palavras e flexões)",
+            "normalized_name": "morfologia classes de palavras e flexoes",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}"
+          },
+          {
+            "id": "82f8fea6-405c-4fa6-a946-0f4532255aa1",
+            "name": "Concordância Nominal e Verbal",
+            "normalized_name": "concordancia nominal e verbal",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}"
+          },
+          {
+            "id": "a3dddb1f-82a3-401c-ab4e-bb769ecdc8e7",
+            "name": "Compreensão e Interpretação de Textos (Gêneros variados, coesão e coerência)",
+            "normalized_name": "compreensao e interpretacao de textos generos variados coesao e coerencia",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}"
+          },
+          {
+            "id": "b558a72c-95bf-43ea-8dd7-28a8e31ca492",
+            "name": "Sintaxe (Estrutura da oração, período simples e composto)",
+            "normalized_name": "sintaxe estrutura da oracao periodo simples e composto",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}"
+          },
+          {
+            "id": "fa47f445-dce1-4883-bac6-37247193330d",
+            "name": "Semântica (Sinônimos, antônimos, conotação e denotação)",
+            "normalized_name": "semantica sinonimos antonimos conotacao e denotacao",
+            "slug": null,
+            "knowledge_topic_id": null,
+            "parent_notice_topic_id": null,
+            "weight": null,
+            "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}"
+          }
+        ]
+      }
+    ]
+  },
+  "relationships": {
+    "foreign_keys": [
+      {
+        "source_table": "chat_sessions",
+        "source_column": "knowledge_subject_id",
+        "foreign_table": "knowledge_subjects",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "contests",
+        "source_column": "board_id",
+        "foreign_table": "boards",
+        "foreign_column": "id",
+        "on_delete": "RESTRICT"
+      },
+      {
+        "source_table": "contests",
+        "source_column": "organ_id",
+        "foreign_table": "organs",
+        "foreign_column": "id",
+        "on_delete": "RESTRICT"
+      },
+      {
+        "source_table": "document_subjects",
+        "source_column": "subject_id",
+        "foreign_table": "knowledge_subjects",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "document_topics",
+        "source_column": "topic_id",
+        "foreign_table": "knowledge_topics",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "documents",
+        "source_column": "edital_id",
+        "foreign_table": "editais",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "editais",
+        "source_column": "contest_id",
+        "foreign_table": "contests",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "knowledge_topics",
+        "source_column": "parent_topic_id",
+        "foreign_table": "knowledge_topics",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "knowledge_topics",
+        "source_column": "subject_id",
+        "foreign_table": "knowledge_subjects",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "lessons",
+        "source_column": "knowledge_subject_id",
+        "foreign_table": "knowledge_subjects",
+        "foreign_column": "id",
+        "on_delete": "RESTRICT"
+      },
+      {
+        "source_table": "notice_subjects",
+        "source_column": "edital_id",
+        "foreign_table": "editais",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "notice_subjects",
+        "source_column": "knowledge_subject_id",
+        "foreign_table": "knowledge_subjects",
+        "foreign_column": "id",
+        "on_delete": "RESTRICT"
+      },
+      {
+        "source_table": "notice_subjects",
+        "source_column": "position_id",
+        "foreign_table": "positions",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "notice_topics",
+        "source_column": "knowledge_topic_id",
+        "foreign_table": "knowledge_topics",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "notice_topics",
+        "source_column": "notice_subject_id",
+        "foreign_table": "notice_subjects",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "notice_topics",
+        "source_column": "parent_notice_topic_id",
+        "foreign_table": "notice_topics",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "positions",
+        "source_column": "contest_id",
+        "foreign_table": "contests",
+        "foreign_column": "id",
+        "on_delete": "CASCADE"
+      },
+      {
+        "source_table": "positions",
+        "source_column": "edital_id",
+        "foreign_table": "editais",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "profiles",
+        "source_column": "contest_id",
+        "foreign_table": "contests",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "questions",
+        "source_column": "knowledge_subject_id",
+        "foreign_table": "knowledge_subjects",
+        "foreign_column": "id",
+        "on_delete": "RESTRICT"
+      },
+      {
+        "source_table": "questions",
+        "source_column": "knowledge_topic_id",
+        "foreign_table": "knowledge_topics",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      },
+      {
+        "source_table": "questions",
+        "source_column": "source_edital_id",
+        "foreign_table": "editais",
+        "foreign_column": "id",
+        "on_delete": "SET NULL"
+      }
+    ]
+  },
+  "data": {
+    "contests": [
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000103",
+        "organ_id": "aaaaaaaa-0000-4000-8000-000000000201",
+        "board_id": "aaaaaaaa-0000-4000-8000-000000000202",
+        "title": "Concurso PMERJ — Soldado PM (REAL)",
+        "slug": "real-pmerj-soldado",
+        "description": "DADO REAL (PME-RJ — material do usuário). Edital e pesos de matéria: PENDENTES de confirmação manual.",
+        "status": "publicado",
+        "start_date": null,
+        "end_date": null,
+        "created_at": "2026-08-16T00:41:54.855Z",
+        "updated_at": "2026-09-30T02:52:59.798Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000201",
+        "organ_id": "aaaaaaaa-0000-4000-8000-000000000101",
+        "board_id": "aaaaaaaa-0000-4000-8000-000000000102",
+        "title": "Concurso Público MPF 2026",
+        "slug": "mpf-2026",
+        "description": "Concurso de teste (seed mínimo Contest)",
+        "status": "publicado",
+        "start_date": "2026-08-13T00:00:00.000Z",
+        "end_date": "2027-02-28T23:59:59.000Z",
+        "created_at": "2026-08-13T17:32:10.220Z",
+        "updated_at": "2026-08-13T17:32:10.220Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000303",
+        "organ_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "board_id": "aaaaaaaa-0000-4000-8000-000000000302",
+        "title": "CBMERJ — SMTV 2026 (Praças)",
+        "slug": "cbmerj-smtv-2026",
+        "description": "Serviço Militar Temporário Voluntário (SMTV 2026 - Praças) - CBMERJ - 1.122 vagas",
+        "status": "publicado",
+        "start_date": "2026-10-19T00:00:00.000Z",
+        "end_date": "2026-11-09T23:59:59.000Z",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      }
+    ],
+    "editais": [
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "contest_id": "aaaaaaaa-0000-4000-8000-000000000201",
+        "title": "Edital MPF 2026",
+        "version": "1.0",
+        "published_date": "2026-08-13T00:00:00.000Z",
+        "content_url": null,
+        "programmatic_content": null,
+        "is_current": true,
+        "status": "publicado",
+        "created_at": "2026-08-13T17:32:10.220Z",
+        "updated_at": "2026-08-13T17:32:10.220Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000305",
+        "contest_id": "aaaaaaaa-0000-4000-8000-000000000303",
+        "title": "Edital CBMERJ - SMTV 2026 (Praças)",
+        "version": "1.0",
+        "published_date": "2026-10-03T00:00:00.000Z",
+        "content_url": null,
+        "programmatic_content": "{\"banca\":\"Instituto AOCP\",\"vagas\":\"1.122 (Combatentes e Guarda-Vidas)\",\"escolaridade\":\"Nível Médio\",\"taxa\":\"R$ 95,31\",\"inscricoes\":\"19/10 a 09/11/2026\",\"formato\":\"60 questões de múltipla escolha (30 Português / 30 Matemática)\",\"ciclo_sugerido\":{\"segunda\":\"Português (Teoria) + 10 Questões AOCP\",\"terca\":\"Matemática (Teoria) + 10 Questões AOCP\",\"quarta\":\"Português (Revisão) + 20 Questões AOCP\",\"quinta\":\"Matemática (Revisão) + 20 Questões AOCP\",\"sexta\":\"Simulado Curto (15 questões de cada matéria) + Análise de Erros\",\"sabado\":\"Treinamento Físico (TAF) + Revisão de pontos fracos\",\"domingo\":\"Descanso total\"}}",
+        "is_current": true,
+        "status": "publicado",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      }
+    ],
+    "knowledge_subjects": [
+      {
+        "id": "08de4af6-4d35-459a-b263-14b45dcee26e",
+        "name": "Ética no Serviço Público",
+        "slug": "etica-no-servico-publico",
+        "description": "Ética, moral, deontologia, código de conduta",
+        "color": "#a855f7",
+        "keywords": [
+          "ética",
+          "moral",
+          "deontologia",
+          "código de conduta",
+          "improbidade",
+          "moralidade"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "13b6b7c3-aea6-49e0-84ae-a062261b183b",
+        "name": "Matéria 9ef494b9",
+        "slug": "materia-9ef494b9",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-22T16:59:55.288Z",
+        "updated_at": "2026-08-22T16:59:55.288Z",
+        "deleted_at": null
+      },
+      {
+        "id": "2240c79e-eaf0-4bc8-a7e0-fcab376c837a",
+        "name": "Contabilidade",
+        "slug": "contabilidade",
+        "description": "Contabilidade geral, pública, análise",
+        "color": "#f43f5e",
+        "keywords": [
+          "contabilidade geral",
+          "contabilidade pública",
+          "balanço",
+          "demonstrações",
+          "receita",
+          "despesa",
+          "orçamento"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "2aa718e8-a799-485a-a694-ced257c33967",
+        "name": "Economia",
+        "slug": "economia",
+        "description": "Economia, macro, micro, finanças públicas",
+        "color": "#ec4899",
+        "keywords": [
+          "pib",
+          "inflação",
+          "política monetária",
+          "política fiscal",
+          "câmbio",
+          "crescimento",
+          "desenvolvimento"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "38189cfa-b9a3-4753-b5f5-34554a70257e",
+        "name": "Estatística",
+        "slug": "estatistica",
+        "description": "Estatística descritiva, probabilidade, inferência",
+        "color": "#06b6d4",
+        "keywords": [
+          "média",
+          "mediana",
+          "moda",
+          "desvio padrão",
+          "distribuição",
+          "probabilidade",
+          "amostragem"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "3d007b39-4b4f-4344-8e23-ccad6a67755f",
+        "name": "Redação",
+        "slug": "redacao",
+        "description": "Redação oficial, dissertação, discursiva",
+        "color": "#3b82f6",
+        "keywords": [
+          "dissertação",
+          "argumentação",
+          "redação oficial",
+          "coesão",
+          "coerência",
+          "manual de redação"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "4e559c4e-bff1-4658-b61e-4063ebd46179",
+        "name": "Direito Processual Civil",
+        "slug": "direito-processual-civil",
+        "description": "Processo civil, jurisdição, ação, recursos",
+        "color": "#0891b2",
+        "keywords": [
+          "cpc",
+          "jurisdição",
+          "competência",
+          "tutela",
+          "recursos",
+          "execução"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "56f56d02-9294-489a-8bfe-8ba28285e39a",
+        "name": "Legislação Especial",
+        "slug": "legislacao-especial",
+        "description": "Leis especiais para concursos",
+        "color": "#f97316",
+        "keywords": [
+          "lei 8.112",
+          "lei 8.666",
+          "lei 14.133",
+          "lei de improbidade",
+          "lei de licitações",
+          "estatuto"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "59f150b0-fdc3-4dbc-b50b-62ee096ea658",
+        "name": "Direito Processual Penal",
+        "slug": "direito-processual-penal",
+        "description": "Processo penal, investigação, provas, recursos",
+        "color": "#65a30d",
+        "keywords": [
+          "código de processo penal",
+          "inquérito",
+          "ação penal",
+          "provas",
+          "prisão",
+          "recursos"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "6ffdc44e-d20c-4dfa-90c6-3e91ab9c76ba",
+        "name": "Direito Civil",
+        "slug": "direito-civil",
+        "description": "Código Civil, obrigações, contratos, família",
+        "color": "#16a34a",
+        "keywords": [
+          "código civil",
+          "obrigações",
+          "contratos",
+          "responsabilidade civil",
+          "família",
+          "sucessões"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "7a36765e-15b2-4edc-b9fe-e4ece29d9349",
+        "name": "Atualidades",
+        "slug": "atualidades",
+        "description": "Atualidades, geopolítica, economia, meio ambiente",
+        "color": "#8b5cf6",
+        "keywords": [
+          "atualidades",
+          "geopolítica",
+          "economia",
+          "meio ambiente",
+          "tecnologia",
+          "política",
+          "sociedade"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "816266d0-3809-4694-a961-966326e9b9da",
+        "name": "Direito do Trabalho",
+        "slug": "direito-do-trabalho",
+        "description": "CLT, relações de trabalho, direitos trabalhistas",
+        "color": "#2563eb",
+        "keywords": [
+          "clt",
+          "empregado",
+          "empregador",
+          "jornada",
+          "férias",
+          "rescisão",
+          "justiça do trabalho"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "8b59108d-45ec-4df9-a977-fe5d927a3c1d",
+        "name": "Matéria f72f758c",
+        "slug": "materia-f72f758c",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-22T15:57:03.773Z",
+        "updated_at": "2026-08-22T15:57:03.773Z",
+        "deleted_at": null
+      },
+      {
+        "id": "8bc950bc-5efe-4371-9b44-0bc74767cdf4",
+        "name": "Direito Penal",
+        "slug": "direito-penal",
+        "description": "Crimes, penas, teoria do crime",
+        "color": "#ca8a04",
+        "keywords": [
+          "código penal",
+          "crime",
+          "pena",
+          "tipicidade",
+          "culpabilidade",
+          "imputabilidade"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "90c7f2cc-c6d5-4b60-9d5b-aaa3be131576",
+        "name": "E2E a73eb286",
+        "slug": "e2e-a73eb286",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-14T02:24:59.190Z",
+        "updated_at": "2026-08-14T02:24:59.190Z",
+        "deleted_at": null
+      },
+      {
+        "id": "95bb8b59-60ad-4c52-bf05-bc718cbb6353",
+        "name": "Matemática",
+        "slug": "matematica",
+        "description": "Matemática básica, álgebra, geometria, financeira",
+        "color": "#14b8a6",
+        "keywords": [
+          "álgebra",
+          "geometria",
+          "porcentagem",
+          "juros",
+          "estatística",
+          "probabilidade",
+          "trigonometria"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "96b03cd8-1fb3-4a23-926d-3a5c190b545e",
+        "name": "Direito Ambiental",
+        "slug": "direito-ambiental",
+        "description": "Meio ambiente, licenciamento, responsabilidade",
+        "color": "#db2777",
+        "keywords": [
+          "meio ambiente",
+          "licenciamento",
+          "eia-rima",
+          "poluição",
+          "unidades de conservação",
+          "responsabilidade ambiental"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "a5f0bae0-436f-44a8-99c4-6bad1ee54e55",
+        "name": "Direito Processual do Trabalho",
+        "slug": "direito-processual-do-trabalho",
+        "description": "Processo trabalhista, reclamação, recursos",
+        "color": "#7c3aed",
+        "keywords": [
+          "reclamação trabalhista",
+          "dissídio",
+          "execução trabalhista",
+          "recursos trabalhistas"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "name": "Português",
+        "slug": "portugues",
+        "description": "Matéria de teste (Planner E2E)",
+        "color": "#0ea5e9",
+        "keywords": [
+          "gramatica",
+          "interpretacao"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T01:07:17.034Z",
+        "updated_at": "2026-08-13T01:07:17.034Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "name": "Direito Constitucional",
+        "slug": "direito-constitucional",
+        "description": "Matéria de teste (Planner E2E)",
+        "color": "#dc2626",
+        "keywords": [
+          "cf/88",
+          "direitos fundamentais"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T01:07:17.034Z",
+        "updated_at": "2026-08-13T01:07:17.034Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000003",
+        "name": "Direito Administrativo",
+        "slug": "direito-administrativo",
+        "description": "Matéria de teste (Planner E2E)",
+        "color": "#ea580c",
+        "keywords": [
+          "ato administrativo",
+          "licitacao"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T01:07:17.034Z",
+        "updated_at": "2026-08-13T01:07:17.034Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000004",
+        "name": "Raciocínio Lógico",
+        "slug": "raciocinio-logico",
+        "description": "Matéria de teste (Planner E2E)",
+        "color": "#84cc16",
+        "keywords": [
+          "logica",
+          "conjuntos"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T01:07:17.034Z",
+        "updated_at": "2026-08-13T01:07:17.034Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000005",
+        "name": "Informática",
+        "slug": "informatica",
+        "description": "Matéria de teste (Planner E2E)",
+        "color": "#6366f1",
+        "keywords": [
+          "windows",
+          "office"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T01:07:17.034Z",
+        "updated_at": "2026-08-13T01:07:17.034Z",
+        "deleted_at": null
+      },
+      {
+        "id": "b3900c66-b293-41c1-887c-0f08ba7d9b15",
+        "name": "E2E d02819b4",
+        "slug": "e2e-d02819b4",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-22T15:57:04.485Z",
+        "updated_at": "2026-08-22T15:57:04.485Z",
+        "deleted_at": null
+      },
+      {
+        "id": "b778b2cc-8f86-4dc5-91ab-01940fd660c6",
+        "name": "E2E 7c0707db",
+        "slug": "e2e-7c0707db",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-22T16:59:24.038Z",
+        "updated_at": "2026-08-22T16:59:24.038Z",
+        "deleted_at": null
+      },
+      {
+        "id": "bd542e8b-87c5-419c-afca-076f6ffc1ab6",
+        "name": "E2E 58f07a7b",
+        "slug": "e2e-58f07a7b",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-22T16:59:55.640Z",
+        "updated_at": "2026-08-22T16:59:55.640Z",
+        "deleted_at": null
+      },
+      {
+        "id": "d802beb2-e5a5-4e5d-945a-cfc4908b9c7b",
+        "name": "Direitos Humanos",
+        "slug": "direitos-humanos",
+        "description": "Direitos humanos, tratados, DUDH, Corte IDH",
+        "color": "#ef4444",
+        "keywords": [
+          "direitos humanos",
+          "dudh",
+          "tratados",
+          "corte idh",
+          "dignidade",
+          "igualdade"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "e20846e0-1449-4b50-afd8-62994bdcdfd2",
+        "name": "Matéria 1baad6ab",
+        "slug": "materia-1baad6ab",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-14T02:24:58.949Z",
+        "updated_at": "2026-08-14T02:24:58.949Z",
+        "deleted_at": null
+      },
+      {
+        "id": "ecbeb2dc-c0cf-412c-9252-dfea1bb33e5a",
+        "name": "Matéria 5e9f8f3f",
+        "slug": "materia-5e9f8f3f",
+        "description": null,
+        "color": null,
+        "keywords": [],
+        "status": "active",
+        "created_at": "2026-08-22T16:59:23.663Z",
+        "updated_at": "2026-08-22T16:59:23.663Z",
+        "deleted_at": null
+      },
+      {
+        "id": "ef7c3ee2-3d07-4309-8e50-abc8f59f6838",
+        "name": "Direito Tributário",
+        "slug": "direito-tributario",
+        "description": "Tributos, impostos, contribuições, CTN",
+        "color": "#9333ea",
+        "keywords": [
+          "ctn",
+          "tributo",
+          "imposto",
+          "taxa",
+          "contribuição",
+          "competência tributária",
+          "imunidade"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "f7bada76-4beb-48b3-9df3-a863088a419a",
+        "name": "Direito Empresarial",
+        "slug": "direito-empresarial",
+        "description": "Empresas, sociedades, títulos de crédito, falência",
+        "color": "#e11d48",
+        "keywords": [
+          "empresário",
+          "sociedade",
+          "ltda",
+          "sa",
+          "título de crédito",
+          "falência",
+          "recuperação judicial"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "fdcef14e-590d-4b37-8758-85ce777b8186",
+        "name": "Direito Previdenciário",
+        "slug": "direito-previdenciario",
+        "description": "RGPS, benefícios, aposentadoria, RPPS",
+        "color": "#c026d3",
+        "keywords": [
+          "inss",
+          "aposentadoria",
+          "benefício",
+          "pensão",
+          "auxílio",
+          "segurado",
+          "carência"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      },
+      {
+        "id": "fe11de41-0b08-43af-9cdb-cdfb0bc272b4",
+        "name": "Administração Pública",
+        "slug": "administracao-publica",
+        "description": "Administração, gestão, políticas públicas",
+        "color": "#d946ef",
+        "keywords": [
+          "administração",
+          "gestão",
+          "políticas públicas",
+          "planejamento",
+          "orçamento",
+          "governança"
+        ],
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.630Z",
+        "updated_at": "2026-08-13T12:12:05.630Z",
+        "deleted_at": null
+      }
+    ],
+    "knowledge_topics": [
+      {
+        "id": "039c4311-4442-46a6-a0bc-509970f07eb7",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Poder Judiciário",
+        "slug": "poder-judiciario",
+        "description": "STF, STJ, CNJ, tribunais, juízes, garantias, competências, súmula vinculante",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "0a6a0acd-4bf9-4cdd-a6a3-e4df4d9d3a17",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Interpretação de Texto",
+        "slug": "interpretacao-de-texto",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:22.568Z",
+        "updated_at": "2026-08-15T14:49:22.568Z",
+        "deleted_at": null
+      },
+      {
+        "id": "0ab80194-ea1e-4639-b142-7e4364f1c299",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": "8ca30630-1619-432e-b970-8726339fa94e",
+        "name": "Direitos Sociais (Art. 6º a 11)",
+        "slug": "direitos-sociais",
+        "description": "Educação, saúde, alimentação, trabalho, moradia, transporte, lazer, segurança, previdência",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "10f3f8f9-2362-43ec-b815-9baf6830ec06",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Coesão e Coerência",
+        "slug": "coesao-e-coerencia",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:25.744Z",
+        "updated_at": "2026-08-15T14:49:25.744Z",
+        "deleted_at": null
+      },
+      {
+        "id": "19e9cff1-a68c-4bcb-9118-f4ce75fbfb52",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Semântica",
+        "slug": "semantica",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:25.479Z",
+        "updated_at": "2026-08-15T14:49:25.479Z",
+        "deleted_at": null
+      },
+      {
+        "id": "1abc0508-5ef7-4963-9dc0-fce56e52d20f",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": "8ca30630-1619-432e-b970-8726339fa94e",
+        "name": "Nacionalidade",
+        "slug": "nacionalidade",
+        "description": "Brasileiros natos, naturalizados, portugueses equiparados, perda",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "1ad11c4c-4e40-493e-9810-8af72ec99244",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Organização do Estado",
+        "slug": "organizacao-do-estado",
+        "description": "Federação, União, Estados, Municípios, DF, Territórios, intervenção",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "1cdf12fc-a5c1-4ba3-a062-723a37d5a38c",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Fonologia e Ortografia",
+        "slug": "fonologia-e-ortografia",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:23.345Z",
+        "updated_at": "2026-08-15T14:49:23.345Z",
+        "deleted_at": null
+      },
+      {
+        "id": "211b50d2-e695-4603-ba19-22be6a051b36",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": "8ca30630-1619-432e-b970-8726339fa94e",
+        "name": "Remédios Constitucionais",
+        "slug": "remedios-constitucionais",
+        "description": "Habeas corpus, mandado de segurança, habeas data, mandado de injunção, ação popular",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "31b8009b-f690-4a1f-abdf-823d548d6680",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Controle de Constitucionalidade",
+        "slug": "controle-de-constitucionalidade",
+        "description": "ADI, ADC, ADPF, ADO, controle difuso, concentrado, abstrato",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "3ea80f23-2979-4fdb-8454-bfc87adb674a",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": "8ca30630-1619-432e-b970-8726339fa94e",
+        "name": "Direitos Individuais (Art. 5º)",
+        "slug": "direitos-individuais-art-5",
+        "description": "Vida, liberdade, igualdade, segurança, propriedade, devido processo legal",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "42d99aed-aeb4-44c2-83fb-0459b4392c59",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Regência e Crase",
+        "slug": "regencia-e-crase",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:25.204Z",
+        "updated_at": "2026-08-15T14:49:25.204Z",
+        "deleted_at": null
+      },
+      {
+        "id": "530b4245-55ff-4c6a-bde1-0a6fe3ed8f89",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Morfologia (Classes de Palavras)",
+        "slug": "morfologia-classes-de-palavras",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:23.870Z",
+        "updated_at": "2026-08-15T14:49:23.870Z",
+        "deleted_at": null
+      },
+      {
+        "id": "62f0f42f-a873-4c15-82b0-00ac8d49fa2d",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Sintaxe do Período",
+        "slug": "sintaxe-do-periodo",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:24.400Z",
+        "updated_at": "2026-08-15T14:49:24.400Z",
+        "deleted_at": null
+      },
+      {
+        "id": "64328c38-d8a7-4dc3-95c8-4f81393f24d9",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Defesa do Estado e Instituições Democráticas",
+        "slug": "defesa-do-estado",
+        "description": "Estado de defesa, estado de sítio, Forças Armadas, segurança pública",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "7d131732-1cde-47ad-ab78-d5df509e8e0e",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Teoria da Constituição",
+        "slug": "teoria-da-constituicao",
+        "description": "Conceito, classificação, elementos, supremacia, eficácia das normas",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "8ca30630-1619-432e-b970-8726339fa94e",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Direitos e Garantias Fundamentais",
+        "slug": "direitos-e-garantias-fundamentais",
+        "description": "Direitos individuais, coletivos, sociais, nacionalidade, políticos",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "9069b285-6a42-46d7-8a2b-983192d25ec7",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Funções Essenciais à Justiça",
+        "slug": "funcoes-essenciais-a-justica",
+        "description": "MP, AGU, DP, advocacia",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "9641d867-1bcb-40fa-84d7-d07d635983e5",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Acentuação Gráfica",
+        "slug": "acentuacao-grafica",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:23.592Z",
+        "updated_at": "2026-08-15T14:49:23.592Z",
+        "deleted_at": null
+      },
+      {
+        "id": "96e0b13e-51d7-471d-8555-05023032993e",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Poder Executivo",
+        "slug": "poder-executivo",
+        "description": "Presidente, ministros, atribuições, responsabilidade, crimes de responsabilidade",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "9c157a79-15e4-42e8-b1a5-fad4a01ebc98",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Administração Pública",
+        "slug": "administracao-publica-constitucional",
+        "description": "Princípios, servidores, militares, regiões",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "9f05eacd-674c-4494-ae2b-b147a7984866",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Poder Legislativo",
+        "slug": "poder-legislativo",
+        "description": "Congresso, Câmara, Senado, deputados, senadores, processo legislativo, CPI, TCU",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "a74f85c9-8e48-4feb-83db-d55859b24e7e",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Tipologia Textual",
+        "slug": "tipologia-textual",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:23.069Z",
+        "updated_at": "2026-08-15T14:49:23.069Z",
+        "deleted_at": null
+      },
+      {
+        "id": "a8a4aaf3-ccff-4593-a82c-d87bb1fc3cd4",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Ordem Econômica e Financeira",
+        "slug": "ordem-economica-financeira",
+        "description": "Princípios, intervenção do Estado, política urbana, agrícola, SFN",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "b3ad5e72-0310-428d-b541-d1aa7841bda5",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Ordem Social",
+        "slug": "ordem-social",
+        "description": "Seguridade, saúde, previdência, assistência, educação, cultura, meio ambiente",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "b8b6104c-3e54-4521-a3d6-d14539644287",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Figuras de Linguagem",
+        "slug": "figuras-de-linguagem",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:26.004Z",
+        "updated_at": "2026-08-15T14:49:26.004Z",
+        "deleted_at": null
+      },
+      {
+        "id": "bae5d5c7-12ed-4067-a6f5-e135c795c9ac",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Sintaxe da Oração",
+        "slug": "sintaxe-da-oracao",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:24.202Z",
+        "updated_at": "2026-08-15T14:49:24.202Z",
+        "deleted_at": null
+      },
+      {
+        "id": "dbef0123-1c51-45fb-8da9-e068936ae820",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Concordância Verbal e Nominal",
+        "slug": "concordancia-verbal-e-nominal",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:24.944Z",
+        "updated_at": "2026-08-15T14:49:24.944Z",
+        "deleted_at": null
+      },
+      {
+        "id": "f4e9fbd7-4506-4fa4-9f59-3256c22a868d",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": null,
+        "name": "Poder Constituinte",
+        "slug": "poder-constituinte",
+        "description": "Originário, derivado, reformador, revisor, limitações",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      },
+      {
+        "id": "f5b21318-37d8-4bf9-bda5-3e422cf7a2b1",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "parent_topic_id": null,
+        "name": "Pontuação",
+        "slug": "pontuacao",
+        "description": null,
+        "status": "active",
+        "created_at": "2026-08-15T14:49:24.698Z",
+        "updated_at": "2026-08-15T14:49:24.698Z",
+        "deleted_at": null
+      },
+      {
+        "id": "fb7f2290-fd93-49bd-9360-2ca310277728",
+        "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "parent_topic_id": "8ca30630-1619-432e-b970-8726339fa94e",
+        "name": "Direitos Políticos",
+        "slug": "direitos-politicos",
+        "description": "Sufrágio, voto, elegibilidade, partidos políticos, inelegibilidade, perda, suspensão",
+        "status": "active",
+        "created_at": "2026-08-13T12:12:05.803Z",
+        "updated_at": "2026-08-13T12:12:05.803Z",
+        "deleted_at": null
+      }
+    ],
+    "notice_subjects": [
+      {
+        "id": "a8558000-e47a-40f0-8c60-c4c2451b9688",
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000305",
+        "position_id": "aaaaaaaa-0000-4000-8000-000000000304",
+        "knowledge_subject_id": "95bb8b59-60ad-4c52-bf05-bc718cbb6353",
+        "weight": 50,
+        "status": "active",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000501",
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "position_id": "aaaaaaaa-0000-4000-8000-000000000401",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+        "weight": 30,
+        "status": "active",
+        "created_at": "2026-08-13T17:32:10.220Z",
+        "updated_at": "2026-08-13T17:32:10.220Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000502",
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "position_id": "aaaaaaaa-0000-4000-8000-000000000401",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000003",
+        "weight": 25,
+        "status": "active",
+        "created_at": "2026-08-13T17:32:10.220Z",
+        "updated_at": "2026-08-13T17:32:10.220Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000503",
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "position_id": "aaaaaaaa-0000-4000-8000-000000000401",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "weight": 25,
+        "status": "active",
+        "created_at": "2026-08-13T17:32:10.220Z",
+        "updated_at": "2026-08-13T17:32:10.220Z",
+        "deleted_at": null
+      },
+      {
+        "id": "aaaaaaaa-0000-4000-8000-000000000504",
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000301",
+        "position_id": "aaaaaaaa-0000-4000-8000-000000000401",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000005",
+        "weight": 20,
+        "status": "active",
+        "created_at": "2026-08-13T17:32:10.220Z",
+        "updated_at": "2026-08-13T17:32:10.220Z",
+        "deleted_at": null
+      },
+      {
+        "id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "edital_id": "aaaaaaaa-0000-4000-8000-000000000305",
+        "position_id": "aaaaaaaa-0000-4000-8000-000000000304",
+        "knowledge_subject_id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "weight": 50,
+        "status": "active",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      }
+    ],
+    "notice_topics": [
+      {
+        "id": "0e3dd3d4-353e-41c8-a7fd-2ed4011ec83a",
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "knowledge_topic_id": null,
+        "name": "Pontuação (Uso da vírgula, dois-pontos, etc.)",
+        "normalized_name": "pontuacao uso da virgula dois pontos etc",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "450c1668-615c-481e-b68c-ee7aec524d21",
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "knowledge_topic_id": null,
+        "name": "Regência Nominal e Verbal e Uso do Sinal de Crase",
+        "normalized_name": "regencia nominal e verbal e uso do sinal de crase",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "4b9ef240-fd19-406c-9ef5-6bb4412dee4a",
+        "notice_subject_id": "a8558000-e47a-40f0-8c60-c4c2451b9688",
+        "knowledge_topic_id": null,
+        "name": "Geometria Plana (Cálculo de áreas e perímetros de figuras básicas)",
+        "normalized_name": "geometria plana calculo de areas e perimetros de figuras basicas",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "52853ffa-f130-46ca-beee-6253e7d187ab",
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "knowledge_topic_id": null,
+        "name": "Morfologia (Classes de palavras e flexões)",
+        "normalized_name": "morfologia classes de palavras e flexoes",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "82f8fea6-405c-4fa6-a946-0f4532255aa1",
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "knowledge_topic_id": null,
+        "name": "Concordância Nominal e Verbal",
+        "normalized_name": "concordancia nominal e verbal",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "9052d4ca-3617-47fa-a0e9-1e422dfc8577",
+        "notice_subject_id": "a8558000-e47a-40f0-8c60-c4c2451b9688",
+        "knowledge_topic_id": null,
+        "name": "Álgebra (Equações de 1º e 2º graus, sistemas e funções)",
+        "normalized_name": "algebra equacoes de 1º e 2º graus sistemas e funcoes",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "a3dddb1f-82a3-401c-ab4e-bb769ecdc8e7",
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "knowledge_topic_id": null,
+        "name": "Compreensão e Interpretação de Textos (Gêneros variados, coesão e coerência)",
+        "normalized_name": "compreensao e interpretacao de textos generos variados coesao e coerencia",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "a6ade1ff-b742-4b42-af7d-7804a32ce04a",
+        "notice_subject_id": "a8558000-e47a-40f0-8c60-c4c2451b9688",
+        "knowledge_topic_id": null,
+        "name": "Razão e Proporção (Regra de três simples/composta, porcentagem e juros simples)",
+        "normalized_name": "razao e proporcao regra de tres simples composta porcentagem e juros simples",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "b558a72c-95bf-43ea-8dd7-28a8e31ca492",
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "knowledge_topic_id": null,
+        "name": "Sintaxe (Estrutura da oração, período simples e composto)",
+        "normalized_name": "sintaxe estrutura da oracao periodo simples e composto",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "e81e05cc-f1c3-437e-9d65-9b296fa8d747",
+        "notice_subject_id": "a8558000-e47a-40f0-8c60-c4c2451b9688",
+        "knowledge_topic_id": null,
+        "name": "Análise Combinatória e Probabilidade (Princípio multiplicativo, arranjos e combinações)",
+        "normalized_name": "analise combinatoria e probabilidade principio multiplicativo arranjos e combinacoes",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "fa47f445-dce1-4883-bac6-37247193330d",
+        "notice_subject_id": "cb5e13b8-5781-4eed-b244-adcc7689be95",
+        "knowledge_topic_id": null,
+        "name": "Semântica (Sinônimos, antônimos, conotação e denotação)",
+        "normalized_name": "semantica sinonimos antonimos conotacao e denotacao",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Língua Portuguesa\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      },
+      {
+        "id": "fb5c8fef-dcf3-4c14-8242-b4ffb8a126e2",
+        "notice_subject_id": "a8558000-e47a-40f0-8c60-c4c2451b9688",
+        "knowledge_topic_id": null,
+        "name": "Aritmética Básica (Operações com números reais, frações e decimais)",
+        "normalized_name": "aritmetica basica operacoes com numeros reais fracoes e decimais",
+        "weight": null,
+        "parent_notice_topic_id": null,
+        "metadata": "{\"edital\":\"CBMERJ SMTV 2026\",\"disciplina\":\"Matemática e Raciocínio Lógico\",\"questoes\":30}",
+        "created_at": "2026-10-03T11:18:36.522Z",
+        "updated_at": "2026-10-03T11:18:36.522Z",
+        "deleted_at": null
+      }
+    ]
+  },
+  "checksum_sha256": "fa8c2c42686496974bf17fb058fbdd10710bdfd3b7c96084b814f56c46cf491c"
+}
