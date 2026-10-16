@@ -42,6 +42,11 @@ const serverEnvSchema = z.object({
   KIMI_API_KEY: z.string().optional(),
   KIMI_BASE_URL: z.string().url().default("https://api.moonshot.ai/v1"),
 
+  // ModelRouter (gateway de modelos compatível com a API OpenAI).
+  // OPCIONAL. A chave habilita a descoberta de modelos na área administrativa.
+  MODELROUTER_API_KEY: z.string().optional(),
+  MODELROUTER_BASE_URL: z.string().url().default("https://modelrouter.id/v1"),
+
   // Serviço de embeddings (BAAI/bge-m3 — self-hosted ou API).
   // Obrigatório em produção para ativar a busca vetorial (docs/10-EMBEDDING-STANDARD).
   EMBEDDING_API_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
