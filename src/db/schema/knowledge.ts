@@ -33,6 +33,7 @@ import {
   vector,
 } from "drizzle-orm/pg-core";
 import { authUsers } from "./identity";
+import { editais, positions } from "./contest";
 
 // ============================================================
 // CUSTOM TYPES
@@ -131,6 +132,29 @@ export const documents = pgTable(
       .on(t.userId, t.fileHash)
       .where(sql`${t.deletedAt} is null`),
     check("chk_documents_file_size", sql`${t.fileSize} >= 0`),
+    // FASE 6E-R3: CHECK legado de producao (0008-E).
+    check(
+      "chk_documents_review_status",
+      sql`${t.reviewStatus} in ('pendente', 'aprovado', 'rejeitado')`
+    ),
+    // FASE 6E-R3 (D1): FKs com os nomes legados de producao, sem renomear nada.
+    foreignKey({
+      columns: [t.editalId],
+      foreignColumns: [editais.id],
+      name: "documents_edital_id_fkey",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [t.positionId],
+      foreignColumns: [positions.id],
+      name: "documents_position_id_fkey",
+    }).onDelete("set null"),
+    // FASE 6E-R3 (D5): indices parciais legados de producao.
+    index("idx_documents_edital")
+      .on(t.editalId)
+      .where(sql`${t.deletedAt} is null`),
+    index("idx_documents_position")
+      .on(t.positionId)
+      .where(sql`${t.deletedAt} is null`),
     index("idx_documents_user_status").on(t.userId, t.status),
     index("idx_documents_user_hash").on(t.userId, t.fileHash),
     index("idx_documents_status")

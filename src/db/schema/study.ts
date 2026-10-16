@@ -18,6 +18,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -168,22 +169,10 @@ export const questions = pgTable(
     explicacao: text("explicacao"),
     tipo: text("tipo").notNull().default("multipla_escolha"),
     fonte: text("fonte"),
-    sourceDocumentId: uuid("source_document_id").references(
-      () => documents.id,
-      { onDelete: "set null" }
-    ),
-    sourceChunkId: uuid("source_chunk_id").references(
-      () => documentChunks.id,
-      { onDelete: "set null" }
-    ),
-    sourceEditalId: uuid("source_edital_id").references(
-      () => editais.id,
-      { onDelete: "set null" }
-    ),
-    sourcePositionId: uuid("source_position_id").references(
-      () => positions.id,
-      { onDelete: "set null" }
-    ),
+    sourceDocumentId: uuid("source_document_id"),
+    sourceChunkId: uuid("source_chunk_id"),
+    sourceEditalId: uuid("source_edital_id"),
+    sourcePositionId: uuid("source_position_id"),
     origin: text("origin").notNull().default("manual"),
     confidence: numeric("confidence", { precision: 3, scale: 2 }),
     aiGenerated: boolean("ai_generated").notNull().default(false),
@@ -214,6 +203,34 @@ export const questions = pgTable(
     index("idx_questions_banca").on(t.banca),
     index("idx_questions_nivel").on(t.nivel),
     index("idx_questions_status").on(t.status),
+    // FASE 6E-R3 (D1): FKs legadas de producao com os nomes originais.
+    foreignKey({
+      columns: [t.sourceDocumentId],
+      foreignColumns: [documents.id],
+      name: "questions_source_document_id_fkey",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [t.sourceChunkId],
+      foreignColumns: [documentChunks.id],
+      name: "questions_source_chunk_id_fkey",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [t.sourceEditalId],
+      foreignColumns: [editais.id],
+      name: "questions_source_edital_id_fkey",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [t.sourcePositionId],
+      foreignColumns: [positions.id],
+      name: "questions_source_position_id_fkey",
+    }).onDelete("set null"),
+    // FASE 6E-R3 (D5): indices parciais legados de producao.
+    index("idx_questions_source_document")
+      .on(t.sourceDocumentId)
+      .where(sql`${t.deletedAt} is null`),
+    index("idx_questions_origin")
+      .on(t.origin)
+      .where(sql`${t.deletedAt} is null`),
   ]
 );
 
@@ -292,14 +309,8 @@ export const flashcards = pgTable(
     ),
     front: text("front").notNull(),
     back: text("back").notNull(),
-    sourceDocumentId: uuid("source_document_id").references(
-      () => documents.id,
-      { onDelete: "set null" }
-    ),
-    sourceChunkId: uuid("source_chunk_id").references(
-      () => documentChunks.id,
-      { onDelete: "set null" }
-    ),
+    sourceDocumentId: uuid("source_document_id"),
+    sourceChunkId: uuid("source_chunk_id"),
     tags: jsonb("tags").notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -312,6 +323,17 @@ export const flashcards = pgTable(
   (t) => [
     index("idx_flashcards_user").on(t.userId),
     index("idx_flashcards_tags").using("gin", sql`${t.tags}`),
+    // FASE 6E-R3 (D1): FKs legadas de producao com os nomes originais.
+    foreignKey({
+      columns: [t.sourceDocumentId],
+      foreignColumns: [documents.id],
+      name: "flashcards_source_document_id_fkey",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [t.sourceChunkId],
+      foreignColumns: [documentChunks.id],
+      name: "flashcards_source_chunk_id_fkey",
+    }).onDelete("set null"),
   ]
 );
 
@@ -384,6 +406,9 @@ export const questionModerationEvents = pgTable(
   (t) => [
     index("idx_moderation_events_question").on(t.questionId),
     index("idx_moderation_events_admin").on(t.adminUserId),
+    // FASE 6E-R3 (D5): nomes de indices legados de producao; os nomes 0002 ficam.
+    index("idx_question_moderation_events_question").on(t.questionId),
+    index("idx_question_moderation_events_admin").on(t.adminUserId),
   ]
 );
 
@@ -422,7 +447,10 @@ export const lessons = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (t) => [
-    index("idx_lessons_user").on(t.userId),
+    // FASE 6E-R3 (D5): indice parcial legado de producao (linhas vivas).
+    index("idx_lessons_user")
+      .on(t.userId)
+      .where(sql`${t.deletedAt} is null`),
     index("idx_lessons_subject").on(t.knowledgeSubjectId),
     index("idx_lessons_document").on(t.documentId),
   ]

@@ -15,6 +15,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   pgEnum,
@@ -50,9 +51,7 @@ export const chatSessions = pgTable(
       () => knowledgeSubjects.id,
       { onDelete: "set null" }
     ),
-    documentId: uuid("document_id").references(() => documents.id, {
-      onDelete: "set null",
-    }),
+    documentId: uuid("document_id"),
     chapter: text("chapter"),
     model: aiModel("model").notNull().default("flash"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -65,6 +64,16 @@ export const chatSessions = pgTable(
   },
   (t) => [
     index("idx_chat_sessions_user_updated").on(t.userId, t.updatedAt),
+    // FASE 6E-R3 (D1): FK com o nome legado de producao.
+    foreignKey({
+      columns: [t.documentId],
+      foreignColumns: [documents.id],
+      name: "chat_sessions_document_id_fkey",
+    }).onDelete("set null"),
+    // FASE 6E-R3 (D5): indice parcial legado de producao.
+    index("idx_chat_sessions_document")
+      .on(t.documentId)
+      .where(sql`${t.deletedAt} is null`),
   ]
 );
 
@@ -149,7 +158,10 @@ export const avatars = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (t) => [
-    uniqueIndex("uq_avatars_slug").on(t.slug),
+    // FASE 6E-R3 (D5): unique parcial de producao (somente linhas vivas).
+    uniqueIndex("uq_avatars_slug")
+      .on(t.slug)
+      .where(sql`${t.deletedAt} is null`),
   ]
 );
 
