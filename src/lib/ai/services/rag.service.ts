@@ -120,9 +120,10 @@ export class RagService {
       userId,
       filters: {
         ...(input.subjectId && { subjectId: input.subjectId }),
-        // HybridSearch suporta um único documentId por consulta no MVP.
+        // Restringe a busca ao conjunto de documentos pedido. O filtro so fecha
+        // o escopo ja autorizado: documento de outro usuario continua fora.
         ...(input.documentIds && input.documentIds.length > 0 && {
-          documentId: input.documentIds[0],
+          documentIds: input.documentIds,
         }),
         // Isolamento por curso/cargo/edital (resolvido no backend via perfil).
         ...(input.positionId && { positionId: input.positionId }),

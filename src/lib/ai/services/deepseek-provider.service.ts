@@ -7,7 +7,7 @@
 import "server-only";
 import { chatCompletion } from "@/lib/ai/deepseek";
 import { KimiService } from "@/lib/ai/kimi";
-import { logger, now, elapsed } from "@/lib/observability";
+import { elapsed, logger, now, redactSecrets } from "@/lib/observability";
 import type { AIModel, ChatMessage as PromptMessage } from "@/lib/ai/types";
 
 export class ProviderError extends Error {
@@ -70,14 +70,17 @@ export const DeepSeekProvider = {
         tokensOut: result.tokensOut,
       };
     } catch (err) {
+      // A mensagem crua do provedor pode conter endpoint, chave ou trecho do prompt.
+      // Ela e logada redigida e o ProviderError tambem: as rotas de geracao devolvem
+      // error.message ao cliente, entao a sanitizacao precisa acontecer aqui.
+      const detail = redactSecrets(
+        err instanceof Error ? err.message : String(err)
+      );
       logger.error("deepseek", "falha na chamada ao provedor", {
         model: req.model,
-        error: err instanceof Error ? err.message : String(err),
+        error: detail,
       });
-      throw new ProviderError(
-        "PROVIDER_FAILED",
-        err instanceof Error ? err.message : "Falha ao chamar o provedor DeepSeek."
-      );
+      throw new ProviderError("PROVIDER_FAILED", detail);
     }
   },
 };

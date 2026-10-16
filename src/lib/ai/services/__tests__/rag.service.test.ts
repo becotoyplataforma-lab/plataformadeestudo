@@ -132,7 +132,7 @@ describe("RagService", () => {
     );
   });
 
-  it("repassa document_ids como filtro (primeiro)", async () => {
+  it("repassa todos os document_ids como narrowing do escopo autorizado", async () => {
     search.mockResolvedValue({ results: [chunk()], totalHits: 1, queryTimeMs: 10 });
 
     await makeService().answer({
@@ -143,7 +143,7 @@ describe("RagService", () => {
 
     expect(search).toHaveBeenCalledWith(
       expect.objectContaining({
-        filters: expect.objectContaining({ documentId: "doc-1" }),
+        filters: expect.objectContaining({ documentIds: ["doc-1", "doc-2"] }),
       })
     );
   });
