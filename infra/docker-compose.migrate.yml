@@ -15,5 +15,12 @@ services:
     image: concursoai-migrator:latest
     env_file:
       - ../.env.production
+    # Marca de intencao exclusiva deste job de release. Nao abre nada sozinha:
+    # o drizzle.config.ts so libera a migracao quando, ALEM desta flag, o
+    # DB_RELEASE_CONFIRM_REF (carregado do .env.production acima) bater com o
+    # project ref real do DATABASE_URL. Sem essa confirmacao, o bloqueio
+    # fail-closed permanece. push/pull/studio nunca recebem este furo.
+    environment:
+      DB_ALLOW_PRODUCTION_WRITE: "true"
     command: ["npx", "drizzle-kit", "migrate"]
     restart: "no"

@@ -237,6 +237,27 @@ export function getProductionProjectRef(): string | null {
   return null;
 }
 
+/**
+ * Project ref REAL do destino apontado por uma connection string, sem expor
+ * credencial. Reaproveita exatamente a mesma leitura do guard (identify),
+ * inclusive o caso do pooler em que o ref vem sufixado no usuario.
+ *
+ * Existe para o opt-in de release em drizzle.config.ts: liberar a escrita em
+ * producao exige comparar um ref explicitamente confirmado pelo operador
+ * contra o ref real do destino. Ao contrario do veredito completo de
+ * evaluateDatabaseSafety, esta leitura nao depende de NODE_ENV -- o ramo de
+ * producao daquele veredito retorna sem base e portanto sem projectRef, o que
+ * inviabilizaria a confirmacao justamente quando ela e necessaria.
+ *
+ * Retorna undefined quando nenhum ref e identificavel (host local, URL
+ * invalida ou Supabase sem ref). Nesse caso nenhuma confirmacao e possivel e o
+ * chamador permanece em modo fail-closed.
+ */
+export function targetProjectRef(rawUrl?: string): string | undefined {
+  ensureProjectEnv();
+  return identify(rawUrl ?? readEnv("DATABASE_URL"))?.projectRef;
+}
+
 /** Origem do processo, para decidir se NODE_ENV=production pode ser ignorado. */
 export function detectExecutionOrigin():
   | "vitest"
