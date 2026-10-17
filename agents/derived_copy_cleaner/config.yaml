@@ -1,0 +1,124 @@
+# Configuracao do agente derived_copy_cleaner
+#
+# Define escopo, politica de sanitizacao de metadados legados, neutralizacao
+# de conteudo ativo e a politica do icone. Nenhum valor aqui autoriza
+# processar originais.
+
+agent:
+  name: derived_copy_cleaner
+  version: "2.0.0"
+  description: >-
+    Sanear COPIAS DERIVADAS de apostilas: expurga o registro interno legado
+    (DocInfo e XMP), neutraliza conteudo ativo e valida a camada visual.
+    Nunca deve operar sobre originais.
+
+# 1. ESCOPO
+escopo:
+  target_permitido: "copia_derivada"
+  targets_proibidos:
+    - "original"
+    - "fonte"
+    - "master"
+
+# 2. POLITICA DE METADADOS
+# sanitizacao_completa_metadados_legados (padrao): todo registro legado sai,
+# inclusive author/creator/producer/owner/origem/source/origin, para
+# reinsercao consolidada pelo operador.
+# regra_por_valor_conservadora (legada, ainda enderecavel): remove apenas
+# tecnicos e marca-d'agua com valor estritamente instrumental; preserva
+# autoria/procedencia.
+politica: sanitizacao_completa_metadados_legados
+politicas_disponiveis:
+  - sanitizacao_completa_metadados_legados
+  - regra_por_valor_conservadora
+
+# 3. CAMADA VISUAL - inegociavel nas duas politicas.
+visual:
+  preservar_page_streams: true
+  preservar_xobjects: true
+  preservar_texto_renderizado: true
+  preservar_marcas_visuais: true
+  preservar_geometria_da_pagina: true
+
+# 4. LIMPEZA DE REGISTRO INTERNO (bytes reais via pikepdf)
+metadata:
+  wipe_docinfo: true
+  remove_xmp: true
+  remover_tecnico: true
+  remover_marca_dagua: true
+  remover_autoria_legada: true
+  remover_procedencia_legada: true
+  remover_id: true
+  chaves_tecnicas_proibidas:
+    - technical_metadata
+    - software
+    - tool_chain
+    - fingerprint
+  chaves_marca_dagua:
+    - watermark
+    - marca_dagua
+    - marca_d_agua
+  chaves_autoria_legada:
+    - author
+    - creator
+    - producer
+    - owner
+    - origem
+    - source
+    - origin
+  chaves_identificacao_legada:
+    - title
+    - subject
+    - keywords
+    - copyright
+    - rights
+    - creationdate
+    - moddate
+    - date
+    - trapped
+  # Vazio de proposito na politica completa: a preservacao migrou das
+  # chaves de metadado para a camada visual da pagina.
+  chaves_preservadas: []
+
+# 5. CONTEUDO ATIVO (scripts e acoes automaticas)
+active_content:
+  remover_open_action: true
+  remover_open_action_seguras: false
+  remover_javascript: true
+  remover_additional_actions: true
+  remover_names_javascript: true
+
+# 6. FALHA FECHADA
+bloqueios:
+  criptografado: bloquear
+  assinado: bloquear
+  malformado: bloquear
+  saida_sem_integridade_visual: bloquear
+  deteccao_de_assinatura: heuristica_estrutural
+
+# 7. MARCA DEEPSEEK - nenhuma alteracao visual por padrao.
+marca_deepseek:
+  ativado: false
+  modo: proveniencia
+  texto: "DeepSeek"
+
+# 8. RELATORIO DE AUDITORIA
+relatorio:
+  listar_valores_removidos: true
+  campo_reinsercao: docinfo_removido
+
+# 9. ICONE DEEPSEEK
+icone:
+  identificador_ferramenta: "deepseek"
+  claims:
+    authorship: false
+    endorsement: false
+    origin_of_content: false
+
+# 10. DEPENDENCIAS (documental)
+dependencias:
+  - pikepdf
+  - pypdfium2
+  - reportlab
+  - pyyaml
+  - pytest

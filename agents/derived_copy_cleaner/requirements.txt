@@ -1,0 +1,14 @@
+# Dependencias do agente derived_copy_cleaner
+#
+# pikepdf    : unico motor que toca bytes de PDF (DocInfo/XMP/acoes)
+# pypdfium2  : extracao de texto e leitura da pagina para validar a camada visual
+# lxml       : reescrita cirurgica do pacote XMP na politica conservadora
+# reportlab  : geracao dos PDFs sinteticos dos testes (nunca apostilas reais)
+# PyYAML     : leitura de config.yaml
+# pytest     : suíte de testes do CI
+pikepdf>=9.0
+pypdfium2>=5.0
+lxml>=5.0
+reportlab>=4.0
+PyYAML>=6.0
+pytest>=8.0

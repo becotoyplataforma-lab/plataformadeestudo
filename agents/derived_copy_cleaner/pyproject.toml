@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "derived-copy-cleaner"
+version = "2.0.0"
+description = "Agente que sanear cópias derivadas de apostilas: expurga metadados legados (DocInfo/XMP), neutraliza conteúdo ativo e preserva a camada visual."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # Motor único de PDF (DocInfo, XMP, ações) e validação de saída.
+    "pikepdf>=9.0",
+    # Leitura de página/texto usada na validação fail-closed da camada visual.
+    "pypdfium2>=5.0",
+    # Escrita do pacote XMP (política conservadora); já é dependência do pikepdf.
+    "lxml>=5.0",
+    # Geração dos PDFs sintéticos dos testes.
+    "reportlab>=4.0",
+    # Leitura de config.yaml.
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.setuptools]
+# O pacote vive em agents/derived_copy_cleaner.
+packages = ["agents", "agents.derived_copy_cleaner"]
+
+[tool.pytest.ini_options]
+# Executa a partir da raiz do projeto (agents/derived_copy_cleaner).
+pythonpath = ["."]
+testpaths = ["tests"]
