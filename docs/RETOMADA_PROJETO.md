@@ -166,7 +166,7 @@ Configuradas no `.env`:
 - **Pipeline:** `UPLOAD → STORAGE → DOCUMENT → EXTRAÇÃO → NORMALIZAÇÃO → CHUNKING → EMBEDDING → INDEXAÇÃO → READY`.
 - **Estados:** `pending → processing → processed/chunked → indexing → indexed | failed`.
 - **Sem `EMBEDDING_API_URL`**, o documento termina em **`chunked`** (conteúdo pronto, busca vetorial pendente) — **não é falha**; metadata registra `embedding_skipped`.
-- **Storage:** Cloudflare R2 (preferencial) ou Supabase Storage (fallback). R2 ativa quando `R2_ACCESS_KEY_ID` configurado.
+- **Storage:** backend explicito por `STORAGE_BACKEND` (r2 ou supabase). R2 NAO ativa sozinho por presenca de credenciais; em producao sem a variavel o app falha rapido. Docs legados continuam servindo do Supabase pelo `storage_backend` gravado no documento.
 - **Extração:** PDF (`pdf-parse`), DOCX (`mammoth`), TXT/Markdown, HTML.
 - **Chunking:** fixo (1000/200) ou estrutural (headings), persistência em `document_chunks` + FTS `portuguese`.
 - **Embedding:** BAAI/bge-m3 1024d, batch 20, cache por `content_hash`, pgvector/HNSW.

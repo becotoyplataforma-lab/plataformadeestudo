@@ -35,7 +35,7 @@
 ## Passo a passo
 
 ### 1. Resetar a senha do banco (Supabase)
-1. Supabase Dashboard → projeto `sqrjovmqupjowyilgbsp` → **Settings → Database → Database Password → Reset**.
+1. Supabase Dashboard → projeto informado em `NEXT_PUBLIC_SUPABASE_URL` (o project ref de producao fica em `PROD_SUPABASE_PROJECT_REF`, nunca em doc) → **Settings → Database → Database Password → Reset**.
 2. Copie a nova senha (fica visível **apenas na tela**).
 
 ### 2. Nova Service Role Key (Supabase)

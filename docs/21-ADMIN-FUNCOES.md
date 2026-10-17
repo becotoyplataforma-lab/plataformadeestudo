@@ -188,6 +188,7 @@ Exibe também um **banner de alertas**: apostilas com erro, questões pendentes,
 **APIs usadas:**
 - `POST /api/admin/editais/parse` (body: `{ document_id }` → retorna sugestões com banca, cargo, data e matérias/pesos)
 - `POST /api/admin/editais/apply` (body: `{ document_id, contest_id, title?, banca, materias[] }`)
+- `POST /api/admin/catalog/analyze` (body: `{ source, contest?, mode?, extraction?, subjectAliases?, ai? }` → proposta auditável do CourseCatalogAgent. Não escreve em banco, não deduplica e não substitui `parse`/`apply` acima: é a entrada de revisão de catálogo (FASE 4B, `docs/28`).
 
 ---
 

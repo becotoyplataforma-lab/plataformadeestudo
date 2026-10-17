@@ -106,7 +106,7 @@ Cada chunk carrega `metadata` (jsonb):
 | GET | `/api/knowledge/documents` | Lista documentos |
 | GET | `/api/knowledge/documents/[id]` | Status + metadados |
 | DELETE | `/api/knowledge/documents/[id]` | Remove (R2 + vetores) |
-| POST | `/api/knowledge/documents/[id]/reprocess` | Re-processa |
+| POST | `/api/knowledge/documents/[id]/process` | Re-processa |
 | GET | `/api/knowledge/search?q=...` | Busca semântica nos documentos do usuário |
 
 ## 8. Integração com o Professor IA (RAG)

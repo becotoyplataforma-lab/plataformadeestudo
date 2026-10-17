@@ -204,6 +204,16 @@ schemas Drizzle em `src/db/schema/`.
 apostilas batch, documents review/preview/fonte, editais parse/apply, fontes, subjects,
 import URL), `/api/ai/rag`, `/api/chat` (RAG por document_id).
 
+`POST /api/ai/rag` fica **desativada por padrão**: sem `RAG_API_DISABLED=false` explícito
+(só `true`/`false` são reconhecidos; ausente, vazio ou inválido mantém fechada) ela responde
+503 **antes** de sessão, banco, quota e provedor. Habilitada, a rota exige sessão, aplica
+rajada de 30/min, teto de corpo de 16 KB e validação do DTO; resolve cargo/edital pelo
+perfil autenticado; confere a quota diária do plano antes de gastar token — se a leitura de
+`ai_usage` falhar, a requisição é negada (fail closed); restringe o modelo `pro` a plano com
+`allowPro`; e registra a tentativa mesmo quando o provedor falha. A decisão de posse dos
+documentos não mudou: continua dentro do SQL (`documentAccessCondition`), e `document_ids`
+apenas estreita o que já é visível.
+
 ## 27. Testes
 Vitest unitário (457 passed / 25 skipped) — destaque para `QuestionValidationService`,
 `QuestionImportService` (CSV/JSON/XLSX + dedup), `ConsolidationService`, gate de revisão do

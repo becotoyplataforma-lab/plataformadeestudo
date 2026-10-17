@@ -34,7 +34,7 @@ Este documento descreve as mudanças implementadas recentemente na plataforma Co
 |------------|-----------|--------|
 | Framework | Next.js | 16.3.0 (Turbopack) |
 | Linguagem | TypeScript | strict mode |
-| Database | PostgreSQL (Supabase) | sqrjovmqupjowyilgbsp |
+| Database | PostgreSQL (Supabase) | ref do projeto no .env (nao no doc) |
 | Auth | Auth.js v5 | Supabase + Credentials |
 | Storage | Cloudflare R2 + Supabase | r2 (explícito via env) |
 | Testing | Vitest | v4.1.11 |
@@ -48,16 +48,16 @@ Este documento descreve as mudanças implementadas recentemente na plataforma Co
 **Ativo:** `STORAGE_BACKEND=r2` (Cloudflare R2)
 
 ```
-Bucket: plataforma
-Endpoint: https://a9eb62d2acb1771eba70b2a95d24203b.r2.cloudflarestorage.com
+Bucket: nome do bucket em R2_BUCKET (valor nao vai para o repositorio)
+Endpoint: derivado de R2_ACCOUNT_ID em src/lib/knowledge/storage/r2-storage.service.ts
 Credentials: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
 ```
 
-**Fallback:** Supabase Storage (bucket `documents`) — apenas para leitura de docs legados.
+**Sem fallback automatico:** o backend e decidido por `STORAGE_BACKEND`. Supabase Storage (bucket `documents`) continua servindo os documentos legados porque o download usa o `storage_backend` gravado no documento, nao o backend global.
 
 **Migração Realizada:**
-- 2 documentos migrados de Supabase → R2
-- Originais deletados de Supabase
+- 2 documentos migrados de Supabase -> R2 (execucao historica, com credenciais que hoje nao estao neste ambiente);
+- Originais deletados de Supabase; reexecutar `scripts/migrate-storage-r2.mjs` so com credenciais e banco de teste isolado
 - 0 docs permanecem em Supabase
 - 8 docs + transformados em R2 + 2 em Supabase (confirmado via HeadObject + download)
 
@@ -809,9 +809,112 @@ API Routes:
 - `docs/08-DATABASE-PHYSICAL.md` — Schema físico
 - `docs/14-PROMPTS.md` — Prompts de IA
 - `docs/20-CONTEST-IMPLEMENTATION-MAP.md` — Roadmap de implementação
+- `docs/23-CATALOGO-PROVENIENCIA-E-VOCABULARIO.md` — proveniência e vocabulário do catálogo
+- `docs/24-CATALOGACAO-HISTORICA-CBMERJ-2021.md` — edital histórico medido, não retranscrito
+- `docs/27-VOCABULARIO-EM-CODIGO-E-MEDIDA-CALIBRADA.md` — o que virou código e a medida calibrada
 
 ---
 
+## 16. Atualização 2026-10-03 — catálogo (FASE 4) em código, nenhuma escrita
+Escopo: transformar em código o que `docs/23` deixava em prosa e calibrar a medida de
+`docs/24`. Justificativas e números completos em `docs/27`.
+- **Vocabulário de assunto** (`src/lib/catalog/services/catalog-subject-vocabulary.ts`):
+  `Língua Portuguesa` → `Português` e `Matemática e Raciocínio Lógico` → `Matemática`;
+  `Conhecimentos Específicos` e `Conhecimentos Básicos` registrados como cabeçalhos sem alvo.
+  Alias resolve assunto e nunca renomeia linha canônica.
+- **Matcher** usa o vocabulário como linha de base; alias do caller tem precedência. O contrato
+  está fixado em `catalog-matcher.service.test.ts` (15 testes, snapshot sintético, sem banco).
+- **Normalizador e detectores de colisão**: precedência única em `classifyCollision`,
+  `collisionId` estável por `kind + chave`, comparadores separados para pontuação contra
+  caixa/acento. Todo grupo devolve `deduplicated: false` e `discardedEntries: 0`.
+- **Medida calibrada do CBMERJ-2021** (278 unidades contra o snapshot de 33 assuntos e 31
+  tópicos): 9 `REUSO_CANONICO`, 127 `NOVO_CANONICO`, 78 `PENDENTE_REVISAO`,
+  64 `BLOQUEADO` (só `Conhecimentos Específicos`), 0 `AMBIGUO`; 78 grupos de colisão
+  `NORMALIZED_NAME` sobre 220 unidades; 0 acordo de chave completa.
+- **Apply segue recusado**: `APPLY_DISABLED_IN_AUDIT_PHASE`, `databaseOperations: []`, inclusive
+  com `force`/`skip-review`. `db:push`, `db:seed` e `db:migrate` continuam bloqueados por guard
+  até existir banco de teste isolado.
+- **Validação**: 1134 testes passando em 103 arquivos (6 expected fail já registrados),
+  `tsc --noEmit` limpo, `eslint src/lib/catalog` limpo; catálogo: 62 testes em 4 arquivos.
+- **Pendente**: a FASE 3B (revisão humana de vocabulário e vínculo) pertence a `docs/26`, que
+  ainda não existe.
+---
+## 17. Atualização 2026-10-03 — CourseCatalogAgent (FASE 4B): entrada de novo curso
+Escopo: transformar o esqueleto da FASE 4 em fluxo utilizável de auditoria — fatos de edital,
+proposta DeepSeek, rota administrativa, fixture de concurso novo. Justificativa e números completos
+em `docs/28`. `docs/26` continua reservado à FASE 3B (revisão humana) e não foi criado.
+- **Agente** (`src/lib/catalog/agents/course-catalog-agent.ts`): `analyze()` mapeia a borda, chama o
+  `run()` da FASE 4 intacto, mede fatos de edital e projeta proposta revisável; `snapshotReader` é
+  costura de leitura para teste — sem banco, sem rede.
+- **Fatos de edital** (`src/lib/catalog/services/contest-facts.service.ts`): banca, órgão, nível,
+  vagas, questões, data, nome do concurso e cargo, cada um com `start`/`end`/`page`; regras
+  CONTEST-01…CONTEST-10, e `CONTEST-DECLARED-01` marca declaração do caller como
+  `DETERMINISTIC_MAPPING`. Campo sem âncora publicada cai em `missingFields`.
+- **DeepSeek** (`src/lib/catalog/services/deepseek-catalog-ai-client.ts`): adapter da porta
+  `CatalogAiClient` sobre o `DeepSeekProvider` que já existia; mesma `DEEPSEEK_API_KEY`, modelo
+  `flash`, temperatura 0, teto de 45 s. Sem chave, a fábrica devolve `null` e a seção fica
+  `AI_CLIENT_UNAVAILABLE`. IA é anotação: `AI_OVERREACH`, `AI_SCHEMA_INVALID`,
+  `AI_PROVIDER_FAILED` e `INVALID_AI_PROPOSAL` viram rejeição, nunca mudança de classificação.
+- **Rota** `POST /api/admin/catalog/analyze` (exige sessão de admin): `AUDIT` executa; fonte sem
+  proveniência auditável devolve 422 `SOURCE_REFUSED`; `APPLY` é aceito apenas para ser recusado. A
+  resposta traz `applyStatus: "BLOCKED"`, `apply.code` = `APPLY_DISABLED_IN_AUDIT_PHASE`,
+  `databaseOperations: []` e `report` legível.
+- **Medida**: CBMERJ-2021 pelo agente reproduz a calibração de `docs/27` sem mover um número (278
+  unidades; 9 `REUSO_CANONICO`, 127 `NOVO_CANONICO`, 0 `AMBIGUO`, 64 `BLOQUEADO`, 78
+  `PENDENTE_REVISAO`; 78 grupos de colisão sobre 220 unidades). A fixture sintética
+  `novo-curso-2026` cobre reuso canônico, near-miss semântico, tópico novo, cinco tipos de colisão,
+  disciplina inexistente bloqueada e fragmento derivado que nunca vira reuso.
+- **Validação**: 123 testes em 8 arquivos de catálogo/rota; suíte completa 1195 passando, 6 expected
+  fail, 29 skipped; `tsc --noEmit` limpo; `eslint src/lib/catalog src/app/api/admin/catalog
+  --max-warnings=0` limpo. Nenhuma escrita em banco, nenhuma migração, nenhum seed, nenhuma
+  requisição de rede, nenhum `.env` alterado.
+
+---
+## 18. Atualização 2026-10-05 — aprovação humana da análise (FASE 5): contrato, sem escrita
+Escopo: transformar "revisão humana pendente" de frase em registro assinado por digest. Justificativa
+e tabelas completas em `docs/29`. `docs/26` continua reservado à FASE 3B e não foi tocado.
+- **Contrato** (`src/lib/catalog/types/catalog-approval.ts`): `CatalogApproval` sem `updatedAt`, sem
+  `deletedAt` e sem UPDATE; status exatamente `"aprovado" | "rejeitado"` em minúsculo, sem `pendente`
+  persistido — ausência de registro é que significa "não decidido"; corrigir é novo registro com
+  `supersedesApprovalId`. O status de `documents.review_status` é de outro domínio (vive em coluna, com
+  máquina de estados própria) e não foi importado.
+- **Digest compartilhado** (`src/lib/catalog/services/catalog-digest.ts`): `sha256Hex` subiu do
+  validador de fonte para este módulo, que só importa `server-only` e `node:crypto`;
+  `source-validator.service.ts` importa e re-exporta o símbolo, preservando a API que os testes da
+  FASE 4 já usam. Os dois hashes fora do domínio catálogo (`scripts/migrate-storage-r2.mjs`,
+  `src/lib/knowledge/storage/migrate-classifier.ts`) ficaram onde estavam.
+- **Vínculo triplo** (`src/lib/catalog/services/catalog-approval.service.ts`): `analysisDigest` é cópia
+  de `provenance.analysedTextSha256` (não é rederivado); `proposalId` é `PRP-` mais 24 hex de
+  `sha256(agente|fase|schema|analysisDigest)`; `proposalDigest` é o sha256 do canonical JSON da
+  projeção; `approvalId` é `APR-` mais 32 hex do registro menos o próprio id. O canonical ordena
+  chaves por unidade UTF-16, omite `undefined` e recusa `Date`, `Map`, `Set`, classe, função, symbol,
+  bigint, `NaN` e `Infinity`.
+- **Projeção de decisão:** entra o que o humano aprovou — concurso declarado e publicado, sem slug
+  inventado (`CatalogContestProfile` não tem `slug`), disciplinas, tópicos, casamentos, colisões,
+  conflitos de decisão e resumo recalculado sobre a lista filtrada. Ficam fora `audit.*` (relógio e
+  custo), `report`, `aiProposal`, `aiAssist` por linha, `apply`, `applyStatus`, `requestedMode`, nota
+  de borda e os conflitos `INVALID_AI_PROPOSAL`, `AI_OVERREACH` e `APPLY_DISABLED_IN_AUDIT_PHASE`.
+  Reexecutar o DeepSeek com outra saída não invalida a decisão de um humano sobre as regras
+  determinísticas.
+- **Gate em memória:** `buildApprovalGate` devolve `approved`, `status`, `approval`, os três vínculos
+  e `issues`; `findCurrentApproval` percorre a cadeia por supersessão, não por relógio, e reporta
+  `SUPERSEDES_SELF`, `SUPERSEDES_UNKNOWN`, `SUPERSEDES_CYCLE` e `SUPERSEDES_AMBIGUOUS`. A aprovação é
+  da **análise inteira**: `SUB-`, `TOP-` e `AIP-` seguem identificadores de linha, nunca de decisão.
+- **APPLY continua bloqueado:** `approved: true` é condição necessária, não suficiente.
+  `catalog-apply.service.ts`, `course-catalog-agent.ts`, `catalog-analysis.ts`, a rota `analyze` e
+  `src/db/**` não foram tocados; nenhuma rota ou UI de aprovação foi criada.
+- **Validação:** 192 testes em 11 arquivos de catálogo e rota (7 de digest, 54 de aprovação unitários,
+  8 de integração sobre payload real do agente, 123 anteriores da FASE 4/4B intactos); `tsc --noEmit`
+  limpo; `eslint src/lib/catalog src/app/api/admin/catalog --max-warnings=0` limpo; `git diff --check`
+  sem whitespace. Nenhuma escrita em banco, nenhuma migration, nenhum seed, nenhuma requisição de
+  rede, nenhum `.env` alterado, nenhum commit, nenhum push.
+- **Suíte global do repositório:** `npx vitest run --reporter=dot` fechou a fase com 121 arquivos
+  (110 passando, 11 de integração pulados) e 1299 testes (1264 passando, 6 marcados como
+  esperado-falhar, 29 pulados), exit 0. Os pulados são a prova de que nada falou com banco:
+  `src/integration/helpers.ts` define `hasDb` por `isNonProductionDatabaseUrl(DATABASE_URL)`
+  e desliga os arquivos com `describe.skipIf` enquanto não há banco de teste isolado.
+
+---
 ## Apêndice: Checklist de Validação
 
 - [x] Sidebar redesenhado (padrão "Estratégia Concursos")
