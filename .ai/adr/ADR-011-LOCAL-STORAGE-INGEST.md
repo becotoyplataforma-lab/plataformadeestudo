@@ -26,7 +26,8 @@ Accepted
   raiz do filesystem nem a raiz do repositório; `.storage/` está no `.gitignore`.
 - Criar `src/lib/knowledge/pending-ingest.ts`: fila JSON com escrita atômica,
   `schema_version`, idempotência por `sha256` e estados
-  `recorded → staged → synced` (+ `error`).
+  `staged → recorded → synced` (+ `error`); `synced` é terminal e `recorded` não
+  é rebaixado por um novo `staged` do mesmo hash.
 
 ## Consequences
 - Ingestão e desenvolvimento funcionam sem credenciais de storage.
@@ -36,7 +37,8 @@ Accepted
 - O sidecar é um segundo artefato por objeto: `remove` apaga os dois, e um objeto
   copiado à mão sem sidecar cai no MIME inferido pela extensão em `head()`.
 - A fila é o único registro do que ainda não virou `documents`; sincronizar é
-  responsabilidade do CLI (fase seguinte), nunca de uma rota pública.
+  responsabilidade do CLI (`--stage` grava bytes e enfileira; `--sync` consome a
+  fila), nunca de uma rota pública.
 - `local` em produção falha no boot da operação, não silenciosamente — um
   serviço serverless tem disco efêmero e serviríamos 404 no próximo cold start.
 
@@ -60,5 +62,6 @@ Accepted
 - `src/lib/knowledge/storage/local-storage.service.ts`
 - `src/lib/knowledge/storage/backend.ts`
 - `src/lib/knowledge/pending-ingest.ts`
+- `scripts/ingest-apostilas.ts` (`--stage`, `--sync`, `--backend`)
 - `docs/GUIA-INGESTAO-APOSTILAS.md`
 - `.ai/adr/ADR-001-SUPABASE-AUTH.md` (formato)

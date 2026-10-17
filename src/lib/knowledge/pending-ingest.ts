@@ -8,18 +8,28 @@
  * Neon continua bloqueado neste posto.
  *
  * Esta fila guarda a primeira metade enquanto a segunda e impossivel. Ela e
- * escrita pelo CLI de ingestao local e lida pelo comando de sincronizacao, que
- * reproduz o registro no banco. Idempotencia por `sha256`: o mesmo arquivo
- * ingestado duas vezes nao cria duas entradas e nao duplica bytes no storage.
+ * escrita pelo CLI de ingestao e lida pelo `--sync`, que reproduz o registro no
+ * banco. Idempotencia por `sha256`: o mesmo arquivo ingestado duas vezes nao
+ * cria duas entradas e nao duplica bytes no storage.
+ *
+ * A entrada tem dois formatos, porque existe um intervalo real entre eles:
+ * - `staged`: os bytes estao preservados em `.storage/staging/{sha256}{ext}` e
+ *   nao ha nada no banco. `storagePath` e `documentId` sao `null` porque o
+ *   `documentId` nasce junto do INSERT em `IngestionService.ingest` — inventar
+ *   um uuid aqui seria uma chave falsa para o proximo `--sync`.
+ * - `recorded`: a linha de `documents` e o objeto na chave canonica ja existem
+ *   (falta extracao e embeddings); `stagingPath` e `null`.
  *
  * O arquivo e JSON com `schema_version` e escrita atomica (`{file}.{uuid}.tmp`
- * + rename), porque fila corrompida a meio de `markStaged` equivaleria a perder
- * o resultado de uma ingestao de varios minutos.
+ * + rename), porque fila corrompida a meio de uma sincronizacao equivaleria a
+ * perder o resultado de uma ingestao de varios minutos.
  */
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+
+import { extensionOf } from "./format-contract";
 
 export const PENDING_INGEST_SCHEMA_VERSION = 1 as const;
 
@@ -37,8 +47,14 @@ export type PendingIngestEntry = {
   mimeType: string;
   sizeBytes: number;
   sha256: string;
-  storageBackend: string;
-  storagePath: string;
+  /** Backend do objeto canonico; `null` enquanto os bytes estao so no staging. */
+  storageBackend: string | null;
+  /** Chave `{userId}/{documentId}/{fileName}`; `null` ate o objeto existir. */
+  storagePath: string | null;
+  /** Linha de `documents` ja criada; `null` enquanto o registro e planejado. */
+  documentId: string | null;
+  /** Arquivo em `.storage/staging`; `null` quando os bytes ja viraram objeto. */
+  stagingPath: string | null;
   status: PendingIngestStatus;
   recordedAt: string;
   updatedAt: string;
@@ -147,14 +163,29 @@ async function writePendingQueue(file: PendingIngestFile, queueFile: string): Pr
   }
 }
 
-export type RecordPendingInput = {
+export type RecordedPendingInput = {
   fileName: string;
   filePath: string;
   mimeType: string;
   sizeBytes: number;
   sha256: string;
+  /** Backend onde os bytes viraram objeto canonico. */
   storageBackend: string;
+  /** Chave canonica ja escrita no backend. */
   storagePath: string;
+  /** Linha de `documents` que existe — sem ela o `--sync` nao sabe o que processar. */
+  documentId: string;
+  queueFile?: string;
+};
+
+export type StagedPendingInput = {
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256: string;
+  /** Arquivo preservado em staging, enderecado pelo proprio conteudo. */
+  stagingPath: string;
   queueFile?: string;
 };
 
@@ -164,43 +195,57 @@ export type RecordPendingResult = {
   created: boolean;
 };
 
+type PendingEntryFields = Omit<
+  PendingIngestEntry,
+  "id" | "status" | "recordedAt" | "updatedAt" | "attempts" | "lastError"
+>;
+
 /**
- * Grava (ou reencontra) a entrada da apostila na fila.
- *
- * Idempotente por sha256: reprocessar o mesmo arquivo nao duplica entrada nem
- * reescreve bytes. Se a entrada ja estava `synced` e alguem reingestou o mesmo
- * conteudo, ela permanece `synced` — mudar para `recorded` faria o proximo
- * `--sync` tentar inserir no banco um documento que ja la esta.
+ * Estado existente nunca e rebaixado por um registro novo:
+ * - `synced` sobrevive a re-ingestao: mudar para `recorded` faria o proximo
+ *   `--sync` tentar inserir no banco um documento que ja la esta.
+ * - `recorded` sobrevive a um `--stage` do mesmo conteudo: os bytes ja sao
+ *   objeto no backend, e staging redundante sugeriria trabalho que nao existe.
  */
-export async function recordPendingIngest(input: RecordPendingInput): Promise<RecordPendingResult> {
-  const queueFile = input.queueFile ?? pendingIngestQueuePath();
+function nextStatus(current: PendingIngestStatus, incoming: PendingIngestStatus): PendingIngestStatus {
+  if (current === "synced") return "synced";
+  if (current === "recorded" && incoming === "staged") return "recorded";
+  return incoming;
+}
+
+async function upsertPendingEntry(
+  fields: PendingEntryFields,
+  status: PendingIngestStatus,
+  queueFile: string
+): Promise<RecordPendingResult> {
   const file = await readPendingQueue(queueFile);
   const now = new Date().toISOString();
-  const existing = file.entries.find((entry) => entry.sha256 === input.sha256);
+  const existing = file.entries.find((entry) => entry.sha256 === fields.sha256);
 
   if (existing) {
+    // Campo ja preenchido nao e apagado por um registro que nao o conhece: uma
+    // entrada `recorded` que alguem voltou a por em staging continua com a chave
+    // canonica, senao o `--sync` perderia o rastro do objeto que existe.
     const entry: PendingIngestEntry = {
       ...existing,
-      fileName: input.fileName,
-      filePath: input.filePath,
+      ...fields,
+      storageBackend: fields.storageBackend ?? existing.storageBackend,
+      storagePath: fields.storagePath ?? existing.storagePath,
+      documentId: fields.documentId ?? existing.documentId,
+      stagingPath: fields.stagingPath ?? existing.stagingPath,
+      status: nextStatus(existing.status, status),
       attempts: existing.attempts + 1,
       updatedAt: now,
     };
-    file.entries = file.entries.map((e) => (e.sha256 === input.sha256 ? entry : e));
+    file.entries = file.entries.map((e) => (e.sha256 === fields.sha256 ? entry : e));
     await writePendingQueue(file, queueFile);
     return { entry, created: false };
   }
 
   const entry: PendingIngestEntry = {
     id: randomUUID(),
-    fileName: input.fileName,
-    filePath: input.filePath,
-    mimeType: input.mimeType,
-    sizeBytes: input.sizeBytes,
-    sha256: input.sha256,
-    storageBackend: input.storageBackend,
-    storagePath: input.storagePath,
-    status: "recorded",
+    ...fields,
+    status,
     recordedAt: now,
     updatedAt: now,
     attempts: 1,
@@ -208,6 +253,48 @@ export async function recordPendingIngest(input: RecordPendingInput): Promise<Re
   file.entries = [...file.entries, entry];
   await writePendingQueue(file, queueFile);
   return { entry, created: true };
+}
+
+/** Registro do que ja virou objeto canonico (falhou so a extracao/embeddings). */
+export async function recordPendingIngest(
+  input: RecordedPendingInput
+): Promise<RecordPendingResult> {
+  return upsertPendingEntry(
+    {
+      fileName: input.fileName,
+      filePath: input.filePath,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      sha256: input.sha256,
+      storageBackend: input.storageBackend,
+      storagePath: input.storagePath,
+      documentId: input.documentId,
+      stagingPath: null,
+    },
+    "recorded",
+    input.queueFile ?? pendingIngestQueuePath()
+  );
+}
+
+/** Registro dos bytes preservados sem banco: metade de storage, nenhuma de banco. */
+export async function recordStagedIngest(
+  input: StagedPendingInput
+): Promise<RecordPendingResult> {
+  return upsertPendingEntry(
+    {
+      fileName: input.fileName,
+      filePath: input.filePath,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      sha256: input.sha256,
+      storageBackend: null,
+      storagePath: null,
+      documentId: null,
+      stagingPath: input.stagingPath,
+    },
+    "staged",
+    input.queueFile ?? pendingIngestQueuePath()
+  );
 }
 
 /**
@@ -257,4 +344,91 @@ export function summarizePendingQueue(file: PendingIngestFile): Record<PendingIn
     totals[entry.status] = (totals[entry.status] ?? 0) + 1;
   }
   return totals;
+}
+
+/** O que o `--sync` tem a fazer: tudo o que ainda nao virou documento processado. */
+export function pendingEntriesToSync(file: PendingIngestFile): PendingIngestEntry[] {
+  return file.entries.filter((entry) => entry.status !== "synced");
+}
+
+/**
+ * Directoria de staging: irma do arquivo da fila (`.storage/staging` por
+ * default), para que `rm -rf .storage` descarte bytes e fila de uma vez — o
+ * mesmo criterio da raiz de storage local.
+ */
+export function stagingDirFor(queueFile: string = pendingIngestQueuePath()): string {
+  return join(dirname(queueFile), "staging");
+}
+
+/**
+ * Nome em staging: o conteudo e a identidade, a extensao so preserva o MIME
+ * para o proximo `head()`. Qualquer coisa fora de letras e numeros vira `.bin`.
+ */
+export function stagedFileName(sha256: string, fileName: string): string {
+  const ext = extensionOf(fileName).replace(/^\./, "").toLowerCase();
+  return /^[a-z0-9]{1,8}$/.test(ext) ? `${sha256}.${ext}` : `${sha256}.bin`;
+}
+
+/**
+ * Preserva os bytes longe do banco. O hash e conferido ANTES do rename: staging
+ * com conteudo diferente do sha256 declarado seria sincronizado mais tarde como
+ * se fosse a apostila certa, e o catalogo passaria a conter bytes que ninguem
+ * pediu. Um arquivo ja presente com o mesmo conteudo nao e reescrito.
+ */
+export async function writeStagedBytes(args: {
+  sha256: string;
+  fileName: string;
+  buffer: Buffer;
+  queueFile?: string;
+}): Promise<string> {
+  if (!/^[0-9a-f]{64}$/.test(args.sha256)) {
+    throw new PendingIngestError(
+      "PENDING_STAGED_SHA_INVALID",
+      `sha256 invalido para staging: ${args.sha256.slice(0, 16)}…`
+    );
+  }
+  if (createHash("sha256").update(args.buffer).digest("hex") !== args.sha256) {
+    throw new PendingIngestError(
+      "PENDING_STAGED_HASH_MISMATCH",
+      `O conteudo de ${args.fileName} nao bate com o sha256 declarado; nada foi gravado em staging.`
+    );
+  }
+
+  const dir = resolve(stagingDirFor(args.queueFile ?? pendingIngestQueuePath()));
+  const target = resolve(dir, stagedFileName(args.sha256, args.fileName));
+  const tmp = `${target}.${randomUUID()}.tmp`;
+  try {
+    await mkdir(dir, { recursive: true });
+    await writeFile(tmp, args.buffer);
+    await rename(tmp, target);
+  } catch (error) {
+    throw new PendingIngestError(
+      "PENDING_STAGED_WRITE_FAILED",
+      `Falha ao gravar staging em ${target}: ${error instanceof Error ? error.message : "erro desconhecido"}`
+    );
+  }
+  return target;
+}
+
+/** Le o staging e confirma o hash: o que se sincroniza e o que foi gravado. */
+export async function readStagedBytes(args: {
+  stagingPath: string;
+  sha256: string;
+}): Promise<Buffer<ArrayBuffer>> {
+  let buffer: Buffer<ArrayBuffer>;
+  try {
+    buffer = await readFile(args.stagingPath);
+  } catch {
+    throw new PendingIngestError(
+      "PENDING_STAGED_MISSING",
+      `Bytes em staging nao encontrados em ${args.stagingPath}; a apostila precisa ser lida da origem outra vez.`
+    );
+  }
+  if (createHash("sha256").update(buffer).digest("hex") !== args.sha256) {
+    throw new PendingIngestError(
+      "PENDING_STAGED_HASH_MISMATCH",
+      `O arquivo de staging ${args.stagingPath} nao bate com o sha256 da fila; sincronizar criaria um documento com conteudo trocado.`
+    );
+  }
+  return buffer;
 }

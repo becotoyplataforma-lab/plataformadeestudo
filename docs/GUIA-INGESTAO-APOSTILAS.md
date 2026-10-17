@@ -102,7 +102,7 @@ passo de embedding depende de `EMBEDDING_API_URL`/`EMBEDDING_API_KEY`. Sem
 eles o documento termina em `chunked` (sem embeddings), que e o comportamento
 degradado esperado e ja coberto por teste unitario.
 
-## 5. Dry-run em lote (unico modo executavel hoje)
+## 5. Dry-run em lote e o modo `--stage` (executaveis sem banco)
 
 Comando (PowerShell, saida fora do repositorio):
 
@@ -145,6 +145,43 @@ Interpretacao honesta: este resultado **exercita apenas o caminho de origem
 vazia**. Ele prova que o CLI roda, que o guard nao e violado e que a saida vai
 para fora do repositorio; nao prova extracao, chunking, dedup em corpus real
 nem volume.
+
+### 5.1 Modo `--stage` e modo `--sync` (evidencia de 2026-10-17)
+
+`--stage` e o segundo modo executavel neste posto, sem banco: grava os bytes em
+`.storage/staging` (arquivo `sha256.ext`, escrito por rename e conferido pelo
+hash) e registra a apostila na fila `.storage/pending-ingest.json` como `staged`.
+Escreve so em storage — nenhuma linha de banco, nenhuma credencial de IA, nenhum
+`--actor-email`:
+
+```powershell
+$ws = Join-Path $env:TEMP 'concursoai-stage'
+npm run ingest:apostilas -- --source materiais --workspace $ws --backend local --stage
+```
+
+Saida desta rodada (2 arquivos de teste, backend `local`): `staged: novos=2
+reutilizados=0` e fila `{"recorded":0,"staged":2,"synced":0,"error":0}`. O mesmo
+comando repetido devolveu `novos=0 reutilizados=2` com `staged:2`: a fila e
+idempotente por sha256. `--backend` aceita `r2|supabase|local`; sem a flag vale
+`STORAGE_BACKEND`, e nao existe escolha de backend por documento.
+
+Com banco de teste isolado, `--sync` consome a fila:
+
+```powershell
+npm run ingest:apostilas -- --sync --actor-email [professor] --limit 1
+```
+
+Entrada `staged` vira ingestao completa a partir dos bytes preservados (o hash e
+reconferido na leitura, entao o que se sincroniza e o que foi gravado); entrada
+`recorded` — bytes ja no backend canonico e linha em `documents` — repete apenas
+a extracao, porque ingerir de novo daria `DUPLICATE_FILE` e deixaria o conteudo
+sem chunks. Sem `DATABASE_URL` de teste o comando para antes de qualquer escrita
+(`[cli] BLOCKED NON_PRODUCTION_DATABASE_REQUIRED`, codigo de saida 3).
+
+Os tres modos de escrita sao mutuamente exclusivos (`Modos exclusivos: --apply e
+--stage. Escolha um.`), e `.storage/` esta no `.gitignore` (linha 130): acervo,
+staging e fila continuam fora do repositorio. Referencias de linha das secoes 1
+a 5 acima foram lidas na versao anterior do CLI e nao incluem `--stage`/`--sync`.
 
 ## 6. Ler as saidas
 

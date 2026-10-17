@@ -7,6 +7,19 @@
  * prova o CLI falha com NON_PRODUCTION_DATABASE_REQUIRED, porque desenvolvimento
  * e producao compartilham o mesmo projeto Supabase neste ambiente.
  *
+ * Tres modos de escrita, mutuamente exclusivos:
+ *   --stage  os bytes vao para o storage escolhido e a entrada entra na fila de
+ *            ingestao. Nenhum banco e tocado, por isso nenhum guard de banco se
+ *            aplica: e o modo que funciona neste posto, sem DATABASE_URL.
+ *   --apply  ingestao completa (exige banco de teste isolado).
+ *   --sync   consome a fila: `staged` vira ingestao completa a partir dos bytes
+ *            preservados, `recorded` repete so a extracao/embeddings. Tambem
+ *            exige banco de teste isolado.
+ *
+ * --backend r2|supabase|local decide onde os bytes DESTA execucao vivem; sem ele
+ * vale STORAGE_BACKEND. Storage local em producao e recusado pelo adaptador
+ * (LOCAL_BACKEND_FORBIDDEN), e nao ha escolha de backend por documento.
+ *
  * Origem: somente leitura. O CLI nao move, renomeia nem apaga arquivo algum.
  * As saidas vao para a area de trabalho (manifest, reports, logs, processed).
  */
@@ -22,18 +35,34 @@ import {
 import { resolveMcpProvider } from "../src/lib/knowledge/mcp/registry";
 import { McpError, type KnowledgeMcpProvider, type McpPlan } from "../src/lib/knowledge/mcp/contracts";
 import { extensionOf, mimeForExtension } from "../src/lib/knowledge/format-contract";
+import {
+  pendingEntriesToSync,
+  readPendingQueue,
+  readStagedBytes,
+  recordPendingIngest,
+  recordStagedIngest,
+  stagingDirFor,
+  summarizePendingQueue,
+  updatePendingStatus,
+  writeStagedBytes,
+  type PendingIngestEntry,
+} from "../src/lib/knowledge/pending-ingest";
 
 const DEFAULT_SOURCE = process.env.APOSTILA_SOURCE_DIR ?? "";
 const DEFAULT_WORKSPACE =
   process.env.APOSTILA_WORK_DIR ?? join(process.cwd(), ".apostilas-work");
 const WORKSPACE_DIRS = ["source", "manifest", "processed", "failed", "logs", "exports", "reports"];
 const ZERO_PROBE_BYTES = 65536;
+const BACKEND_CHOICES = ["r2", "supabase", "local"] as const;
 
 type CliArgs = {
   source: string;
   workspace: string;
   limit: number | null;
   apply: boolean;
+  stage: boolean;
+  sync: boolean;
+  backend: string | null;
   mcpId: string | null;
   subject: string | null;
   actorEmail: string | null;
@@ -67,9 +96,37 @@ function usage(): string {
     "  --mcp ID          provedor MCP (default apostila-mcp)",
     "  --subject NOME    disciplina gravada no plano",
     "  --apply           executa ingestao real (exige banco de teste isolado)",
+    "  --stage           grava os bytes no storage e coloca a apostila na fila (sem banco)",
+    "  --sync            consome a fila: ingere as staged e repete a extracao das recorded",
+    "  --backend B       r2 | supabase | local para os bytes desta execucao (default STORAGE_BACKEND)",
     "  --actor-email E   e-mail do professor ou admin responsavel",
     "  --dry-run         forca modo seco (padrao)",
   ].join("\n");
+}
+
+/** Backend de storage desta execucao. Nao existe escolha de backend por documento. */
+function parseBackend(raw: string): string {
+  if (!(BACKEND_CHOICES as readonly string[]).includes(raw)) {
+    throw new Error("--backend aceita r2, supabase ou local. Recebido: " + raw + "\n" + usage());
+  }
+  return raw;
+}
+
+/** Os tres modos de escrita sao mutuamente exclusivos: cada um tem outro guard. */
+function assertSingleWriteMode(args: CliArgs): void {
+  const modes = ["--apply", "--stage", "--sync"].filter((flag) =>
+    flag === "--apply" ? args.apply : flag === "--stage" ? args.stage : args.sync
+  );
+  if (modes.length > 1) {
+    throw new Error("Modos exclusivos: " + modes.join(" e ") + ". Escolha um.\n" + usage());
+  }
+}
+
+/** O modo desta execucao, como aparece no log e no report. */
+function modeLabel(args: CliArgs): string {
+  if (args.sync) return "sync (consome a fila)";
+  if (args.stage) return "stage (sem banco)";
+  return args.apply ? "APPLY" : "dry-run (padrao)";
 }
 
 function takeValue(next: string | undefined, flag: string): string {
@@ -77,12 +134,27 @@ function takeValue(next: string | undefined, flag: string): string {
   return next;
 }
 
-function parseArgs(argv: string[]): CliArgs {
+/** Aceita `--flag valor` e `--flag=valor`; a segunda forma e a que aparece em docs. */
+function expandEquals(input: string[]): string[] {
+  const argv: string[] = [];
+  for (const token of input) {
+    const eq = token.startsWith("--") ? token.indexOf("=") : -1;
+    if (eq > 2) argv.push(token.slice(0, eq), token.slice(eq + 1));
+    else argv.push(token);
+  }
+  return argv;
+}
+
+function parseArgs(input: string[]): CliArgs {
+  const argv = expandEquals(input);
   const args: CliArgs = {
     source: DEFAULT_SOURCE,
     workspace: DEFAULT_WORKSPACE,
     limit: null,
     apply: false,
+    stage: false,
+    sync: false,
+    backend: null,
     mcpId: null,
     subject: null,
     actorEmail: null,
@@ -95,7 +167,10 @@ function parseArgs(argv: string[]): CliArgs {
       process.exit(0);
     }
     if (token === "--apply") { args.apply = true; continue; }
-    if (token === "--dry-run") { args.apply = false; continue; }
+    if (token === "--stage") { args.stage = true; continue; }
+    if (token === "--sync") { args.sync = true; continue; }
+    if (token === "--backend") { args.backend = parseBackend(takeValue(argv[i + 1], token)); i += 1; continue; }
+    if (token === "--dry-run") { args.apply = false; args.stage = false; args.sync = false; continue; }
     if (token === "--source") { args.source = resolve(takeValue(argv[i + 1], token)); i += 1; continue; }
     if (token === "--workspace") { args.workspace = resolve(takeValue(argv[i + 1], token)); i += 1; continue; }
     if (token === "--mcp") { args.mcpId = takeValue(argv[i + 1], token); i += 1; continue; }
@@ -299,7 +374,7 @@ function renderReport(args: CliArgs, provider: KnowledgeMcpProvider, rows: Manif
   const lines: string[] = [
     "# Relatorio de ingestao de apostilas",
     "",
-    "- modo: " + (args.apply ? "APPLY" : "dry-run"),
+    "- modo: " + modeLabel(args),
     "- provedor MCP: " + provider.id + "-" + provider.version,
       "- versao editorial: " + provider.processingVersion,
     "- origem: " + args.source,
@@ -358,22 +433,13 @@ async function writeArtifacts(args: CliArgs, provider: KnowledgeMcpProvider, row
   await writeFile(join(args.workspace, "reports", "apostilas.md"), renderReport(args, provider, rows), "utf8");
 }
 /**
- * Ingestao real, atraves do pipeline completo:
- *   arquivo -> validacao -> storage -> extracao -> chunks -> embeddings ->
- *   indexacao -> metadados -> associacao -> Knowledge Engine -> RAG
- *
- * Nao roda sem o guard provar banco de teste isolado, e nao roda sem um ator
- * professor/admin real: isProfessorOrAdmin(undefined) NAO e suficiente aqui.
+ * Quem pode escrever no banco: primeiro o guard prova banco de teste isolado,
+ * depois o ator real. `isProfessorOrAdmin(undefined)` NAO e suficiente aqui, e o
+ * ator precisa existir em `auth.users` — a linha de `documents` referencia ela.
  */
-async function applyIngestion(args: CliArgs, provider: KnowledgeMcpProvider, rows: ManifestRow[]): Promise<void> {
+async function requireActor(args: CliArgs): Promise<string> {
   assertNonProductionDatabaseUrl("apostila-cli", process.env.DATABASE_URL);
-  if (!args.actorEmail) throw new Error("--apply exige --actor-email de professor ou admin.");
-
-  const pending = rows.filter(function (row) { return row.action === "pending"; });
-  const limited = args.limit === null ? pending : pending.slice(0, args.limit);
-  if (limited.length !== pending.length) {
-    console.log("[cli] --limit ativo: " + limited.length + " de " + pending.length + " documento(s).");
-  }
+  if (!args.actorEmail) throw new Error("Este modo exige --actor-email de professor ou admin.");
 
   const { AdminGuardService } = await import("../src/lib/administration/services/admin-guard.service");
   const allowed = await AdminGuardService.isProfessorOrAdmin(args.actorEmail);
@@ -388,65 +454,250 @@ async function applyIngestion(args: CliArgs, provider: KnowledgeMcpProvider, row
     .where(eq(authUsers.email, args.actorEmail))
     .limit(1);
   if (!actor) throw new Error("Ator sem registro em auth.users: " + args.actorEmail);
-  const userId = actor.id;
+  return actor.id;
+}
 
+/**
+ * O minimo que o CLI sabe sobre um arquivo para ingere-lo. `ManifestRow`
+ * satisfaz esta forma, e uma entrada da fila tambem — assim `--apply` e `--sync`
+ * percorrem exatamente o mesmo caminho de ingestao.
+ */
+type IngestTarget = { relPath: string; fileName: string; sha256: string; sizeBytes: number };
+
+/**
+ * Ingestao de UM arquivo: registro -> bytes -> extracao/embeddings -> metadados.
+ */
+async function applyOne(
+  args: CliArgs,
+  provider: KnowledgeMcpProvider,
+  userId: string,
+  target: IngestTarget,
+  buffer: Buffer<ArrayBuffer>
+): Promise<{ documentId: string; storagePath: string; storageBackend: string }> {
   const { IngestionService } = await import("../src/lib/knowledge/services/ingestion.service");
   const { DocumentStorageService } = await import("../src/lib/knowledge/storage.service");
   const { DocumentPipelineService } = await import("../src/lib/knowledge/services/document-pipeline.service");
   const { DocumentRepository } = await import("../src/lib/knowledge/repositories/document.repository");
 
+  const file = new File([buffer], target.fileName, { type: mimeFor(target.fileName) });
+  const plan = await provider.plan({
+    fileName: target.fileName,
+    mimeType: file.type,
+    sizeBytes: target.sizeBytes,
+    sha256: target.sha256,
+    subject: args.subject ?? undefined,
+    relativePath: target.relPath,
+  });
+
+  const result = await IngestionService.ingest({ userId, file, sourceType: "upload" });
+  await DocumentStorageService.upload({
+    userId,
+    documentId: result.documentId,
+    fileName: result.storagePath.split("/").pop() ?? target.fileName,
+    buffer,
+    mimeType: result.mimeType,
+  });
+
+  try {
+    await DocumentPipelineService.processDocument(result.documentId);
+  } catch (error) {
+    // Bytes e registro ja existem; so a extracao falhou. Entra na fila como
+    // `recorded` para o proximo --sync repetir apenas este passo, em vez de
+    // obrigar a voltar ao --stage e gravar os mesmos bytes duas vezes.
+    await recordPendingIngest({
+      fileName: target.fileName,
+      filePath: target.relPath,
+      mimeType: result.mimeType,
+      sizeBytes: target.sizeBytes,
+      sha256: target.sha256,
+      storageBackend: result.storageBackend,
+      storagePath: result.storagePath,
+      documentId: result.documentId,
+    });
+    console.warn("[cli] pipeline falhou em " + target.relPath + " (fila `recorded`): " + (error as Error).message);
+  }
+
+  await DocumentRepository.updateMetadata(result.documentId, {
+    mcp_provider_id: plan.providerId,
+    mcp_version: plan.providerVersion,
+    processing_version: plan.processingVersion,
+    lesson_order: plan.lessonOrder ?? null,
+    variant: plan.variant ?? null,
+    mcp: {
+      providerId: plan.providerId,
+      providerVersion: plan.providerVersion,
+      processingVersion: plan.processingVersion,
+      variant: plan.variant ?? null,
+      indexedByDefault: plan.indexedByDefault,
+    },
+  });
+
+  return {
+    documentId: result.documentId,
+    storagePath: result.storagePath,
+    storageBackend: result.storageBackend,
+  };
+}
+
+/**
+ * Ingestao real pelo pipeline completo:
+ *   arquivo -> validacao -> storage -> extracao -> chunks -> embeddings ->
+ *   indexacao -> metadados -> associacao -> Knowledge Engine -> RAG
+ */
+async function applyIngestion(args: CliArgs, provider: KnowledgeMcpProvider, rows: ManifestRow[]): Promise<void> {
+  const userId = await requireActor(args);
+  const limited = pendingRows(args, rows);
   let done = 0;
   for (const row of limited) {
     const buffer = await readFile(join(args.source, ...row.relPath.split("/")));
-    const file = new File([buffer], row.fileName, { type: mimeFor(row.fileName) });
-    const plan = await provider.plan({
-      fileName: row.fileName,
-      mimeType: file.type,
-      sizeBytes: row.sizeBytes,
-      sha256: row.sha256,
-      subject: args.subject ?? undefined,
-      relativePath: row.relPath,
-    });
-
-    const result = await IngestionService.ingest({ userId, file, sourceType: "upload" });
-    await DocumentStorageService.upload({
-      userId,
-      documentId: result.documentId,
-      fileName: result.storagePath.split("/").pop() ?? row.fileName,
-      buffer,
-      mimeType: result.mimeType,
-    });
-
-    try {
-      await DocumentPipelineService.processDocument(result.documentId);
-    } catch (error) {
-      console.warn("[cli] pipeline falhou em " + row.relPath + ": " + (error as Error).message);
-    }
-
-    await DocumentRepository.updateMetadata(result.documentId, {
-      mcp_provider_id: plan.providerId,
-      mcp_version: plan.providerVersion,
-      processing_version: plan.processingVersion,
-      lesson_order: plan.lessonOrder ?? null,
-      variant: plan.variant ?? null,
-      mcp: {
-        providerId: plan.providerId,
-        providerVersion: plan.providerVersion,
-        processingVersion: plan.processingVersion,
-        variant: plan.variant ?? null,
-        indexedByDefault: plan.indexedByDefault,
-      },
-    });
-
+    await applyOne(args, provider, userId, row, buffer);
     done += 1;
     console.log("[cli] ingerido " + done + "/" + limited.length + ": " + row.relPath);
   }
   console.log("[cli] ingestao concluida: " + done + " documento(s).");
 }
 
+/** `--limit` corta a lista de arquivos que ainda precisam de ingestao. */
+function pendingRows(args: CliArgs, rows: ManifestRow[]): ManifestRow[] {
+  const pending = rows.filter((row) => row.action === "pending");
+  const limited = args.limit === null ? pending : pending.slice(0, args.limit);
+  if (limited.length !== pending.length) {
+    console.log("[cli] --limit ativo: " + limited.length + " de " + pending.length + " documento(s).");
+  }
+  return limited;
+}
+
+/**
+ * Metade storage, nenhuma de banco: os bytes vao para o backend escolhido e a
+ * apostila entra na fila como `staged`. Nenhum guard de banco se aplica porque
+ * nenhuma linha e escrita — e por isso o modo tambem nao exige --actor-email.
+ *
+ * Os bytes ficam no STAGING, enderecado pelo sha256, e nao na chave canonica:
+ * `{userId}/{documentId}/{fileName}` so passa a existir depois do INSERT, e
+ * inventar um uuid para parecer pronto deixaria um objeto que nenhum documento
+ * aponta. A chave canonica e criada no --sync, pelo proprio servico.
+ */
+async function stageIngestion(args: CliArgs, rows: ManifestRow[]): Promise<void> {
+  const limited = pendingRows(args, rows);
+  let fresh = 0;
+  let known = 0;
+  for (const row of limited) {
+    const buffer = await readFile(join(args.source, ...row.relPath.split("/")));
+    // writeStagedBytes so renomeia o arquivo depois de conferir o sha256 dos
+    // bytes: se a apostila mudou desde a varredura, ela nao entra na fila.
+    const stagingPath = await writeStagedBytes({ sha256: row.sha256, fileName: row.fileName, buffer });
+    const recorded = await recordStagedIngest({
+      fileName: row.fileName,
+      filePath: row.relPath,
+      mimeType: mimeFor(row.fileName),
+      sizeBytes: row.sizeBytes,
+      sha256: row.sha256,
+      stagingPath,
+    });
+    if (recorded.created) fresh += 1;
+    else known += 1;
+  }
+  const file = await readPendingQueue();
+  console.log("[cli] staged: novos=" + fresh + " reutilizados=" + known + " (staging em " + stagingDirFor() + ")");
+  console.log("[cli] fila: " + JSON.stringify(summarizePendingQueue(file)));
+  console.log("[cli] nada foi escrito em banco. Rode --sync com DATABASE_URL de teste isolado.");
+}
+
+/** Backend registrado na fila, se for um dos conhecidos; senao, o do ambiente. */
+function entryBackend(entry: PendingIngestEntry): "r2" | "supabase" | "local" | undefined {
+  return (BACKEND_CHOICES as readonly string[]).includes(entry.storageBackend ?? "")
+    ? (entry.storageBackend as "r2" | "supabase" | "local")
+    : undefined;
+}
+
+/** Onde estao os bytes de uma entrada: staging verificado, senao chave canonica. */
+async function bytesForEntry(
+  entry: PendingIngestEntry,
+  storage: { download: (path: string, backend?: "r2" | "supabase" | "local") => Promise<Buffer> }
+): Promise<Buffer<ArrayBuffer>> {
+  if (entry.stagingPath) {
+    return readStagedBytes({ stagingPath: entry.stagingPath, sha256: entry.sha256 });
+  }
+  if (entry.storagePath) {
+    // Todo adapter devolve Buffer de um ArrayBuffer proprio (r2/supabase fazem
+    // Buffer.from, local faz readFile); o tipo do servico e o general.
+    return (await storage.download(entry.storagePath, entryBackend(entry))) as Buffer<ArrayBuffer>;
+  }
+  throw new Error("Entrada " + entry.id + " sem stagingPath e sem storagePath; reposicione com --stage.");
+}
+
+/**
+ * Consome a fila. Escreve em `documents`, chunks e embeddings, entao exige o
+ * mesmo banco de teste isolado do --apply.
+ *
+ * Nada aqui assume que a entrada esta pronta: `staged` so vira ingestao completa
+ * se os bytes existem e batem com o sha256; `recorded` ja tem linha em
+ * `documents`, entao repete apenas a extracao — ingerir de novo daria
+ * DUPLICATE_FILE e o conteudo ficaria sem chunks para sempre.
+ */
+async function syncQueue(args: CliArgs, provider: KnowledgeMcpProvider): Promise<void> {
+  const userId = await requireActor(args);
+  const file = await readPendingQueue();
+  const toSync = pendingEntriesToSync(file);
+  const limited = args.limit === null ? toSync : toSync.slice(0, args.limit);
+  if (limited.length === 0) {
+    console.log("[cli] fila: nada a sincronizar. " + JSON.stringify(summarizePendingQueue(file)));
+    return;
+  }
+  if (limited.length !== toSync.length) {
+    console.log("[cli] --limit ativo: " + limited.length + " de " + toSync.length + " entrada(s) na fila.");
+  }
+
+  const { DocumentStorageService } = await import("../src/lib/knowledge/storage.service");
+  const { DocumentPipelineService } = await import("../src/lib/knowledge/services/document-pipeline.service");
+
+  let synced = 0;
+  for (const entry of limited) {
+    try {
+      if (entry.status === "recorded" && entry.documentId) {
+        await DocumentPipelineService.processDocument(entry.documentId);
+      } else {
+        const buffer = await bytesForEntry(entry, DocumentStorageService);
+        await applyOne(
+          args,
+          provider,
+          userId,
+          { relPath: entry.filePath, fileName: entry.fileName, sha256: entry.sha256, sizeBytes: buffer.length },
+          buffer
+        );
+      }
+      await updatePendingStatus({ id: entry.id, status: "synced" });
+      synced += 1;
+      console.log("[cli] sincronizado " + synced + "/" + limited.length + ": " + entry.fileName);
+    } catch (error) {
+      if ((error as { code?: string }).code === "DUPLICATE_FILE") {
+        // O catalogo ja tem este conteudo: nao ha nada a repetir, sai da fila.
+        await updatePendingStatus({ id: entry.id, status: "synced" });
+        console.log("[cli] ja catalogado, marcado como sincronizado: " + entry.fileName);
+        continue;
+      }
+      await updatePendingStatus({ id: entry.id, status: "error", lastError: (error as Error).message });
+      console.warn("[cli] sync falhou em " + entry.fileName + ": " + (error as Error).message);
+    }
+  }
+  const after = await readPendingQueue();
+  console.log("[cli] sync concluido: " + synced + " entrada(s). Fila: " + JSON.stringify(summarizePendingQueue(after)));
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+  assertSingleWriteMode(args);
+  if (args.backend) {
+    // Vale para a execucao toda: backend de storage nao e escolha por documento.
+    process.env.STORAGE_BACKEND = args.backend;
+  }
   const provider = resolveMcpProvider(args.mcpId);
+
+  if (args.sync) {
+    // A fila e a origem: --sync nao le a pasta de apostilas nem reescreve manifest.
+    await syncQueue(args, provider);
+    return;
+  }
 
   if (!args.source) {
     console.error(usage());
@@ -457,7 +708,7 @@ async function main(): Promise<void> {
 
   console.log("[cli] provedor MCP: " + provider.id + " v" + provider.version);
   console.log("[cli] origem: " + args.source);
-  console.log("[cli] modo: " + (args.apply ? "APPLY" : "dry-run (padrao)"));
+  console.log("[cli] modo: " + modeLabel(args));
 
   const entries = await walk(args.source, args.source);
   entries.sort(function (a, b) { return a.relPath.localeCompare(b.relPath); });
@@ -475,6 +726,11 @@ async function main(): Promise<void> {
 
   await writeArtifacts(args, provider, rows);
   console.log("[cli] manifest e report gravados em " + args.workspace);
+
+  if (args.stage) {
+    await stageIngestion(args, rows);
+    return;
+  }
 
   if (!args.apply) {
     console.log("[cli] dry-run: nenhuma escrita em banco, storage ou R2.");

@@ -6,22 +6,31 @@
  * as três garantias que o arquivo precisa dar: idempotência por sha256,
  * ausência de arquivo não é erro, e escrita que não perde entradas.
  */
+import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   PENDING_INGEST_SCHEMA_VERSION,
+  pendingEntriesToSync,
   pendingIngestQueuePath,
   readPendingQueue,
+  readStagedBytes,
   recordPendingIngest,
+  recordStagedIngest,
+  stagedFileName,
+  stagingDirFor,
   summarizePendingQueue,
   updatePendingStatus,
+  writeStagedBytes,
   PendingIngestError,
 } from "@/lib/knowledge/pending-ingest";
 
 let dir = "";
 let queueFile = "";
+let stagingDir = "";
 
 function inputFor(overrides: Partial<Parameters<typeof recordPendingIngest>[0]> = {}) {
   return {
@@ -32,6 +41,20 @@ function inputFor(overrides: Partial<Parameters<typeof recordPendingIngest>[0]> 
     sha256: "a".repeat(64),
     storageBackend: "local",
     storagePath: "owner-1/doc-1/13-TRT15-2024.pdf",
+    documentId: "doc-1",
+    queueFile,
+    ...overrides,
+  };
+}
+
+function stagedInput(overrides: Partial<Parameters<typeof recordStagedIngest>[0]> = {}) {
+  return {
+    fileName: "13-TRT15-2024.pdf",
+    filePath: "/apostilas/13-TRT15-2024.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: 1024,
+    sha256: "a".repeat(64),
+    stagingPath: join(stagingDir, `${"a".repeat(64)}.pdf`),
     queueFile,
     ...overrides,
   };
@@ -40,6 +63,7 @@ function inputFor(overrides: Partial<Parameters<typeof recordPendingIngest>[0]> 
 beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "ca-pending-"));
   queueFile = join(dir, "pending-ingest.json");
+  stagingDir = join(dir, "staging");
 });
 
 afterAll(async () => {
@@ -48,6 +72,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await rm(queueFile, { force: true });
+  await rm(stagingDir, { recursive: true, force: true });
 });
 
 describe("pendingIngestQueuePath", () => {
@@ -173,5 +198,102 @@ describe("updatePendingStatus", () => {
       synced: 0,
       error: 0,
     });
+  });
+});
+
+describe("recordStagedIngest", () => {
+  it("staged não tem chave canônica nem documentId — eles nascem do INSERT", async () => {
+    const { entry, created } = await recordStagedIngest(stagedInput());
+
+    expect(created).toBe(true);
+    expect(entry.status).toBe("staged");
+    expect(entry.storagePath).toBeNull();
+    expect(entry.storageBackend).toBeNull();
+    expect(entry.documentId).toBeNull();
+    expect(entry.stagingPath).toBe(stagedInput().stagingPath);
+  });
+
+  it("stage de conteúdo já recorded não apaga a chave canônica", async () => {
+    await recordPendingIngest(inputFor());
+    const again = await recordStagedIngest(stagedInput());
+
+    expect(again.created).toBe(false);
+    expect(again.entry.status).toBe("recorded");
+    expect(again.entry.storagePath).toBe("owner-1/doc-1/13-TRT15-2024.pdf");
+    expect(again.entry.documentId).toBe("doc-1");
+  });
+
+  it("synced não é rebaixado por um stage novo", async () => {
+    const first = await recordStagedIngest(stagedInput());
+    await updatePendingStatus({ id: first.entry.id, status: "synced", queueFile });
+    const again = await recordStagedIngest(stagedInput());
+
+    expect(again.entry.status).toBe("synced");
+    expect(pendingEntriesToSync(await readPendingQueue(queueFile))).toHaveLength(0);
+  });
+
+  it("pendingEntriesToSync deixa de fora o que já foi sincronizado", async () => {
+    const done = await recordStagedIngest(stagedInput({ sha256: "e".repeat(64) }));
+    await recordStagedIngest(stagedInput({ sha256: "f".repeat(64) }));
+    await updatePendingStatus({ id: done.entry.id, status: "synced", queueFile });
+
+    const toSync = pendingEntriesToSync(await readPendingQueue(queueFile));
+    expect(toSync).toHaveLength(1);
+    expect(toSync[0].sha256).toBe("f".repeat(64));
+  });
+});
+
+describe("staging de bytes", () => {
+  it("a directoria de staging é irmã do arquivo da fila", () => {
+    expect(stagingDirFor(join("/repo", ".storage", "pending-ingest.json"))).toBe(
+      join("/repo", ".storage", "staging")
+    );
+  });
+
+  it("o nome em staging é o conteúdo, com a extensão preservada", () => {
+    expect(stagedFileName("a".repeat(64), "A10 - Radical Questoes.pdf")).toBe(
+      `${"a".repeat(64)}.pdf`
+    );
+    expect(stagedFileName("b".repeat(64), "arquivo-sem-extensao")).toBe(`${"b".repeat(64)}.bin`);
+  });
+
+  it("publica só depois de conferir o sha256, e não deixa rastro do que recusou", async () => {
+    const buffer = Buffer.from("apostila verdadeira");
+    const sha256 = createHash("sha256").update(buffer).digest("hex");
+
+    const written = await writeStagedBytes({ sha256, fileName: "aula.pdf", buffer, queueFile });
+    expect(await readFile(written)).toEqual(buffer);
+
+    const wrongSha = "f".repeat(64);
+    try {
+      await writeStagedBytes({ sha256: wrongSha, fileName: "aula.pdf", buffer, queueFile });
+      expect.unreachable("conteúdo que não bate com o sha256 declarado deveria lançar");
+    } catch (error) {
+      expect((error as PendingIngestError).code).toBe("PENDING_STAGED_HASH_MISMATCH");
+    }
+    expect(existsSync(join(stagingDir, `${wrongSha}.pdf`))).toBe(false);
+  });
+
+  it("readStagedBytes recusa bytes trocados em vez de sincronizar conteúdo errado", async () => {
+    const buffer = Buffer.from("apostila verdadeira");
+    const sha256 = createHash("sha256").update(buffer).digest("hex");
+    const written = await writeStagedBytes({ sha256, fileName: "aula.pdf", buffer, queueFile });
+
+    await writeFile(written, "apostila adulterada");
+    try {
+      await readStagedBytes({ stagingPath: written, sha256 });
+      expect.unreachable("bytes adulterados deveriam lançar");
+    } catch (error) {
+      expect((error as PendingIngestError).code).toBe("PENDING_STAGED_HASH_MISMATCH");
+    }
+  });
+
+  it("staging ausente é erro explícito, não ficheiro vazio", async () => {
+    try {
+      await readStagedBytes({ stagingPath: join(dir, "nao-existe.pdf"), sha256: "a".repeat(64) });
+      expect.unreachable("staging ausente deveria lançar");
+    } catch (error) {
+      expect((error as PendingIngestError).code).toBe("PENDING_STAGED_MISSING");
+    }
   });
 });
