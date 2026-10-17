@@ -124,3 +124,7 @@ __pycache__/
 # como pasta comum — foi o risco que os blocos B1-B4 correram a cada validacao.
 /.wt-*/
 
+
+# Storage local (STORAGE_BACKEND=local) e fila de ingestao pendente:
+# bytes de apostila e caminhos do posto de trabalho. Nunca versionar.
+/.storage/

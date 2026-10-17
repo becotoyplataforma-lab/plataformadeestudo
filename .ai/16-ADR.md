@@ -60,3 +60,17 @@ permitir troca futura.
 **Consequência:** Contratos explícitos entre camadas; menos acoplamento ao
 schema do banco; campos sensíveis nunca vazam. (Infra criada; aplicado a partir
 das novas funcionalidades.)
+
+## ADR-011 — Backend de storage local para desenvolvimento e ingestão offline
+**Status:** Aceita
+**Decisão:** Além de Supabase Storage e R2, existe o backend `local`
+(`STORAGE_BACKEND=local`), que grava os bytes em `STORAGE_LOCAL_DIR`
+(default `.storage/documents`) com a MESMA chave de objeto
+`{userId}/{documentId}/{fileName}` e um sidecar `.meta.json` com contentType e
+sha256. É proibido em produção (`LOCAL_BACKEND_FORBIDDEN`). Enquanto o registro
+no banco não é possível, a ingestão guarda a metade já concluída na fila
+`.storage/pending-ingest.json` (idempotente por sha256).
+**Consequência:** Desenvolver e ingerir apostila sem credenciais e sem banco de
+teste disponível; a migração local → R2/Supabase é cópia de chave para chave e
+`documents.storage_path` continua válida. Ver
+`.ai/adr/ADR-011-LOCAL-STORAGE-INGEST.md`.

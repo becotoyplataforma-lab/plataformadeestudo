@@ -7,6 +7,7 @@
  *
  *   STORAGE_BACKEND=r2        → SOMENTE Cloudflare R2 (falha se R2 não configurado)
  *   STORAGE_BACKEND=supabase  → SOMENTE Supabase Storage
+ *   STORAGE_BACKEND=local     → SOMENTE filesystem (dev/ingestão offline; proibido em produção)
  *   ausente em produção       → fail-fast (NUNCA fallback silencioso)
  *
  * Em desenvolvimento/teste, o default é "supabase" para manter a suíte de
@@ -14,9 +15,10 @@
  */
 import "server-only";
 
-export type StorageBackend = "r2" | "supabase";
+export type StorageBackend = "r2" | "supabase" | "local";
 
-const VALID: StorageBackend[] = ["r2", "supabase"];
+/** Backends conhecidos. "local" é o adaptador de filesystem (dev/ingestão offline); nunca em produção. */
+const VALID: StorageBackend[] = ["r2", "supabase", "local"];
 
 export class StorageBackendError extends Error {
   code: string;
@@ -48,10 +50,17 @@ export function resolveStorageBackend(
     return "supabase";
   }
 
+  if (raw === "local" && env.NODE_ENV === "production") {
+    throw new StorageBackendError(
+      "LOCAL_BACKEND_FORBIDDEN",
+      "STORAGE_BACKEND=local não é permitido em produção: o adaptador local é ferramenta de desenvolvimento e de ingestão offline."
+    );
+  }
+
   if (!VALID.includes(raw as StorageBackend)) {
     throw new StorageBackendError(
       "STORAGE_BACKEND_INVALID",
-      `STORAGE_BACKEND inválido: "${raw}". Use "r2" ou "supabase".`
+      `STORAGE_BACKEND inválido: "${raw}". Use "r2", "supabase" ou "local".`
     );
   }
 
