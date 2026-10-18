@@ -1,8 +1,9 @@
 # Runbook operacional de ingestao e sync de apostilas
 
 > Sequencia validada em engenharia (8 passos) para levar apostilas do acervo local
-> ate o banco, com backup previo, simulacao obrigatoria no passo 5 antes do
-> primeiro `--apply --limit 1` e conferencia antes de ampliar.
+> ate o banco, com pre-voo de leitura antes do passo 1, backup previo, simulacao
+> obrigatoria no passo 5 antes do primeiro `--apply --limit 1` e conferencia antes
+> de ampliar.
 > Este runbook **nao contem** valores de credencial. Ele descreve **quais** variaveis
 > precisam existir, nunca o conteudo delas.
 >
@@ -25,6 +26,76 @@
 Formatos aceitos: `pdf`, `docx`, `txt`, `md`, `html`. Recusados: `doc`, `epub`,
 `rtf`, `odt`, `ppt(x)`, `xls(x)` e todas as imagens. **Nao ha OCR**: PDF
 escaneado passa no formato e falha na extracao.
+
+---
+
+## Pre-voo (so leitura, antes do passo 1)
+
+Tres verificacoes que nao escrevem em lugar nenhum e que dizem, com antecedencia,
+se os passos 3, 4, 6 e 8 vao rodar. Ordem: destino do banco, origem do lote, ator.
+
+### 1. Destino do banco — o gate
+
+```bash
+npx tsx --conditions=react-server scripts/db-guard.ts -- node -p "'ok'"
+```
+
+O `db-guard` imprime primeiro a avaliacao (`db-cli-safety target=... host=...
+ref=... prodRef=... safe=... reason=...`) e so depois executa o comando apos o
+`--`. Usar `node -p` como alvo torna a prova inofensiva: se o guard deixar
+passar, nao acontece nada alem de um `ok` no stdout.
+
+- `safe=true` — os quatro passos de escrita podem rodar.
+- `safe=false` e `[db-guard] BLOCKED NON_PRODUCTION_DATABASE_REQUIRED` (saida 3)
+  — **parar aqui**. Passos 3, 4, 6 e 8 abortam exatamente pelo mesmo motivo, e o
+  passo 5 passa a ser o unico util (ele nem abre conexao).
+
+O isolamento exige **as duas** condicoes em simultaneo: `DATABASE_URL` com
+project ref distinto do de producao **e** esse ref listado em
+`SAFE_TEST_DATABASE_REFS`. Nao ha atalho: `env-guard.ts` compara o ref com
+`PROD_SUPABASE_PROJECT_REF` *antes* de consultar a allowlist, entao listas que
+incluam o ref de producao continuam `safe=false` com o motivo "mesmo projeto
+Supabase da producao". A unica prova aceita e a comparacao de ref — o nome do
+banco nao libera escrita, nem para libertar nem para bloquear.
+
+### 2. Origem do lote
+
+```powershell
+$p = 'H:\Meu Drive\plataforma de estudo'   # ou 'materiais'
+$f = @(Get-ChildItem $p -Recurse -File)
+$m = @($f | Where-Object Extension -eq '.pdf' | Sort-Object Length -Descending)
+'extensoes: ' + (($f | Group-Object Extension | Sort-Object Count -Descending |
+  ForEach-Object { $_.Name + ':' + $_.Count }) -join '  ')
+'{0} PDF, {1} MB, maior {2} MB, acima de 25 MB: {3}' -f $m.Count,
+  [Math]::Round(($m | Measure-Object Length -Sum).Sum / 1MB, 1),
+  [Math]::Round($m[0].Length / 1MB, 2), @($m | Where-Object Length -gt 25MB).Count
+'placeholders no Drive: ' + @($f | Where-Object { $_.Attributes -match 'ReparsePoint' }).Count
+```
+
+Leitura correta destes numeros:
+
+- extensao fora de `pdf|docx|txt|md|html` vira `skipped_unsupported` — nao e
+  erro, e o lote que sobra; o formato e aceito ou recusado por extensao, antes
+  de qualquer leitura de conteudo;
+- `walk()` e recursivo, logo `--source` pode apontar para a arvore do Drive sem
+  copiar nada; `placeholders` deve ser `0`, porque arquivo ainda nao hidratado e
+  baixado sob demanda e um cliente em pausa rebenta no meio do lote — fixar
+  "sempre neste dispositivo" ou copiar para `materiais/`;
+- PDF encostado ao teto de 25 MB passa com margem minima; dar-lhe um `--limit 1`
+  proprio no passo 6 para nao contaminar a leitura do resto do lote.
+
+Medida real (2026-10-17) em `H:\Meu Drive\plataforma de estudo`: 28 arquivos em
+5 subpastas — 20 PDF (99,1 MB, maior 24,85 MB, nenhum acima do teto) e 8 JSON
+(esses 8 caem como `skipped_unsupported`), zero placeholders.
+
+### 3. Ator do apply
+
+`--actor-email` tem de existir em `auth.users` **e** passar em
+`AdminGuardService.isProfessorOrAdmin`; `requireActor` corre antes de qualquer
+upload e falha com "Ator sem registro em auth.users" ou "E-mail sem privilegio de
+upload". Num banco de teste recem-criado isso falha sempre: semear com
+`scripts/create-mp-test-user.ts` / `scripts/seed-superadmins.mjs` (ou pela UI)
+antes de chegar ao passo 6.
 
 ---
 
@@ -267,6 +338,8 @@ relatorio de ingestao com metadados de acervo.
 ## Sequencia resumida
 
 ```bash
+# 0 (pre-vo): o gate do guard — tem de imprimir safe=true antes de qualquer escrita
+npx tsx --conditions=react-server scripts/db-guard.ts -- node -p "'ok'"
 cp .env.local .env.local.bak-$(date +%Y%m%d-%H%M%S)                # 1
 # 2: editar DATABASE_URL no .env.local para o ambiente de teste
 npm run db:migrate                                                  # 3
@@ -277,6 +350,10 @@ npm run ingest:apostilas -- --source "materiais" --apply --actor-email "<email>"
 npm run ingest:apostilas -- --source "materiais" --apply --actor-email "<email>" --limit 50  # 8
 git add -A && git commit -m "chore(acervo): registrar ingestao de apostilas"   # 8 (commit)
 ```
+
+Os passos 5, 6 e 8 aceitam `--source "H:\Meu Drive\<arvore>"` no lugar de
+`materiais`: `walk()` e recursivo e a origem so e aberta para leitura. O que
+decide se o lote pode avancar e o pre-voo acima, nao a presenca dos arquivos.
 
 Alternativa via fila, quando os bytes ja estao no storage: trocar `--apply` por
 `--sync` no passo 6, sem `--source`. `--sync` consome as entradas `staged` e
