@@ -1,7 +1,8 @@
 # Runbook operacional de ingestao e sync de apostilas
 
-> Sequencia validada em engenharia (7 passos) para levar apostilas do acervo local
-> ate o banco, com backup previo, unico por documento e conferencia antes de ampliar.
+> Sequencia validada em engenharia (8 passos) para levar apostilas do acervo local
+> ate o banco, com backup previo, simulacao obrigatoria no passo 5 antes do
+> primeiro `--apply --limit 1` e conferencia antes de ampliar.
 > Este runbook **nao contem** valores de credencial. Ele descreve **quais** variaveis
 > precisam existir, nunca o conteudo delas.
 >
@@ -18,8 +19,8 @@
 | `DATABASE_URL` de **ambiente de teste**, nunca de producao | guard `assertNonProductionDatabaseUrl` aborta o `--apply` com `NON_PRODUCTION_DATABASE_REQUIRED` (codigo de saida 3) |
 | `PROD_SUPABASE_PROJECT_REF` / `SAFE_TEST_DATABASE_REFS` configurados | `src/lib/db/env-guard.ts` usa isso para distinguir teste de producao |
 | `STORAGE_BACKEND` definido (`local`, `r2` ou `supabase`) + credenciais do backend | o passo de upload do `--apply` falha sem isso |
-| Material real em `materiais/` (ou `APOSTILA_SOURCE_DIR`) | hoje `materiais/` so tem pastas, zero arquivos |
-| `--usuario` apontando para e-mail de professor/admin **existente** em `auth.users` | o documento nasce orfao se o usuario nao existir |
+| Material real e `--source DIR` (ou `APOSTILA_SOURCE_DIR`) apontando para ele | o CLI **nao** tem diretorio padrao: sem `--source` nem `APOSTILA_SOURCE_DIR` ele sai com codigo 2 antes de processar lote algum |
+| `--actor-email` apontando para e-mail de professor/admin **existente** em `auth.users` | o documento nasce orfao se o usuario nao existir |
 
 Formatos aceitos: `pdf`, `docx`, `txt`, `md`, `html`. Recusados: `doc`, `epub`,
 `rtf`, `odt`, `ppt(x)`, `xls(x)` e todas as imagens. **Nao ha OCR**: PDF
@@ -30,8 +31,9 @@ escaneado passa no formato e falha na extracao.
 ## Passo 1 — Backup do `.env.local`
 
 Copiar o arquivo antes de qualquer mudanca. E o unico ponto de reversao de todo
-este runbook: os passos 2 a 7 alteram estado de banco e de storage, e nao ha
-rollback automatico para o acervo.
+este runbook: os passos 3, 4, 6 e 8 alteram estado de banco e de storage (o
+passo 5 grava apenas artefatos de planejamento no workspace), e nao ha rollback
+automatico para o acervo.
 
 ```bash
 cp .env.local .env.local.bak-$(date +%Y%m%d-%H%M%S)
@@ -58,15 +60,30 @@ Conferir antes de seguir:
 Qualquer duvida aqui invalida todo o resto: o `--apply` e o `db:seed` escrevem
 no banco que estiver em `DATABASE_URL`.
 
-## Passo 3 — `drizzle-kit push` com `--env-file=.env.local`
+## Passo 3 — Schema no banco de teste (via guard)
+
+Via npm, que ja passa por `scripts/db-guard.ts` (preferida; respeita o journal
+de migracoes em `drizzle/`):
 
 ```bash
-npx drizzle-kit push --env-file=.env.local
+npm run db:migrate
 ```
 
-A flag `--env-file=.env.local` e obrigatoria. Sem ela o drizzle-kit le o `.env`
-(ou nada) e pode aplicar o schema no banco errado, ou falhar com erro de
-variavel ausente. Esse passo cria tabelas, indices e constraints do schema.
+Via drizzle-kit direto, quando for preciso alinhar o schema sem o journal:
+
+```bash
+node --env-file=.env.local node_modules/drizzle-kit/bin.cjs push
+```
+
+Atencao com a flag: `--env-file` e opcao do **node**, nao do drizzle-kit. Na
+forma `npx drizzle-kit push --env-file=.env.local` ela chega ao drizzle-kit e e
+ignorada. O que protege este passo e o `drizzle.config.ts`, que importa o
+env-guard: `evaluateDatabaseSafety()` chama `ensureProjectEnv()` (que carrega o
+`.env.local` via `@next/env`) e so depois corre
+`assertNonProductionDatabaseUrl()`. Em destino que nao seja comprovadamente de
+teste, o `push` aborta com `NON_PRODUCTION_DATABASE_REQUIRED` antes de abrir
+conexao — a seguranca vem do guard, nao da flag. Esse passo cria tabelas,
+indices e constraints do schema.
 
 Se o push pedir confirmacao interativa para operacao destrutiva, a resposta
 correta e **nao**: revisar o diff proposto antes. destructive significa perda de
@@ -78,37 +95,96 @@ dados, nao apenas criacao de tabela.
 npm run db:seed
 ```
 
+Rode **depois** do passo 3 e nunca antes: o seed executa `sql/seed.sql` via
+`supabase db execute`, que falha se as tabelas ainda nao existem.
+
+O comando nao chama o drizzle-kit — ele passa por `scripts/db-guard.ts`, que
+aplica o mesmo guard `NON_PRODUCTION_DATABASE_REQUIRED`. Logo a `DATABASE_URL`
+do passo 2 precisa estar correta aqui tambem.
+
 Popula o catalogo minimo (planos, knowledge_subjects, e o que mais o seed
 requer). Sem o seed, o `--apply` cria documento sem materia — a materia do
 documento precisa existir em `knowledge_subjects` **antes** da ingestao, e nao ha
 criacao automatica.
 
-## Passo 5 — Ingestao com `--apply`, `--usuario` e `--limit 1`
+## Passo 5 — Simulacao com `--dry-run`
 
 ```bash
-npm run ingest:apostilas -- --apply --usuario "<email-professor-ou-admin>" --limit 1
+npm run ingest:apostilas -- --source "materiais" --dry-run
+```
+
+Primeira leitura do lote com **nenhuma escrita em banco, storage ou R2**. E o
+passo que mostra o que o `--apply` faria antes de qualquer efeito. O modo seco e
+tambem o padrao do CLI (omiter `--apply` ja simula), e `--dry-run` alem disso
+zera `--stage` e `--sync` — por isso ele e escrito explicito aqui, como trava.
+O que o passo grava e somente o plano de trabalho no workspace:
+`.apostilas-work/manifest/apostilas.json` e
+`.apostilas-work/reports/apostilas.md` (trocar por `--workspace DIR` ou
+`APOSTILA_WORK_DIR`). O guard de banco so e chamado no caminho do `--apply`,
+entao esta etapa roda mesmo sem `DATABASE_URL` de teste configurada.
+
+O que conferir na saida:
+
+- o lote foi montado a partir de `--source`, com o numero de arquivos esperado;
+  `encontrados=0` significa acervo vazio na origem — nao ha o que aplicar;
+- o modo impresso e `dry-run (padrao)`;
+- `reports/apostilas.md` e `manifest/apostilas.json` listam as acoes propostas
+  (`pending`, `skipped_duplicate`, `skipped_unsupported`, `skipped_invalid`);
+- as linhas de projecao do apply estao coerentes: `pendentes para o apply`,
+  `persistiriam com este limite` e `bytes dos pendentes` dizem quantos
+  documentos e quantos bytes entrariam com o `--limit` do passo 6;
+- nenhum arquivo aparece com classificacao inesperada.
+
+Saida real de um lote em acervo ainda sem arquivos (repo `<repo>`):
+
+```text
+[cli] provedor MCP: apostila-mcp v1.1.0
+[cli] origem: <repo>\materiais
+[cli] modo: dry-run (padrao)
+[cli] encontrados=0 suportados=0 invalidos=0 nao_suportados=0 duplicados=0 variantes=0
+[cli] manifest e report gravados em <repo>\.apostilas-work
+[cli] dry-run: nenhuma escrita em banco, storage ou R2.
+```
+
+Codigo de saida do CLI: `0` ok, `2` sem `--source` nem `APOSTILA_SOURCE_DIR`,
+`3` `NON_PRODUCTION_DATABASE_REQUIRED` (so nos modos de escrita), `4` erro de
+MCP, `1` demais falhas.
+
+Se o lote vier vazio, ou com tudo em `skipped_*`, **parar** aqui: o problema e
+de origem de material ou de formato, e rodar `--apply` adiante apenas repete o
+erro em escala maior. Corrigir a origem e repetir este passo.
+
+## Passo 6 — Ingestao com `--apply`, `--actor-email` e `--limit 1`
+
+```bash
+npm run ingest:apostilas -- --source "materiais" --apply --actor-email "<email-professor-ou-admin>" --limit 1
 ```
 
 Pontos que mudam o resultado:
 
-- **`--usuario` vai entre aspas.** O valor e um e-mail com caractere `@` e ponto;
+- **A flag e `--actor-email`, nao `--usuario`.** O nome importa: `--usuario` nao
+  existe no parser e aborta com erro de opcao desconhecida, sem escrever nada.
+- **`--actor-email` vai entre aspas.** O valor e um e-mail com caractere `@` e ponto;
   sem aspas o shell faz split em varios argumentos e o comando falha com erro
   de flag desconhecida ou ingere com `userId` vazio, o que cria documento sem
-  vinculo de autor.
+  vinculo de autor. O e-mail precisa existir em `auth.users`: o CLI consulta a
+  tabela e aborta se nao achar.
 - **`--limit 1` e intencional nesta rodada.** Limita a escrita a um unico
   documento. E o unico jeito de validar schema, extracao e chunking sem sujar
   o acervo de teste com centenas de linhas possivelmente erradas.
 - Se faltar `DATABASE_URL` valida, o comando **para antes de qualquer escrita**
   (`[cli] BLOCKED NON_PRODUCTION_DATABASE_REQUIRED`, saida 3). Isso e o guard
   funcionando, nao um bug.
-- `--apply` e `--stage` sao mutuamente exclusivos. `--stage` so grava bytes em
-  storage local e enfileira; `--apply` sobe o ciclo completo ate o banco.
+- **`--apply`, `--stage` e `--sync` sao mutuamente exclusivos.** `--stage` so
+  grava bytes no storage e enfileira (nao exige `--actor-email` nem banco);
+  `--apply` sobe o ciclo completo ate o banco; `--sync` consome a fila e **tambem**
+  exige banco de teste e `--actor-email`. `--dry-run` zera as tres.
 
-## Passo 6 — Conferir o documento no banco
+## Passo 7 — Conferir o documento no banco
 
-Antes de ampliar, verificar o resultado do passo 5:
+Antes de ampliar, verificar o resultado do passo 6:
 
-- o documento existe e o `user_id` corresponde ao `--usuario` usado;
+- o documento existe e o `user_id` corresponde ao `--actor-email` usado;
 - `classification`/`reason` do arquivo estao como esperado;
 - ha chunks gerados e eles tem texto nao vazio (extrair **ou** Embedding nao
   configurados deixam o documento em `chunked` sem embeddings — comportamento
@@ -118,13 +194,13 @@ Antes de ampliar, verificar o resultado do passo 5:
   (`pending` -> aplicado; `skipped_duplicate`, `skipped_unsupported`,
   `skipped_invalid` nao escrevem nada).
 
-Se **qualquer** item estiver errado: **nao seguir para o passo 7**. Corrigir e
-repetir a partir do passo 5 com `--limit 1`.
+Se **qualquer** item estiver errado: **nao seguir para o passo 8**. Corrigir e
+repetir a partir do passo 6 com `--limit 1`.
 
-## Passo 7 — Ampliar o limite e commitar
+## Passo 8 — Ampliar o limite e commitar
 
 ```bash
-npm run ingest:apostilas -- --apply --usuario "<email-professor-ou-admin>" --limit 50
+npm run ingest:apostilas -- --source "materiais" --apply --actor-email "<email-professor-ou-admin>" --limit 50
 ```
 
 Ampliar em lotes pequenos e graduais, nao de uma vez: repetir `--limit 50` ate
@@ -140,51 +216,68 @@ git add -A
 git commit -m "chore(acervo): registrar ingestao de apostilas"
 ```
 
-O repositorio **nao** guarda material: `materiais/`, `.apostilas-work/` e
-`.storage/` estao no `.gitignore`. O commit registra apenas mudanca de
-config/schema/seed, nunca a apostila nem o relatorio de ingestao com metadados
-de acervo.
+O `git add -A` acima e seguro por construcao: os tres diretorios acima estao no
+`.gitignore`, entao nenhum byte de apostila entra no commit por acidente. Ainda
+assim, confira `git status` antes de commitar — e use `git add` nomeado quando a
+intencao for commitar apenas um caminho especifico.
+
+O commit registra apenas mudanca de config/schema/seed, nunca a apostila nem o
+relatorio de ingestao com metadados de acervo.
 
 ---
 
 ## Notas de operacao
 
-1. **Ordem e sacrosancta.** Backup -> env -> push -> seed -> apply. Pular o
-   passo 1 torna o runbook irreversivel; pular o passo 4 cria documentos sem
-   materia.
-2. **Um documento por vez, na primeira rodada.** `--limit 1` followed de
+1. **Ordem e sacrosancta.** Backup -> env -> push -> seed -> dry-run -> apply.
+   Pular o passo 1 torna o runbook irreversivel; pular o passo 4 cria documentos
+   sem materia; pular o passo 5 troca uma verificacao de um segundo por uma
+   descoberta no meio da escrita.
+2. **Simular antes de escrever.** O passo 5 custa segundos, roda sem banco e nao
+   escreve em banco nem storage — apenas nos artefatos do workspace. E o unico
+   lugar onde o lote inteiro e visivel antes do primeiro commit de dados, e por
+   isso ele precede o `--apply --limit 1` do passo 6.
+3. **Um documento por vez, na primeira rodada.** `--limit 1` seguido de
    `--limit N` e o unico caminho que valida o caminho feliz sem desperdicar
    volume.
-3. **`--usuario` sempre entre aspas.** E-mail nao quotado quebra o parse de
-   argumentos.
-4. **`--env-file=.env.local` sempre explicito no drizzle-kit.** Confiar no
-   `.env` implicito e o caminho mais curto para aplicar schema no banco errado.
-5. **Guardas sao comportamento esperado.** `NON_PRODUCTION_DATABASE_REQUIRED`,
-   modos de escrita exclusivos e ausencia de `--usuario` devem ser tratadas como
+4. **`--actor-email` sempre entre aspas.** E-mail nao quotado quebra o parse de
+   argumentos. E nao troque por `--usuario`: a flag nao existe.
+5. **`--env-file` e flag do node, nao do drizzle-kit.** `npx drizzle-kit push
+   --env-file=.env.local` nao surte efeito: a flag chega ao drizzle-kit e e
+   ignorada. Use `npm run db:migrate` (passa pelo `scripts/db-guard.ts`) ou
+   `node --env-file=.env.local node_modules/drizzle-kit/bin.cjs push`. O que
+   impede aplicar schema no banco errado e o guard do `drizzle.config.ts`, que
+   carrega o `.env.local` e aborta em destino nao comprovadamente de teste.
+6. **Guardas sao comportamento esperado.** `NON_PRODUCTION_DATABASE_REQUIRED`,
+   modos de escrita exclusivos e ausencia de `--actor-email` devem ser tratadas como
    falha de pre-condicao, nunca contornadas com flag de forca.
-6. **Sem OCR.** PDF escaneado e invalido por extracao mesmo sendo aceito por
+7. **Sem OCR.** PDF escaneado e invalido por extracao mesmo sendo aceito por
    formato; nao adianta tentar reprocessar o mesmo arquivo.
-7. **Limite de 25 MB por arquivo** vale para qualquer plano. Acima disso a
+8. **Limite de 25 MB por arquivo** vale para qualquer plano. Acima disso a
    ingestao falha no upload.
-8. **Material e staging fora do git.** `materiais/`, `.apostilas-work/` e
+9. **Material e staging fora do git.** `materiais/`, `.apostilas-work/` e
    `.storage/` no `.gitignore` por desenho; a arvore de pastas serve para
    organizacao humana, o escopo efetivo do corpus (cargo/edital) existe apenas
    na via UI/API, nao no CLI.
-9. **Rollback.** Nao ha comando de reversao. O unico caminho e restaurar
+10. **Rollback.** Nao ha comando de reversao. O unico caminho e restaurar
    `.env.local` do passo 1 e trabalhar em um banco de teste descartavel — mais um
-   motivo para o passo 5 rodar com `--limit 1`.
+   motivo para o passo 6 rodar com `--limit 1`.
 
 ---
 
 ## Sequencia resumida
 
 ```bash
-cp .env.local .env.local.bak-$(date +%Y%m%d-%H%M%S)          # 1
+cp .env.local .env.local.bak-$(date +%Y%m%d-%H%M%S)                # 1
 # 2: editar DATABASE_URL no .env.local para o ambiente de teste
-npx drizzle-kit push --env-file=.env.local                    # 3
-npm run db:seed                                              # 4
-npm run ingest:apostilas -- --apply --usuario "<email>" --limit 1   # 5
-# 6: conferir documento, chunks e relatorio no banco
-npm run ingest:apostilas -- --apply --usuario "<email>" --limit 50  # 7
-git add -A && git commit -m "chore(acervo): registrar ingestao de apostilas"  # 7
+npm run db:migrate                                                  # 3
+npm run db:seed                                                     # 4
+npm run ingest:apostilas -- --source "materiais" --dry-run          # 5  (so artefatos no workspace; exit 0)
+npm run ingest:apostilas -- --source "materiais" --apply --actor-email "<email>" --limit 1   # 6
+# 7: conferir documento, chunks e relatorio no banco
+npm run ingest:apostilas -- --source "materiais" --apply --actor-email "<email>" --limit 50  # 8
+git add -A && git commit -m "chore(acervo): registrar ingestao de apostilas"   # 8 (commit)
 ```
+
+Alternativa via fila, quando os bytes ja estao no storage: trocar `--apply` por
+`--sync` no passo 6, sem `--source`. `--sync` consome as entradas `staged` e
+repete so a extracao das `recorded`.
