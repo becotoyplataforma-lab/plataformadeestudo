@@ -9,13 +9,15 @@
  * "chunked" (conteúdo pronto, busca vetorial pendente) — NÃO é falha.
  */
 import "server-only";
-import { redactSecrets } from "@/lib/observability";
+import { logger, redactSecrets } from "@/lib/observability";
 import { DocumentRepository } from "../repositories/document.repository";
 import { DocumentStorageService } from "../storage.service";
 import { DocumentExtractionService, ExtractionError } from "./extraction.service";
 import { ChunkService, type PageRange } from "./chunk.service";
 import { EmbeddingService } from "./embedding.service";
 import { embeddingClient } from "../embedding/client";
+import { ApostilaTransformerService } from "./apostila-transformer.service";
+import type { ApostilaTransformReport } from "../dto/apostila-transform.dto";
 
 export class PipelineError extends Error {
   code: string;
@@ -33,6 +35,8 @@ export interface PipelineResult {
   embeddingCount: number;
   pageCount: number | null;
   embeddingConfigured: boolean;
+  /** Auditoria da transformacao aplicada neste processamento; null se nao houve. */
+  transformReport: ApostilaTransformReport | null;
 }
 
 /** Separador usado ao juntar paginas normalizadas (fonte unica das fronteiras). */
@@ -101,8 +105,6 @@ export const DocumentPipelineService = {
         normalizedPages !== null
           ? normalizedPages.join(PAGE_JOIN)
           : normalizeText(extracted.text);
-      const pageRanges =
-        normalizedPages === null ? undefined : rangesFromPages(normalizedPages);
 
       // Item 8 (OCR): PDFs escaneados não têm camada de texto. Detecta e
       // sinaliza em vez de falhar genericamente.
@@ -132,9 +134,27 @@ export const DocumentPipelineService = {
         );
       }
 
-      const chunkResult = await ChunkService.chunk({
+      // Transformacao editorial (redacao de PII + estrutura em fases) entre a
+      // extracao e o chunking. Existe um unico ponto de chamada, o pipeline, e e
+      // por isso que upload web, CLI e reprocessamento passam todos por aqui:
+      // regra duplicada por canal e regra que diverge no meio do lote.
+      const transformed = await applyTransformBeforeChunking({
         documentId,
         text: normalized,
+        pages: normalizedPages ?? undefined,
+        sha256Original: doc.fileHash ?? undefined,
+        fileName: doc.title ?? undefined,
+      });
+
+      // As fronteiras sao recalculadas sobre o texto transformado. Se a IA
+      // reestruturou o documento inteiro, nao ha mais paginas para citar, e o
+      // chunker recebe `undefined` em vez de uma faixa apontando para o lugar
+      // errado - pagina errada em citacao e pior que citacao nenhuma.
+      const pageRanges = transformed.pages ? rangesFromPages(transformed.pages) : undefined;
+
+      const chunkResult = await ChunkService.chunk({
+        documentId,
+        text: transformed.text,
         documentType: doc.type,
         pageRanges,
       });
@@ -174,6 +194,7 @@ export const DocumentPipelineService = {
         embeddingCount,
         pageCount: extracted.pageCount ?? null,
         embeddingConfigured,
+        transformReport: transformed.report,
       };
     } catch (error) {
       const message =
@@ -189,3 +210,59 @@ export const DocumentPipelineService = {
     }
   },
 };
+
+interface TransformStepInput {
+  documentId: string;
+  text: string;
+  pages?: string[];
+  sha256Original?: string;
+  fileName?: string;
+}
+
+/**
+ * Aplica o transform e devolve o texto que vai para o chunker, mais as paginas
+ * transformadas quando elas continuam existindo.
+ *
+ * O relatorio vai para `documents.metadata.transform_report` por merge JSONB, o
+ * mesmo caminho de `mcp_provider_id`: auditar depois exige que o registro do
+ * lote morra junto do documento, e nao numa pasta do servidor que processou.
+ *
+ * Nada aqui derruba o processamento. Transform que falha devolve o texto extraido
+ * intacto: conteudo sem edicao editorial ainda e conteudo pesquisavel, e conteudo
+ * perdido nao e pesquisavel de jeito nenhum.
+ */
+async function applyTransformBeforeChunking(
+  input: TransformStepInput,
+): Promise<{ text: string; pages?: string[]; report: ApostilaTransformReport | null }> {
+  try {
+    const outcome = await ApostilaTransformerService.transformExtraction(input);
+    const report = outcome.report;
+
+    await DocumentRepository.updateMetadata(input.documentId, {
+      transform_report: report,
+      transform_mode: report.modo_usado,
+      transform_rules_version: report.regras_versao,
+      transform_pii_redacted: report.pii_removidos,
+    }).catch((error) => {
+      // O documento ja vai ser chunkado com o texto transformado: a ausencia do
+      // carimbo de auditoria nao pode virar falha de processamento, mas tambem
+      // nao pode passar sem registro.
+      logger.warn("document-pipeline", "relatorio de transformacao nao persistido", {
+        documentId: input.documentId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    if (!outcome.text || outcome.text.trim().length === 0) {
+      return { text: input.text, pages: input.pages, report };
+    }
+    return { text: outcome.text, pages: outcome.pages, report };
+  } catch (error) {
+    logger.warn("document-pipeline", "transform falhou; texto extraido preservado", {
+      documentId: input.documentId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { text: input.text, pages: input.pages, report: null };
+  }
+}
+

@@ -183,18 +183,18 @@ function buildTags(
  * removem a autoria ja presente no corpo do texto. Os acentos entram como
  * escapes \uXXXX para o arquivo permanecer ASCII no repositorio.
  */
-const ADAPTATION_MARKER =
+export const ADAPTATION_MARKER =
   "\u26A1 APOSTILA ADAPTADA POR INTELIG\u00CANCIA ARTIFICIAL";
-const RIGHTS_MARKER = "adaptado por Intelig\u00EAncia Artificial";
+export const RIGHTS_MARKER = "adaptado por Intelig\u00EAncia Artificial";
 
-const ADAPTATION_BANNER: readonly string[] = [
+export const ADAPTATION_BANNER: readonly string[] = [
   "> **" + ADAPTATION_MARKER + "**",
   ">",
   "> Este material foi reorganizado e otimizado por IA em fases progressivas.",
   "> Autoria, marcas e avisos de direitos do material de origem foram preservados.",
 ];
 
-const RIGHTS_FOOTER: readonly string[] = [
+export const RIGHTS_FOOTER: readonly string[] = [
   "> Material alterado e adaptado por Intelig\u00EAncia Artificial. Todos os direitos do",
   "> cont\u00FAdo educacional original s\u00E3o de seus respectivos autores.",
 ];
@@ -221,12 +221,26 @@ const CALLOUT_PATTERN = new RegExp(
   "i",
 );
 
-/** Linha de abertura de fase ou aula: exige numero, por isso e seguro promover a #. */
+/**
+ * Linha de abertura de fase ou aula: exige numero E titulo depois do numero.
+ *
+ * O titulo passou a ser obrigatorio por causa do corpus real: os PDFs de apostila
+ * carregam o cabecalho corrido "Aula 03" em cada pagina. Sem essa exigencia, um
+ * arquivo de 78 paginas saia com 77 chamadas `## Aula 03` promovidas a cabeçalho
+ * de fase, e o relatorio de auditoria dizia "77 fases criadas" para uma apostila
+ * que tem uma. Linha sozinha com numero e mobilia de pagina; "Aula 03 - Direito
+ * Constitucional" e abertura de secao.
+ *
+ * O numero e casado como token inteiro e o titulo precisa comecar depois de um
+ * separador com um caractere que nao seja digito. Com `0*\d{1,3}` seguido de `\S`
+ * a regex escapava pela fresta: em "Aula 03" o `0*` comia o zero e o `3` solto
+ * passava por titulo, e a linha continuava promovida.
+ */
 const PHASE_HEADING_PATTERN =
-  /^(fase|aula|unidade|m[\u00F3o]dulo|se[\u00E7c][\u00E3a]o|cap[\u00EDi]tulo)\s*[-:.]?\s*0*\d{1,3}\b.{0,80}$/i;
+  /^(fase|aula|unidade|m[\u00F3o]dulo|se[\u00E7c][\u00E3a]o|cap[\u00EDi]tulo)\s*[-:.]?\s*\d{1,3}(?:\s+|[\u2013\u2014:-])\s*[^\d\s].{0,79}$/i;
 
 
-interface StructureResult {
+export interface StructureResult {
   text: string;
   headings: number;
   boxes: number;
@@ -237,8 +251,13 @@ interface StructureResult {
  * conteudo: nenhuma linha e apagada e nenhuma palavra e reescrita. Blocos de
  * codigo sao ignorados e linhas ja marcadas nao mudam, o que torna a funcao
  * idempotente e segura para reprocessar o mesmo documento.
+ *
+ * Exportada para `apostila-structurer.service.ts` usar a MESMA regra do
+ * provedor MCP. Se o pipeline e o MCP divergissem, o texto indexado e o texto
+ * devolvido pela ferramenta `knowledge_transform_text` seriam dois documentos
+ * diferentes para o mesmo arquivo, e o relatorio de auditoria nao explicaria.
  */
-function normalizeStructure(text: string): StructureResult {
+export function normalizeStructure(text: string): StructureResult {
   const lines = text.split("\n");
   const output: string[] = [];
   let headings = 0;

@@ -239,3 +239,85 @@ describe("DocumentPipelineService", () => {
     expect(lastPipelinePatch().processingError).toBe("corrompido");
   });
 });
+
+describe("transformacao editorial dentro do pipeline", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFindById.mockResolvedValue(docRow({ fileHash: "b".repeat(64), title: "aula-01.pdf" }));
+    mockUpdatePipeline.mockResolvedValue({});
+    mockUpdateMetadata.mockResolvedValue({});
+    mockUpdateStatus.mockResolvedValue({});
+    mockChunk.mockResolvedValue({ chunkCount: 2, strategy: "fixed" });
+    mockDownload.mockResolvedValue(Buffer.from("bytes", "utf8"));
+    mockIsConfigured.mockReturnValue(false);
+  });
+
+  /**
+   * O teste que prova o plug-and-play: o transform nao e chamado pela rota de
+   * upload nem pelo CLI, e sim pelo pipeline. Entao quem quer que chame
+   * `processDocument` (upload web, `--apply`, `--sync`, `--reprocess`) recebe a
+   * mesma edicao, e nao existe canal que consiga pular a regra.
+   */
+  it("redige PII antes do chunker, preserva a autoria e persiste o relatorio", async () => {
+    const pageOne = "Estratégia Concursos - material do professor\n\n" + "x".repeat(60);
+    const pageTwo = "CPF: 111.444.777-35\n\n" + "y".repeat(60);
+    mockExtract.mockResolvedValue({
+      text: pageOne + "\n\n" + pageTwo,
+      pageCount: 2,
+      pages: [pageOne, pageTwo],
+    });
+
+    const result = await DocumentPipelineService.processDocument("doc-1");
+
+    const input = chunkInput();
+    expect(input.text).not.toContain("111.444.777-35");
+    expect(input.text).toContain("CPF: [REDACTADO]");
+    expect(input.text).toContain("Estratégia Concursos");
+
+    const ranges = input.pageRanges as PageRange[];
+    expect(ranges).toHaveLength(2);
+    expect(input.text.slice(ranges[1].start, ranges[1].end)).toContain("[REDACTADO]");
+
+    expect(result.transformReport?.modo_usado).toBe("sanitize-only");
+    expect(result.transformReport?.pii_removidos).toBeGreaterThanOrEqual(1);
+    expect(result.transformReport?.fronteiras_pagina).toBe("preservadas");
+
+    const stamped = mockUpdateMetadata.mock.calls
+      .map((call) => call[1] as Record<string, unknown>)
+      .find((patch) => "transform_report" in patch);
+    expect(stamped?.transform_mode).toBe("sanitize-only");
+    expect(JSON.stringify(stamped?.transform_report)).not.toContain("111.444.777-35");
+  });
+
+  it("com o transform desligado o texto cru chega ao chunker", async () => {
+    process.env.APOSTILA_TRANSFORM_DISABLED = "1";
+    try {
+      const raw = "Aluno: Maria Conceição\n\n" + "z".repeat(80);
+      mockExtract.mockResolvedValue({ text: raw, pageCount: 1, pages: [raw] });
+
+      const result = await DocumentPipelineService.processDocument("doc-1");
+
+      expect(chunkInput().text).toContain("Aluno: Maria Conceição");
+      expect(result.transformReport?.pii_removidos).toBe(0);
+      expect(result.transformReport?.avisos.join(" ")).toContain("APOSTILA_TRANSFORM_DISABLED");
+    } finally {
+      delete process.env.APOSTILA_TRANSFORM_DISABLED;
+    }
+  });
+
+  it("documento sem paginas (txt/md) tambem sai redigido", async () => {
+    mockExtract.mockResolvedValue({
+      text: "Resumo em markdown\n\nAluno: Maria Conceição da Silva\nMatrícula: 2024.0012-34",
+      pageCount: undefined,
+    });
+
+    const result = await DocumentPipelineService.processDocument("doc-1");
+
+    const input = chunkInput();
+    expect(input.text).toContain("Aluno: [REDACTADO]");
+    expect(input.text).toContain("Matrícula: [REDACTADO]");
+    expect(input.pageRanges).toBeUndefined();
+    expect(result.transformReport?.fronteiras_pagina).toBe("inexistente");
+  });
+});
+

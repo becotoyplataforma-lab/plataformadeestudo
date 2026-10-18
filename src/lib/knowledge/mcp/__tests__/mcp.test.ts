@@ -212,6 +212,25 @@ describe("apostilaMcpProvider: transformacao editorial legitima", () => {
     expect(result.notes.join(" ")).toContain("fase");
   });
 
+  /**
+   * O corpus real tem "Aula 03" como cabecalho corrido em cada pagina. Promover
+   * isso a fase daria 77 fases a uma apostila de uma aula, e o relatorio de
+   * auditoria passaria a mentir sobre o que a regra fez.
+   */
+  it("nao promove cabecalho corrido de pagina a fase", async () => {
+    const result = await run(
+      [
+        "Aula 03",
+        "Texto legitimo de conteudo da apostila.",
+        "Aula 03 - Direito Constitucional",
+      ].join("\n"),
+    );
+    expect(result.text).toContain("## Aula 03 - Direito Constitucional");
+    expect((result.text.match(/^## Aula 03$/gm) ?? []).length).toBe(0);
+    expect(result.text).toContain("\nAula 03\n");
+    expect(result.notes.join(" ")).toContain("1 chamada(s) de fase promovida");
+  });
+
   it("normaliza caixas de destaque sem reescrever o conteudo", async () => {
     const result = await run(
       [

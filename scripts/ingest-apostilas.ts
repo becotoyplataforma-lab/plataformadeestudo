@@ -7,7 +7,7 @@
  * prova o CLI falha com NON_PRODUCTION_DATABASE_REQUIRED, porque desenvolvimento
  * e producao compartilham o mesmo projeto Supabase neste ambiente.
  *
- * Tres modos de escrita, mutuamente exclusivos:
+ * Quatro modos de escrita, mutuamente exclusivos:
  *   --stage  os bytes vao para o storage escolhido e a entrada entra na fila de
  *            ingestao. Nenhum banco e tocado, por isso nenhum guard de banco se
  *            aplica: e o modo que funciona neste posto, sem DATABASE_URL.
@@ -15,6 +15,13 @@
  *   --sync   consome a fila: `staged` vira ingestao completa a partir dos bytes
  *            preservados, `recorded` repete so a extracao/embeddings. Tambem
  *            exige banco de teste isolado.
+ *   --reprocess ID[,ID...]  refaz extracao+transform+chunks de documentos ja
+ *            ingeridos, a partir dos bytes em storage. Mesmo guard do --apply.
+ *
+ * Transformacao editorial (`--transform`, ligado por padrao): redige PII e
+ * normaliza a estrutura em fases dentro do pipeline, antes do chunking. Desligue
+ * com `--no-transform`; escolha o modo com `--mode sanitize-only|structure|full`.
+ * Cada documento ingerido deixa `<workspace>/reports/<id>.transform.json`.
  *
  * --backend r2|supabase|local decide onde os bytes DESTA execucao vivem; sem ele
  * vale STORAGE_BACKEND. Storage local em producao e recusado pelo adaptador
@@ -34,6 +41,10 @@ import {
 } from "../src/lib/db/env-guard";
 import { resolveMcpProvider } from "../src/lib/knowledge/mcp/registry";
 import { McpError, type KnowledgeMcpProvider, type McpPlan } from "../src/lib/knowledge/mcp/contracts";
+import {
+  APOSTILA_TRANSFORM_MODES,
+  type ApostilaTransformReport,
+} from "../src/lib/knowledge/dto/apostila-transform.dto";
 import { extensionOf, mimeForExtension } from "../src/lib/knowledge/format-contract";
 import {
   pendingEntriesToSync,
@@ -66,6 +77,12 @@ type CliArgs = {
   mcpId: string | null;
   subject: string | null;
   actorEmail: string | null;
+  /** default on: `--no-transform` devolve o texto extraido cru para o chunker. */
+  transform: boolean;
+  /** `--reprocess ID[,ID...]` refaz extracao + transform + chunks de documentos ja ingeridos. */
+  reprocess: string[];
+  /** Modo de transformacao desta execucao; vira APOSTILA_TRANSFORM_MODE. */
+  mode: string | null;
 };
 
 type FileEntry = { relPath: string; absPath: string; sizeBytes: number };
@@ -101,6 +118,10 @@ function usage(): string {
     "  --backend B       r2 | supabase | local para os bytes desta execucao (default STORAGE_BACKEND)",
     "  --actor-email E   e-mail do professor ou admin responsavel",
     "  --dry-run         forca modo seco (padrao)",
+    "  --transform       aplica o pipeline editorial (padrao: ligado)",
+    "  --no-transform    nao aplica regra editorial alguma: texto cru no indice",
+    "  --mode M          sanitize-only | structure | full (ou APOSTILA_TRANSFORM_MODE)",
+    "  --reprocess ID    refaz extracao+transform+chunks de apostilas ja ingeridas (exige banco de teste)",
   ].join("\n");
 }
 
@@ -112,22 +133,79 @@ function parseBackend(raw: string): string {
   return raw;
 }
 
-/** Os tres modos de escrita sao mutuamente exclusivos: cada um tem outro guard. */
+/**
+ * Os quatro modos de escrita sao mutuamente exclusivos: cada um tem outro guard,
+ * e rodar dois de uma vez faria o segundo reprocessar o que o primeiro acabou de
+ * ingerir.
+ */
 function assertSingleWriteMode(args: CliArgs): void {
-  const modes = ["--apply", "--stage", "--sync"].filter((flag) =>
-    flag === "--apply" ? args.apply : flag === "--stage" ? args.stage : args.sync
-  );
-  if (modes.length > 1) {
-    throw new Error("Modos exclusivos: " + modes.join(" e ") + ". Escolha um.\n" + usage());
+  const active: Array<[string, boolean]> = [
+    ["--apply", args.apply],
+    ["--stage", args.stage],
+    ["--sync", args.sync],
+    ["--reprocess", args.reprocess.length > 0],
+  ];
+  const chosen = active.filter((entry) => entry[1]).map((entry) => entry[0]);
+  if (chosen.length > 1) {
+    throw new Error("Modos exclusivos: " + chosen.join(" e ") + ". Escolha um.\n" + usage());
   }
 }
 
 /** O modo desta execucao, como aparece no log e no report. */
 function modeLabel(args: CliArgs): string {
+  if (args.reprocess.length > 0) return "reprocess (" + args.reprocess.length + " documento(s))";
   if (args.sync) return "sync (consome a fila)";
   if (args.stage) return "stage (sem banco)";
   return args.apply ? "APPLY" : "dry-run (padrao)";
 }
+
+/**
+ * Modo de transformacao escolhido na linha de comando.
+ *
+ * CLI erra alto: `--mode ful` nao cai em default silencioso, porque o operador
+ * precisa saber que o lote saiu sem IA em vez de assumir que saiu com.
+ */
+function parseTransformMode(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (!(APOSTILA_TRANSFORM_MODES as readonly string[]).includes(value)) {
+    throw new Error(
+      "--mode aceita " + APOSTILA_TRANSFORM_MODES.join(", ") + ". Recebido: " + raw + "\n" + usage(),
+    );
+  }
+  return value;
+}
+
+/** Ids de documento, separados por virgula. UUID primeiro, banco depois. */
+function parseDocumentIds(raw: string): string[] {
+  const ids = raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0);
+  if (ids.length === 0) throw new Error("--reprocess exige pelo menos um id de documento.");
+  for (const id of ids) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      throw new Error("--reprocess espera UUID(s) de documents.id. Recebido: " + id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Relatorio JSON por apostila em `<workspace>/reports/`.
+ *
+ * O nome do arquivo e o id do documento: dois arquivos com o mesmo titulo de
+ * aula nao colidem, e o JSON nao pode mentir sobre a que documento pertence.
+ */
+async function writeTransformReport(
+  args: CliArgs,
+  documentId: string,
+  report: ApostilaTransformReport,
+): Promise<void> {
+  const dir = join(args.workspace, "reports");
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, documentId + ".transform.json"), JSON.stringify(report, null, 2), "utf8");
+}
+
 
 function takeValue(next: string | undefined, flag: string): string {
   if (!next || next.startsWith("--")) throw new Error(flag + " exige um valor.");
@@ -158,6 +236,9 @@ function parseArgs(input: string[]): CliArgs {
     mcpId: null,
     subject: null,
     actorEmail: null,
+    transform: true,
+    reprocess: [],
+    mode: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -170,7 +251,11 @@ function parseArgs(input: string[]): CliArgs {
     if (token === "--stage") { args.stage = true; continue; }
     if (token === "--sync") { args.sync = true; continue; }
     if (token === "--backend") { args.backend = parseBackend(takeValue(argv[i + 1], token)); i += 1; continue; }
-    if (token === "--dry-run") { args.apply = false; args.stage = false; args.sync = false; continue; }
+    if (token === "--dry-run") { args.apply = false; args.stage = false; args.sync = false; args.reprocess = []; continue; }
+    if (token === "--transform") { args.transform = true; continue; }
+    if (token === "--no-transform") { args.transform = false; continue; }
+    if (token === "--mode") { args.mode = parseTransformMode(takeValue(argv[i + 1], token)); i += 1; continue; }
+    if (token === "--reprocess") { args.reprocess = parseDocumentIds(takeValue(argv[i + 1], token)); i += 1; continue; }
     if (token === "--source") { args.source = resolve(takeValue(argv[i + 1], token)); i += 1; continue; }
     if (token === "--workspace") { args.workspace = resolve(takeValue(argv[i + 1], token)); i += 1; continue; }
     if (token === "--mcp") { args.mcpId = takeValue(argv[i + 1], token); i += 1; continue; }
@@ -386,6 +471,8 @@ function renderReport(args: CliArgs, provider: KnowledgeMcpProvider, rows: Manif
     "- variantes fora do indice: " + summary.variants,
     "- total de bytes: " + summary.totalBytes,
     "- limite aplicado: " + (args.limit ?? "nenhum"),
+    "- transformacao editorial: " +
+      (args.transform ? (args.mode ?? process.env.APOSTILA_TRANSFORM_MODE ?? "sanitize-only (default)") : "DESATIVADA (--no-transform)"),
     // Projecao do que o --apply gravaria: só linhas pending contam e o --limit
     // trunca essa fila. Sem estas linhas o report mostra o lote inteiro e o
     // operador nao consegue ler o tamanho real da escrita projetada.
@@ -499,7 +586,10 @@ async function applyOne(
   });
 
   try {
-    await DocumentPipelineService.processDocument(result.documentId);
+    const pipeline = await DocumentPipelineService.processDocument(result.documentId);
+    if (args.transform && pipeline.transformReport) {
+      await writeTransformReport(args, result.documentId, pipeline.transformReport);
+    }
   } catch (error) {
     // Bytes e registro ja existem; so a extracao falhou. Entra na fila como
     // `recorded` para o proximo --sync repetir apenas este passo, em vez de
@@ -655,7 +745,10 @@ async function syncQueue(args: CliArgs, provider: KnowledgeMcpProvider): Promise
   for (const entry of limited) {
     try {
       if (entry.status === "recorded" && entry.documentId) {
-        await DocumentPipelineService.processDocument(entry.documentId);
+        const pipeline = await DocumentPipelineService.processDocument(entry.documentId);
+        if (args.transform && pipeline.transformReport) {
+          await writeTransformReport(args, entry.documentId, pipeline.transformReport);
+        }
       } else {
         const buffer = await bytesForEntry(entry, DocumentStorageService);
         await applyOne(
@@ -684,6 +777,47 @@ async function syncQueue(args: CliArgs, provider: KnowledgeMcpProvider): Promise
   console.log("[cli] sync concluido: " + synced + " entrada(s). Fila: " + JSON.stringify(summarizePendingQueue(after)));
 }
 
+/**
+ * Reprocessa apostilas que ja estao no banco: reexecuta extracao, transform e
+ * chunking a partir dos bytes preservados em storage.
+ *
+ * Serve para aplicar uma regra nova ao corpus sem reingerir nada. Escreve em
+ * `documents` e `chunks`, entao passa pelo MESMO guard do `--apply`: reprocessar
+ * contra producao e exatamente o que o guard existe para impedir, e a regra nova
+ * ainda nao esta provada em banco de teste.
+ */
+async function reprocessDocuments(args: CliArgs): Promise<void> {
+  assertNonProductionDatabaseUrl("apostila-cli-reprocess", process.env.DATABASE_URL);
+
+  const { DocumentPipelineService } = await import("../src/lib/knowledge/services/document-pipeline.service");
+  const { DocumentRepository } = await import("../src/lib/knowledge/repositories/document.repository");
+
+  let done = 0;
+  for (const documentId of args.reprocess) {
+    const doc = await DocumentRepository.findById(documentId);
+    if (!doc) {
+      console.warn("[cli] reprocess: documento inexistente ou removido: " + documentId);
+      continue;
+    }
+    try {
+      const pipeline = await DocumentPipelineService.processDocument(documentId);
+      if (args.transform && pipeline.transformReport) {
+        await writeTransformReport(args, documentId, pipeline.transformReport);
+      }
+      done += 1;
+      console.log(
+        "[cli] reprocessado " + done + "/" + args.reprocess.length + ": " + documentId +
+          " status=" + pipeline.status +
+          " chunks=" + pipeline.chunkCount +
+          " transform=" + (pipeline.transformReport?.modo_usado ?? "nenhum"),
+      );
+    } catch (error) {
+      console.warn("[cli] reprocess falhou em " + documentId + ": " + (error as Error).message);
+    }
+  }
+  console.log("[cli] reprocess concluido: " + done + " documento(s).");
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   assertSingleWriteMode(args);
@@ -691,7 +825,21 @@ async function main(): Promise<void> {
     // Vale para a execucao toda: backend de storage nao e escolha por documento.
     process.env.STORAGE_BACKEND = args.backend;
   }
+  if (!args.transform) {
+    // O desligamento e do processo, nao do arquivo: o pipeline le isto uma vez.
+    process.env.APOSTILA_TRANSFORM_DISABLED = "1";
+  } else if (args.mode) {
+    process.env.APOSTILA_TRANSFORM_MODE = args.mode;
+  }
   const provider = resolveMcpProvider(args.mcpId);
+
+  if (args.reprocess.length > 0) {
+    // A origem dos bytes e o storage: --reprocess nao le pasta nenhuma.
+    console.log("[cli] modo: " + modeLabel(args));
+    console.log(describeDatabaseSafety("apostila-cli-reprocess"));
+    await reprocessDocuments(args);
+    return;
+  }
 
   if (args.sync) {
     // A fila e a origem: --sync nao le a pasta de apostilas nem reescreve manifest.

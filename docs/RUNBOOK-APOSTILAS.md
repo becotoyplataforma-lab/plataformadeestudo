@@ -283,10 +283,45 @@ Pontos que mudam o resultado:
 - Se faltar `DATABASE_URL` valida, o comando **para antes de qualquer escrita**
   (`[cli] BLOCKED NON_PRODUCTION_DATABASE_REQUIRED`, saida 3). Isso e o guard
   funcionando, nao um bug.
-- **`--apply`, `--stage` e `--sync` sao mutuamente exclusivos.** `--stage` so
-  grava bytes no storage e enfileira (nao exige `--actor-email` nem banco);
-  `--apply` sobe o ciclo completo ate o banco; `--sync` consome a fila e **tambem**
-  exige banco de teste e `--actor-email`. `--dry-run` zera as tres.
+- **`--apply`, `--stage`, `--sync` e `--reprocess` sao mutuamente exclusivos.**
+  `--stage` so grava bytes no storage e enfileira (nao exige `--actor-email` nem
+  banco); `--apply` sobe o ciclo completo ate o banco; `--sync` consome a fila e
+  **tambem** exige banco de teste e `--actor-email`; `--reprocess <uuid>` refaz
+  extracao+transform+chunks de um documento ja ingerido, lendo os bytes do storage
+  (exige banco de teste, nao exige `--source`). `--dry-run` zera os quatro.
+
+## Passo 6b — Conferir a transformacao editorial
+
+O pipeline aplica `sanitize-only` por padrao entre a extracao e o chunking: redige
+PII do aluno e normaliza fases/caixas, **sem** tocar autoria.
+
+```bash
+npm run ingest:apostilas -- --source "materiais" --apply --actor-email "<email>" --limit 1
+# depois:
+Get-Content ".apostilas-work\reports\<documentId>.transform.json"
+```
+
+O que tem de estar certo no JSON:
+
+- `modo_usado`: `sanitize-only` (ou o modo pedido, se `APOSTILA_TRANSFORM_MODE`
+  estava setado); `modo_pedido` diferente de `modo_usado` significa fallback;
+- `fallback_ativado` + `fallback_motivo`: se a IA foi pedida e reprovou nos
+  portoes, o documento foi indexado pelo caminho offline. Isso **nao** e erro de
+  ingestao, mas nao pode virar rotina silenciosa;
+- `pii_removidos` e `pii_por_tipo`: contagem. O valor removido nunca aparece aqui;
+- `procedencia_preservada` e o texto real no banco: nome da plataforma,
+  assinatura do professor e URL **continuam no conteudo indexado**. Se sumiram, a
+  regra foi violada e o lote deve ser reprocessado, nao aceito;
+- `regras_fonte`: `arquivo` quando as regras vieram de
+  `src/lib/knowledge/config/apostila-rules.md`. `compilado` quer dizer que o
+  arquivo nao foi lido (deploy empacotado sem `APOSTILA_RULES_PATH`) e o lote
+  rodou com a regra embutida;
+- `fronteiras_pagina`: `preservadas` no modo offline. `descartadas` aparece quando
+  um modo com IA reestruturou o documento inteiro — os chunks nesse caso perdem a
+  citacao de pagina, e e preciso saber disso antes de confiar na fonte.
+
+Sem edicao nenhuma, para comparar: `--no-transform` (equivale a
+`APOSTILA_TRANSFORM_DISABLED=1`).
 
 ## Passo 7 — Conferir o documento no banco
 
@@ -298,6 +333,8 @@ Antes de ampliar, verificar o resultado do passo 6:
   configurados deixam o documento em `chunked` sem embeddings — comportamento
   degradado aceitavel, mas precisa ser reconhecido como tal);
 - o arquivo foi gravado no backend de storage configurado no passo 2;
+- `documents.metadata` carimba `mcp_provider_id`, `processing_version` e
+  `transform_report` (o passo 6b acima explica o que ler dentro dele);
 - `reports/apostilas.md` e `manifest/apostilas.json` mostram a acao esperada
   (`pending` -> aplicado; `skipped_duplicate`, `skipped_unsupported`,
   `skipped_invalid` nao escrevem nada).

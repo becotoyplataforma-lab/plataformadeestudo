@@ -57,6 +57,26 @@ Ingestao de conteudo e delegada a provedores MCP registrados em
   e no seletor "MCP de processamento" do formulario do professor.
 - Batch de apostilas: `npm run ingest:apostilas` (dry-run por padrao; use
   `--limit`, `--mcp`, e `--apply` somente com banco de teste isolado).
+  `--reprocess <uuid>` refaz extracao+transform+chunks de documentos ja ingeridos
+  (mesmo guard do `--apply`, sem `--source`); `--no-transform` desliga a edicao
+  editorial e `--mode` escolhe sanitize-only, structure ou full.
+- Transformacao editorial roda num ponto so: `DocumentPipelineService` chama
+  `apostila-transformer.service.ts` entre a extracao e o chunking. Upload web,
+  `--apply`, `--sync`, `--reprocess` e o reprocessar da UI passam todos por la,
+  entao nenhum canal pula a regra. O vocabulario editavel mora em
+  `src/lib/knowledge/config/apostila-rules.md` (Zod em `.schema.ts`, leitura
+  cacheada por mtime, `APOSTILA_RULES_PATH` cobre o caminho no bundle).
+- Remocao de PII (CPF com checksum valido, matricula, RG, conselho, CNH, nome do
+  comprador em linha de rotulo) e permitida e sempre aplicada, antes de qualquer
+  chamada de IA, porque e dado pessoal de terceiro sob LGPD. Nao e a mesma regra
+  de remover autoria: plataforma, assinatura, URL e copyright ficam. O relatorio
+  so registra contagem por tipo, nunca o valor removido.
+- A saida da IA e gateada: menos marcadores de questao que a entrada, ou token de
+  procedencia que sumiu, ou resposta curta demais = saida rejeitada e o documento
+  cai em `sanitize-only` com `fallback_motivo`. IA nao expande nem inventa conteudo.
+- `APOSTILA_TRANSFORM_MODE` (default `sanitize-only`) e `APOSTILA_TRANSFORM_DISABLED=1`
+  controlam o modo e o kill-switch. Cada processamento grava `transform_report` em
+  `documents.metadata` e o CLI escreve `reports/<documentId>.transform.json`.
 
 - Formatos aceitos sao definidos em `src/lib/knowledge/format-contract.ts` (fonte unica lida pelo MCP,
   pelo `IngestionService` e pelo extrator): `pdf`, `docx`, `txt`, `md`/`markdown`,

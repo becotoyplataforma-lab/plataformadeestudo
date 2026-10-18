@@ -9,14 +9,32 @@ import path from "path";
 
 const PROMPTS_ROOT = path.join(process.cwd(), "prompts");
 
-const cache = new Map<string, string>();
+/**
+ * Cache por mtime, nao por caminho apenas.
+ *
+ * A versao anterior guardava o conteudo para sempre: editar um prompt so valia
+ * depois de reiniciar o processo, e "regra editavel sem redeploy" virava
+ * "regra editavel com restart". Trocar o prompt e mais barato que trocar o
+ * codigo; medir o arquivo no disco a cada leitura mantem isso verdade.
+ */
+const cache = new Map<string, { content: string; mtimeMs: number }>();
 
 async function loadPrompt(relativePath: string): Promise<string> {
-  if (cache.has(relativePath)) return cache.get(relativePath)!;
   const filePath = path.join(PROMPTS_ROOT, relativePath);
-  const content = await fs.readFile(filePath, "utf-8");
-  cache.set(relativePath, content);
-  return content;
+  try {
+    const stat = await fs.stat(filePath);
+    const cached = cache.get(relativePath);
+    if (cached && cached.mtimeMs === stat.mtimeMs) return cached.content;
+    const content = await fs.readFile(filePath, "utf-8");
+    cache.set(relativePath, { content, mtimeMs: stat.mtimeMs });
+    return content;
+  } catch (error) {
+    // Arquivo ilegível agora: se já existiu, serve a última cópia boa em vez de
+    // derrubar uma geração inteira por um erro transitório de disco.
+    const cached = cache.get(relativePath);
+    if (cached) return cached.content;
+    throw error;
+  }
 }
 
 /** Substitui placeholders {{variavel}} no prompt. */
@@ -40,4 +58,5 @@ export const prompts = {
   etlExplicarQuestao: () => loadPrompt("etl/explicar-questao.md"),
   diagnostico: () => loadPrompt("analytics/diagnostico.md"),
   apostilaTransformar: () => loadPrompt("apostila/transformar.md"),
+  apostilaEstruturarFases: () => loadPrompt("apostila/estruturar-fases.md"),
 };

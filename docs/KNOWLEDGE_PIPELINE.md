@@ -58,7 +58,50 @@ Selecao e validacao sempre no backend:
 
 Nao existe nenhuma regra de remocao de autoria: nome de plataforma, assinatura, URL, copyright e identificacao de origem permanecem no texto. Retirar isso nao e edicao, e ocultacao de titularidade de direitos.
 
-O transform e idempotente: rodar duas vezes devolve o mesmo texto, sem duplicar avisos nem caixas. Isso e o que torna seguro reprocessar. Os avisos de adaptacao por IA e de direitos do autor original so entram quando o material nao esta marcado como nao adaptado (`aiAdapted`); declarar IA em texto que nao foi adaptado seria uma procedencia falsa.
+O que **e** removido, e por outro motivo, e dado pessoal de terceiros: CPF, matricula, RG, numero de conselho, CNH e o nome do comprador em linha de rotulo (`Aluno: ...`). Isso e redacao de PII sob LGPD, nao edicao de autoria: apaga-se o dado de quem comprou a licenca, nunca quem escreveu o material. O CPF so sai com checksum valido, entao `123.456.789-00` de exemplo de exercicio permanece; o valor removido nunca aparece no relatorio, so a contagem por tipo.
+
+## Onde a transformacao roda
+
+O ponto de chamada e um so: `DocumentPipelineService.processDocument`, entre a extracao e o chunking (`applyTransformBeforeChunking`). Upload web, `--apply`, `--sync`, `--reprocess` e `POST /documents/[id]/process` passam todos por la, entao nenhum canal de entrada consegue pular a regra. E o que faltava antes: `provider.transform` existia e era anunciado como capacidade, mas so o servidor MCP do VS Code o chamava, enquanto o indexava texto cru.
+
+O servico e `apostila-transformer.service.ts`, com tres pecas ao lado dele: `apostila-sanitizer.service.ts` (PII deterministico, sem rede), `apostila-structurer.service.ts` (estrutura offline + portoes da IA) e `config/apostila-rules.md` com `config/apostila-rules.schema.ts` (vocabulario editavel, validado por Zod).
+
+Modos (`APOSTILA_TRANSFORM_MODE`, default `sanitize-only`):
+
+| Modo | O que faz | Rede |
+| --- | --- | --- |
+| `sanitize-only` | PII + estrutura offline | nao |
+| `structure` | PII + reorganizacao em fases por IA | sim |
+| `full` | PII + fases + caixas de destaque por IA | sim |
+
+`sanitize-only` e a base obrigatoria dos outros dois: o PII sai antes de qualquer chamada, entao o modelo nunca ve o numero de documento do aluno. `structure`/`full` ficam explicitos de proposito -- cada apostila vira uma chamada externa e o texto indexado passa a ser o da IA.
+
+`APOSTILA_TRANSFORM_DISABLED=1` devolve o texto extraido cru ao chunker.
+
+### Portoes da saida da IA
+
+A resposta da IA so e aceita se: (1) tiver tamanho minimo; (2) contiver tantos marcadores de questao quanto a entrada; (3) conservar cada token de procedencia presente na entrada (`estrategia`, `gran`, URL, aviso de direitos). Qualquer reprocao derruba para `sanitize-only` e registra o motivo em `fallback_motivo`. IA que apaga a plataforma do material que tinha plataforma nao e edicao, e a regra do paragrafo anterior valendo tambem para o modelo.
+
+Nao ha expansao de conteudo: a IA reorganiza e nao inventa, como ja dizia `apostila-transform.service.ts`.
+
+### Idempotencia e avisos de IA
+
+O transform e idempotente: rodar duas vezes devolve o mesmo texto, sem duplicar avisos nem caixas, e e isso que torna seguro reprocessar. Os avisos de adaptacao por IA e de direitos do autor original so entram quando houve adaptacao por IA de verdade -- no caminho offline `aiAdapted` e falso e nenhum banner e inserido, porque declarar IA em texto que nao foi adaptado e procedencia falsa.
+
+### Relatorio por documento
+
+Cada processamento grava em `documents.metadata` (merge JSONB, sem migracao): `transform_report`, `transform_mode`, `transform_rules_version`, `transform_pii_redacted`. O relatorio e validado por Zod e contem `sha256_original`, `sha256_transformado`, `regras_versao`, `regras_fonte`, `modo_pedido`, `modo_usado`, contagens de PII por tipo, `fases_criadas`, `caixas_normalizadas`, `questoes_entrada`/`questoes_saida`, `llm_usado`, `fallback_ativado`, `fallback_motivo`, `fronteiras_pagina` e `duracao_ms`. O CLI escreve o mesmo JSON em `<workspace>/reports/<documentId>.transform.json`.
+
+Falha em qualquer parte do transform devolve o texto extraido intacto: conteudo sem edicao editorial ainda e conteudo pesquisavel, conteudo perdido nao.
+
+## Versionamento das regras
+
+`config/apostila-rules.md` e o vocabulario editavel sem deploy: `versao`, `modo`, `pii`, `estrutura`, `marca_redacao`, limites de IA e as listas de campos de PII, marcadores de questao e marcas de procedencia. O parser e `apostila-rules.schema.ts`.
+
+Duas decisoes de seguranca. Os itens do arquivo sao **literais**, nunca regex: o codigo escapa e monta o padrao com familias de acento, entao `matricula` no arquivo casa com `matrícula` no PDF. E chave desconhecida ou valor fora do schema **invalida o lote de regras inteiro**, caindo nas regras compiladas com aviso no relatorio -- typo engolido em config de escrita e pior que config ausente. O vocabulario de caixas e de cabecalhos de fase continua em codigo porque tem testes proprios em `mcp/__tests__`.
+
+A leitura e cacheada por `mtime` + tamanho; editar o arquivo vale sem reiniciar o processo. Em deploy empacotado o caminho padrao pode nao existir: use `APOSTILA_RULES_PATH`.
+
 
 ## Versionamento do processamento
 
@@ -90,7 +133,11 @@ npm run ingest:apostilas -- --limit 13
 npx tsx scripts/ingest-apostilas.ts --source DIR --workspace DIR --mcp apostila-mcp --subject PORTUGUES --actor-email professor@exemplo --apply
 ```
 
-Opcoes: `--source`, `--workspace`, `--limit`, `--mcp`, `--subject`, `--actor-email`, `--apply` e `--dry-run`.
+Opcoes: `--source`, `--workspace`, `--limit`, `--mcp`, `--subject`, `--actor-email`, `--apply`, `--stage`, `--sync`, `--reprocess`, `--transform`, `--no-transform`, `--mode` e `--dry-run`.
+
+`--reprocess <uuid[,uuid...]>` refaz extracao, transform e chunking de documentos ja ingeridos, a partir dos bytes em storage: e como uma regra editorial nova chega ao acervo sem reingerir nada. Escreve em banco, entao passa pelo mesmo guard do `--apply` e nao precisa de `--source`.
+
+`--transform` (ligado por padrao) aplica o pipeline editorial do `ApostilaTransformerService`; `--no-transform` devolve o texto extraido cru; `--mode sanitize-only|structure|full` escolhe o modo desta execucao e erra alto em vez de cair em default silencioso. Cada documento processado deixa `<workspace>/reports/<documentId>.transform.json` com os hashes, o modo efetivo, as contagens de PII e o motivo de fallback, se houve.
 
 Os caminhos vem de ambiente: `APOSTILA_SOURCE_DIR` e `APOSTILA_WORK_DIR`. Sem `--source` e sem a variavel, o CLI imprime usage e sai com codigo 2. Nao existe mais caminho de maquina embutido no repositorio.
 
