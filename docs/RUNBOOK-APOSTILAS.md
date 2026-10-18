@@ -31,8 +31,9 @@ escaneado passa no formato e falha na extracao.
 
 ## Pre-voo (so leitura, antes do passo 1)
 
-Tres verificacoes que nao escrevem em lugar nenhum e que dizem, com antecedencia,
-se os passos 3, 4, 6 e 8 vao rodar. Ordem: destino do banco, origem do lote, ator.
+Quatro verificacoes que nao escrevem em lugar nenhum e que dizem, com
+antecedencia, se os passos 3, 4, 6 e 8 vao rodar. Ordem: destino do banco,
+origem do lote, camada de texto dos PDFs, ator do apply.
 
 ### 1. Destino do banco — o gate
 
@@ -88,7 +89,43 @@ Medida real (2026-10-17) em `H:\Meu Drive\plataforma de estudo`: 28 arquivos em
 5 subpastas — 20 PDF (99,1 MB, maior 24,85 MB, nenhum acima do teto) e 8 JSON
 (esses 8 caem como `skipped_unsupported`), zero placeholders.
 
-### 3. Ator do apply
+### 3. Extracao com camada de texto
+
+O inventario acima decide **formato e tamanho**. Nao decide se o PDF tem camada
+de texto, porque `provider.plan()` e chamado so com metadados — `fileName`,
+`mimeType`, `sizeBytes`, `sha256`, `relativePath`, `allZeroContent`
+(`scripts/ingest-apostilas.ts` L278-286). Um PDF escaneado sai como `pending` no
+passo 5 e falha na extracao, durante o `--apply`. Para nao descobrir isso no meio
+da escrita, corre-se o probe do repositorio, que usa o `pdf-parse` do proprio
+repositorio e nao abre banco nem storage:
+
+```bash
+node scripts/probe-pdf-text.mjs "H:\Meu Drive\plataforma de estudo"
+```
+
+```text
+COM_TEXTO | pg=53 | chars=76973 | mb=2.11 | cbm-rj\matematica\curso-384822-aula-00-0b26-completo.pdf
+...
+RESUMO origem=H:\Meu Drive\plataforma de estudo pdf=20 sem_texto=0 chars_totais=5126505 limiar=200
+```
+
+- `sem_texto=0` e o unico resultado com saida 0; `SEM_TEXTO` (linha com texto
+  abaixo de `--min-chars`, padrao 200) da saida 1 e resolve-se **fora** do lote,
+  porque nao ha OCR;
+- origem inexistente da saida 2 — o probe nunca cria diretorio;
+- `Warning: TT: undefined function` no stderr e do pdf.js (fontes TrueType nao
+  embutidas), nao e falha;
+- limite do metodo: quem extrai no `--apply` e o MCP `apostila-mcp`, que pode
+  usar outro parser. Texto presente aqui e forte indicio, nao a mesma byte-code
+  do provedor — a prova definitiva continua sendo o passo 6 com `--limit 1`.
+
+Medida real (2026-10-17) nessa origem: 20 PDF, zero sem texto, 5.126.505
+caracteres, densidade de 1.042 a 2.270 chars por pagina. O mais pesado do corpus
+e `curso-384118-aula-14-somente-em-pdf-089a-completo.pdf`: 862 paginas,
+1.912.846 caracteres (37% de todo o texto) em 24,85 MB — motivo a mais para o
+`--limit 1` proprio do passo 6.
+
+### 4. Ator do apply
 
 `--actor-email` tem de existir em `auth.users` **e** passar em
 `AdminGuardService.isProfessorOrAdmin`; `requireActor` corre antes de qualquer
@@ -340,6 +377,7 @@ relatorio de ingestao com metadados de acervo.
 ```bash
 # 0 (pre-vo): o gate do guard — tem de imprimir safe=true antes de qualquer escrita
 npx tsx --conditions=react-server scripts/db-guard.ts -- node -p "'ok'"
+node scripts/probe-pdf-text.mjs "materiais"        # 0 (pre-vo): tem de sair sem_texto=0
 cp .env.local .env.local.bak-$(date +%Y%m%d-%H%M%S)                # 1
 # 2: editar DATABASE_URL no .env.local para o ambiente de teste
 npm run db:migrate                                                  # 3
