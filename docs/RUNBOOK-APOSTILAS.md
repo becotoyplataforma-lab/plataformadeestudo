@@ -168,6 +168,41 @@ Conferir antes de seguir:
 Qualquer duvida aqui invalida todo o resto: o `--apply` e o `db:seed` escrevem
 no banco que estiver em `DATABASE_URL`.
 
+### Armadilha: o gate do banco nao cobre os bytes
+
+`assertNonProductionDatabaseUrl()` protege **apenas** o Postgres. O destino dos
+PDFs e decidido por outra variavel, `STORAGE_BACKEND`, e o `resolveStorageBackend()`
+(`src/lib/knowledge/storage/backend.ts`) tem um default silencioso: ausente fora
+de producao ele devolve `"supabase"`. Trocar so a `DATABASE_URL` para um banco de
+teste, sem mexer no storage, manda os bytes da apostila para o **bucket de
+producao** — escrita real, fora do alcance do guard, com upload bem-sucedido e
+nenhum erro para avisar.
+
+Prova rapida do backend que vai ser usado nesta execucao — qual arquivo define
+o que, lembrando que `.env.local` tem precedencia sobre `.env`:
+
+```bash
+grep -n '^STORAGE_BACKEND' .env .env.local .env.production
+```
+
+Arquivo sem a chave = default `"supabase"`. E `.env.production` **tambem nao** a
+traz: num build com `NODE_ENV=production` sem a variavel no painel do provedor, o
+upload falha com `STORAGE_BACKEND_REQUIRED` em vez de adivinhar um backend — conferir
+no dashboard antes do primeiro upload em producao.
+
+Para um lote de teste que nao escreva em nada que seja compartilhado, fixe o
+storage em disco na propria execucao:
+
+```bash
+npx tsx scripts/ingest-apostilas.ts --apply --limit 1 --backend local --actor-email "<email>"
+```
+
+`--backend local` grava em `.storage/documents` (fora do git) e e recusado quando
+`NODE_ENV=production` com o codigo `LOCAL_BACKEND_FORBIDDEN`, entao nao ha como ele
+vazar para o deploy. O `documents.storage_backend` da linha gravada passa a
+`local`, o que tambien evita que um `--sync` posterior tente ir buscar bytes ao
+bucket de producao.
+
 ## Passo 3 — Schema no banco de teste (via guard)
 
 Via npm, que ja passa por `scripts/db-guard.ts` (preferida; respeita o journal
