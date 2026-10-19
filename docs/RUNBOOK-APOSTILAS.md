@@ -340,9 +340,12 @@ hoje, 32.000 caracteres — e a saida do modelo **substitui o documento inteiro*
 PDF de 200 mil caracteres, a IA so viu os primeiros 16% e o resto seria descartado.
 Neste caso a rejeicao aconteceu porque as marcas de origem estavam tambem na parte
 cortada; nao ha garantia de que aconteca em todos os arquivos, e o portao de questoes
-nao ajuda: `questoes_entrada: 0` para este corpus (os marcadores das regras nao batem
-com a numerao usada pelo fornecedor), entao `questoes_saida >= questoes_entrada` e
-`0 >= 0` e se passa por prova de integridade.
+nao ajuda. `countQuestions` (`apostila-structurer.service.ts`) exige
+`marcador + digitos` — regex `\b(?:questao|questoes|exercicio|...)\s*(?:n?o?\.?\s*)?\d{1,3}\b`
+— e o fornecedor numera as questoes como `1. (INSTITUTO AOCP / MPE-RS / 2025)`, com
+`QUESTOES COMENTADAS` em titulo de secao e `Comentario:` antes da resolugao: nenhuma
+dessas formas poe o marcador antes do numero. Resultado medido: `questoes_entrada: 0`,
+entao `questoes_saida >= questoes_entrada` e `0 >= 0` e se passa por prova de integridade.
 
 Consequencia operacional: **nao agendar `--mode full` em lote enquanto o destino for o
 documento inteiro.** O proximo passo e uma guarda de tamanho antes da chamada (documento
