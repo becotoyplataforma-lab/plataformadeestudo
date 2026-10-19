@@ -50,6 +50,26 @@ export function isTransformDisabled(env: Record<string, string | undefined> = pr
 /** Separador de paginas: o mesmo do pipeline, para as fronteiras baterem. */
 export const PAGE_JOIN = "\n\n";
 
+/**
+ * Normalizacao do texto recem-extraido, na forma exata que o pipeline aplica
+ * antes do transform: BOM, CRLF, NBSP, espaco antes de quebra e sequencia de
+ * linhas em branco.
+ *
+ * Exportada porque a previsualizacao do CLI (`--preview`) tem de produzir o
+ * mesmo texto que o chunker receberia. Copiar esta funcao para dentro do script
+ * e a garantia de que, na primeira mexida num dos dois lados, o preview passa a
+ * mostrar um documento que nao e o documento ingerido.
+ */
+export function normalizeExtractedText(text: string): string {
+  return text
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }

@@ -16,7 +16,7 @@ import { DocumentExtractionService, ExtractionError } from "./extraction.service
 import { ChunkService, type PageRange } from "./chunk.service";
 import { EmbeddingService } from "./embedding.service";
 import { embeddingClient } from "../embedding/client";
-import { ApostilaTransformerService } from "./apostila-transformer.service";
+import { ApostilaTransformerService, normalizeExtractedText } from "./apostila-transformer.service";
 import type { ApostilaTransformReport } from "../dto/apostila-transform.dto";
 
 export class PipelineError extends Error {
@@ -59,15 +59,12 @@ function rangesFromPages(pages: string[]): PageRange[] {
   return ranges;
 }
 
-function normalizeText(text: string): string {
-  return text
-    .replace(/^\uFEFF/, "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\u00a0/g, " ")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
+/**
+ * Normalizacao pagina a pagina vive em `normalizeExtractedText`
+ * (`apostila-transformer.service`): a previsualizacao do CLI e o pipeline tem de
+ * aplicar exatamente a mesma forma, ou o preview mostra um texto que nunca
+ * chegaria ao chunker.
+ */
 
 export const DocumentPipelineService = {
   /** Executa (ou reexecuta, no retry) o processamento de um documento. */
@@ -99,12 +96,12 @@ export const DocumentPipelineService = {
       // pagina errada - que e pior do que nao citar pagina nenhuma.
       const normalizedPages =
         extracted.pages && extracted.pages.length > 0
-          ? extracted.pages.map((page) => normalizeText(page))
+          ? extracted.pages.map((page) => normalizeExtractedText(page))
           : null;
       const normalized =
         normalizedPages !== null
           ? normalizedPages.join(PAGE_JOIN)
-          : normalizeText(extracted.text);
+          : normalizeExtractedText(extracted.text);
 
       // Item 8 (OCR): PDFs escaneados não têm camada de texto. Detecta e
       // sinaliza em vez de falhar genericamente.

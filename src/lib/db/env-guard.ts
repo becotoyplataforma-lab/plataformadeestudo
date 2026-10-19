@@ -90,8 +90,12 @@ function readEnv(name: string): string | undefined {
  * Carrega o .env do projeto quando o processo nao o recebeu (CLI disparado sem
  * next dev / next start nao injeta variaveis). Nunca lanca: ambiente ausente
  * deve terminar em bloqueio, nao em excecao opaca.
+ *
+ * Exportado porque o transform tem cliente de IA no caminho (`--mode full`), e
+ * um CLI que nao le o .env ve `DEEPSEEK_API_KEY` ausente e cai em sanitize-only
+ * sem que ninguem tenha pedido modo offline.
  */
-function ensureProjectEnv(): void {
+export function ensureProjectEnv(): void {
   if (cachedEnvOrigin !== null) return;
   if (readEnv("DATABASE_URL")) {
     cachedEnvOrigin = false;

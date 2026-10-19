@@ -297,6 +297,60 @@ Se o lote vier vazio, ou com tudo em `skipped_*`, **parar** aqui: o problema e
 de origem de material ou de formato, e rodar `--apply` adiante apenas repete o
 erro em escala maior. Corrigir a origem e repetir este passo.
 
+## Passo 5b — Previsualizacao editorial sem banco (`--preview`)
+
+Existe para o caso real deste ambiente: ainda nao ha banco de teste isolado, e o
+passo 6 esta bloqueado pelo guard. O `--preview` corre a **extracao e o transform**
+de cada arquivo aceito e grava em `.apostilas-work/preview/<modo>/<sha12>/`:
+
+- `apostila-transformada.md` — exatamente o texto que o chunker receberia;
+- `transform-report.json` — `relatorio` com o mesmo shape de
+  `documents.metadata.transform_report`, mais o bloco `previsualizacao` com as
+  provas de procedencia (`marca_plataforma_permanece`, `url_permanece`,
+  `urls_esperadas`, `marcas_ausentes`).
+
+```bash
+npm run ingest:apostilas -- --source "<pasta das apostilas>" --preview --limit 1 --mode sanitize-only
+```
+
+Zero escrita e verificavel: o modo nao importa `IngestionService`, nem storage, nem
+repositorio, e **nao grava manifest** (gravar manifest daria ao preview a aparencia
+de um plano de ingestao). Tambem nao passa pelo guard de banco, porque nao ha o que
+provar sem escrita. A pasta leva o modo no caminho para o `full` nao pisar a evidencia
+do `sanitize-only`.
+
+O preview tambem carregou o `.env` que faltava: um CLI lancado fora do Next nao tem
+as variaveis injetadas, `DEEPSEEK_API_KEY` parecia ausente e `--mode full` caia em
+`sanitize-only` parecendo falha de IA. Por isso ele chama `ensureProjectEnv()` (a mesma
+leitura do guard) e imprime antes do lote `IA: modo <m> | provedor <label ou sem chave>`.
+
+### Limitacao medida em corpus real: `full` nao serve para apostila longa
+
+Na aula 01 do corpus CBM (104 paginas, 199.786 caracteres), `--mode full` chamou o
+modelo, gastou 33 s e **o portao de procedencia rejeitou a saida**:
+
+```
+fallback_motivo: "A IA removeu identificacao de origem: direcao."
+modo_pedido: full | modo_usado: sanitize-only | caracteres_saida: 196618
+```
+
+O motivo e estrutural: `apostila-structurer.service.ts:143-148` envia
+`input.text.slice(0, min(llm_max_chars, HARD_LLM_LIMIT_CHARS))` — com as regras de
+hoje, 32.000 caracteres — e a saida do modelo **substitui o documento inteiro**. Num
+PDF de 200 mil caracteres, a IA so viu os primeiros 16% e o resto seria descartado.
+Neste caso a rejeicao aconteceu porque as marcas de origem estavam tambem na parte
+cortada; nao ha garantia de que aconteca em todos os arquivos, e o portao de questoes
+nao ajuda: `questoes_entrada: 0` para este corpus (os marcadores das regras nao batem
+com a numerao usada pelo fornecedor), entao `questoes_saida >= questoes_entrada` e
+`0 >= 0` e se passa por prova de integridade.
+
+Consequencia operacional: **nao agendar `--mode full` em lote enquanto o destino for o
+documento inteiro.** O proximo passo e uma guarda de tamanho antes da chamada (documento
+acima do limite cai em `sanitize-only` com motivo proprio, em vez de arriscar mutilacao),
+e marcadores de questao que descrevam o formato real do fornecedor. O preview ja mostra
+os dois sinais (`caracteres_entrada`/`caracteres_saida` e `questoes_entrada`), entao a
+revisao de qualquer modo novo comeca por aqui.
+
 ## Passo 6 — Ingestao com `--apply`, `--actor-email` e `--limit 1`
 
 ```bash

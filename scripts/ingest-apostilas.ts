@@ -23,6 +23,13 @@
  * com `--no-transform`; escolha o modo com `--mode sanitize-only|structure|full`.
  * Cada documento ingerido deixa `<workspace>/reports/<id>.transform.json`.
  *
+ * Previsualizacao editorial (`--preview`): extracao + transform de cada arquivo
+ * aceito, gravados em `<workspace>/preview/<id>/` como `apostila-transformada.md`
+ * (o texto que iria para o chunker) e `transform-report.json`. Nao abre conexao
+ * com banco, nao sobe um byte a storage e nao escreve manifest — por isso nao
+ * precisa do guard de banco e e o unico modo que mostra a saida do pipeline antes
+ * de existir qualquer escrita. `--limit` e `--mode` valem aqui do mesmo jeito.
+ *
  * --backend r2|supabase|local decide onde os bytes DESTA execucao vivem; sem ele
  * vale STORAGE_BACKEND. Storage local em producao e recusado pelo adaptador
  * (LOCAL_BACKEND_FORBIDDEN), e nao ha escolha de backend por documento.
@@ -38,6 +45,7 @@ import {
   NonProductionDatabaseRequiredError,
   assertNonProductionDatabaseUrl,
   describeDatabaseSafety,
+  ensureProjectEnv,
 } from "../src/lib/db/env-guard";
 import { resolveMcpProvider } from "../src/lib/knowledge/mcp/registry";
 import { McpError, type KnowledgeMcpProvider, type McpPlan } from "../src/lib/knowledge/mcp/contracts";
@@ -45,7 +53,7 @@ import {
   APOSTILA_TRANSFORM_MODES,
   type ApostilaTransformReport,
 } from "../src/lib/knowledge/dto/apostila-transform.dto";
-import { extensionOf, mimeForExtension } from "../src/lib/knowledge/format-contract";
+import { extensionOf, mimeForExtension, textFormatOf } from "../src/lib/knowledge/format-contract";
 import {
   pendingEntriesToSync,
   readPendingQueue,
@@ -83,6 +91,8 @@ type CliArgs = {
   reprocess: string[];
   /** Modo de transformacao desta execucao; vira APOSTILA_TRANSFORM_MODE. */
   mode: string | null;
+  /** `--preview`: extracao + transform, zero escrita (banco, storage e manifest). */
+  preview: boolean;
 };
 
 type FileEntry = { relPath: string; absPath: string; sizeBytes: number };
@@ -122,6 +132,7 @@ function usage(): string {
     "  --no-transform    nao aplica regra editorial alguma: texto cru no indice",
     "  --mode M          sanitize-only | structure | full (ou APOSTILA_TRANSFORM_MODE)",
     "  --reprocess ID    refaz extracao+transform+chunks de apostilas ja ingeridas (exige banco de teste)",
+    "  --preview         extracao+transform sem nenhuma escrita: saida em <workspace>/preview/<sha12>/",
   ].join("\n");
 }
 
@@ -153,6 +164,7 @@ function assertSingleWriteMode(args: CliArgs): void {
 
 /** O modo desta execucao, como aparece no log e no report. */
 function modeLabel(args: CliArgs): string {
+  if (args.preview) return "preview (sem banco, sem storage, sem manifest)";
   if (args.reprocess.length > 0) return "reprocess (" + args.reprocess.length + " documento(s))";
   if (args.sync) return "sync (consome a fila)";
   if (args.stage) return "stage (sem banco)";
@@ -206,6 +218,183 @@ async function writeTransformReport(
   await writeFile(join(dir, documentId + ".transform.json"), JSON.stringify(report, null, 2), "utf8");
 }
 
+/**
+ * Marcas de procedencia que a entrada tinha e a saida nao manteve.
+ *
+ * O portao ja existe no structurer (a IA e rejeitada quando devolve texto sem as
+ * marcas da entrada) e o relatorio traz `procedencia_preservada`. Isto aqui e a
+ * leitura legivel dessa mesma prova, separada por natureza da marca: quem revisa
+ * um preview precisa de ler "a URL da plataforma continua la" sem reconstruir a
+ * lista a partir do arquivo de regras.
+ *
+ * `null` quando a entrada nao trazia nenhuma marca daquele tipo: ahi nao ha o
+ * que provar, e escrever `true` seria garantia sobre algo que nunca existiu.
+ */
+/** URL no texto extraido: o dominio da plataforma aparece como `www.` ou com esquema. */
+const URL_IN_TEXT = /(?:https?:\/\/|www\.)[^\s<>"'()\[\]]{4,120}/gi;
+
+function provenanceCheck(input: string, output: string, tokens: readonly string[]) {
+  const from = input.toLowerCase();
+  const to = output.toLowerCase();
+  const expected = tokens.filter((token) => from.includes(token.toLowerCase()));
+  const missingBrands = expected.filter((token) => !to.includes(token.toLowerCase()));
+
+  // A lista de regras guarda NOMES de marca, nao enderecos: "estrategia" nao prova
+  // que `www.estrategiaconcursos.com.br` sobreviveu. A prova da URL sai do proprio
+  // texto — toda URL presente na entrada tem de continuar presente na saida.
+  const urls = Array.from(new Set(input.match(URL_IN_TEXT)?.map((url) => url.toLowerCase()) ?? []));
+  const missingUrls = urls.filter((url) => !to.includes(url));
+
+  return {
+    marca_plataforma_permanece: expected.length === 0 ? null : missingBrands.length === 0,
+    url_permanece: urls.length === 0 ? null : missingUrls.length === 0,
+    marcas_esperadas: expected,
+    urls_esperadas: urls.length,
+    marcas_ausentes: [...missingBrands, ...missingUrls],
+  };
+}
+
+
+/**
+ * `--preview`: extracao + transform editorial de cada arquivo aceito, zero escrita.
+ *
+ * Reproduz o trecho do pipeline que antecede o chunking — a mesma extracao, a
+ * mesma normalizacao pagina a pagina, o mesmo `transformExtraction` — e por isso
+ * o `apostila-transformada.md` e o texto que o chunker receberia, nao uma versao
+ * aproximada dele. Nada aqui importa repositorio, storage ou guard de banco: o
+ * modo existe precisamente para o caso em que o banco de teste ainda nao ha.
+ *
+ * O `documentId` sai do sha256 do arquivo (`prev-<12 hex>`) porque nao existe
+ * linha em `documents`: e nome de pasta, nao identidade persistida.
+ */
+async function previewIngestion(args: CliArgs, rows: ManifestRow[]): Promise<void> {
+  const { DocumentExtractionService } = await import(
+    "../src/lib/knowledge/services/extraction.service"
+  );
+  const { ApostilaTransformerService, normalizeExtractedText, PAGE_JOIN, deepSeekStructuringClient } =
+    await import("../src/lib/knowledge/services/apostila-transformer.service");
+  const { loadApostilaRules } = await import("../src/lib/knowledge/config/apostila-rules.schema");
+
+  // O CLI nao e iniciado pelo Next, entao ninguem injetou o .env no processo. Sem
+  // este carregamento, `--mode full` nao veria `DEEPSEEK_API_KEY`, chamaria o
+  // provedor indisponivel e cairia em sanitize-only parecendo falha de IA.
+  ensureProjectEnv();
+
+  const rules = (await loadApostilaRules(process.env)).rules;
+  // A pasta leva o modo pedido porque o mesmo PDF em `sanitize-only` e em `full`
+  // produz saidas diferentes: sem isto, a segunda execucao pisaria a evidencia da
+  // primeira, e comparar modos e justamente o que a previsualizacao existe para fazer.
+  const requestedMode = (process.env.APOSTILA_TRANSFORM_MODE ?? "sanitize-only").trim();
+
+  // O modo pedido so e realidade se houver provedor. Anunciar isto antes do lote
+  // evita o erro de leitura contrario: "rodei full" quando o que rodou foi offline.
+  const client = deepSeekStructuringClient(process.env);
+  const wantsAi = requestedMode === "structure" || requestedMode === "full";
+  console.log(
+    "[cli] IA: modo " + requestedMode + " | provedor " +
+      (client.available ? client.label : "sem chave configurada") +
+      (wantsAi && !client.available ? " (ninguem chamou: vai cair em sanitize-only)" : ""),
+  );
+
+  const targets = pendingRows(args, rows);
+  if (targets.length === 0) {
+    console.log("[cli] preview: nenhum arquivo pendente para pre-visualizar.");
+    return;
+  }
+
+  let done = 0;
+  for (const row of targets) {
+    const previewId = "prev-" + row.sha256.slice(0, 12);
+    try {
+      const buffer = await readFile(join(args.source, ...row.relPath.split("/")));
+      const extracted = await DocumentExtractionService.extract(
+        buffer,
+        mimeFor(row.fileName),
+        textFormatOf(extensionOf(row.fileName)) ?? "",
+      );
+
+      // Mesma forma do pipeline: paginas normalizadas uma a uma e unidas pelo
+      // separador das fronteiras. Mexer aqui de um lado so, e o preview passa a
+      // mostrar um texto que o chunker nunca viria a receber.
+      const pages =
+        extracted.pages && extracted.pages.length > 0
+          ? extracted.pages.map((page) => normalizeExtractedText(page))
+          : null;
+      const input = pages !== null ? pages.join(PAGE_JOIN) : normalizeExtractedText(extracted.text);
+
+      if (!input) {
+        console.warn(
+          "[cli] preview sem texto em " + row.relPath +
+            ": provavel PDF escaneado (OCR nao configurado). Nada gravado para este arquivo.",
+        );
+        continue;
+      }
+
+      const outcome = await ApostilaTransformerService.transformExtraction({
+        text: input,
+        pages: pages ?? undefined,
+        sha256Original: row.sha256,
+        documentId: previewId,
+        fileName: row.fileName,
+      });
+      const report = outcome.report;
+      const provenance = provenanceCheck(input, outcome.text, rules.marcas_procedencia);
+      const dir = join(args.workspace, "preview", requestedMode, previewId);
+      await mkdir(dir, { recursive: true });
+
+      await writeFile(
+        join(dir, "apostila-transformada.md"),
+        outcome.text.endsWith("\n") ? outcome.text : outcome.text + "\n",
+        "utf8",
+      );
+      const envelope = {
+        previsualizacao: {
+          documento: previewId,
+          origem: row.relPath,
+          bytes_originais: row.sizeBytes,
+          paginas_extraidas: extracted.pageCount ?? (pages ? pages.length : 1),
+          caracteres_entrada: input.length,
+          caracteres_saida: outcome.text.length,
+          escrita: "nenhuma: banco, storage e manifest intactos",
+          ...provenance,
+        },
+        relatorio: report,
+      };
+      await writeFile(join(dir, "transform-report.json"), JSON.stringify(envelope, null, 2), "utf8");
+
+      done += 1;
+      console.log(
+        "[cli] preview " + done + "/" + targets.length + ": " + row.relPath +
+          " -> preview/" + requestedMode + "/" + previewId +
+          " | modo " + report.modo_pedido + "->" + report.modo_usado +
+          " | PII " + report.pii_removidos +
+          " | fases " + report.fases_criadas +
+          " | questoes " + report.questoes_entrada + "->" + report.questoes_saida +
+          " | procedencia " + report.procedencia_preservada +
+          " | fallback " + report.fallback_ativado +
+          " | " + report.duracao_ms + "ms",
+      );
+      if (report.fallback_ativado && report.fallback_motivo) {
+        console.warn("[cli]   fallback: " + report.fallback_motivo);
+      }
+      if (provenance.marcas_ausentes.length > 0) {
+        console.warn("[cli]   marcas perdidas: " + provenance.marcas_ausentes.join(", "));
+      }
+    } catch (error) {
+      // Preview nao perde o lote por causa de um arquivo: o mesmo PDF que falha
+      // aqui falharia no --apply, e a lista de falhas e parte do resultado.
+      console.warn(
+        "[cli] preview falhou em " + row.relPath + " (" + previewId + "): " +
+          (error as Error).message,
+      );
+    }
+  }
+
+  console.log(
+    "[cli] preview concluido: " + done + "/" + targets.length + " documento(s) em " +
+      join(args.workspace, "preview") + " — nenhuma escrita em banco, storage ou manifest.",
+  );
+}
 
 function takeValue(next: string | undefined, flag: string): string {
   if (!next || next.startsWith("--")) throw new Error(flag + " exige um valor.");
@@ -239,6 +428,7 @@ function parseArgs(input: string[]): CliArgs {
     transform: true,
     reprocess: [],
     mode: null,
+    preview: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -252,6 +442,13 @@ function parseArgs(input: string[]): CliArgs {
     if (token === "--sync") { args.sync = true; continue; }
     if (token === "--backend") { args.backend = parseBackend(takeValue(argv[i + 1], token)); i += 1; continue; }
     if (token === "--dry-run") { args.apply = false; args.stage = false; args.sync = false; args.reprocess = []; continue; }
+    if (token === "--preview") {
+      // Previsualizacao nao escreve em lugar nenhum: invalida os modos de escrita
+      // do mesmo modo que --dry-run, seja qual for a ordem da linha de comando.
+      args.preview = true;
+      args.apply = false; args.stage = false; args.sync = false; args.reprocess = [];
+      continue;
+    }
     if (token === "--transform") { args.transform = true; continue; }
     if (token === "--no-transform") { args.transform = false; continue; }
     if (token === "--mode") { args.mode = parseTransformMode(takeValue(argv[i + 1], token)); i += 1; continue; }
@@ -871,6 +1068,14 @@ async function main(): Promise<void> {
       " duplicados=" + summary.duplicates +
       " variantes=" + summary.variants,
   );
+
+  if (args.preview) {
+    // Sem manifest de proposito: o preview nao e artefato de lote, e saida
+    // editorial por documento. Gravar manifest aqui daria ao preview a aparencia
+    // de um plano de ingestao que nunca foi pedido.
+    await previewIngestion(args, rows);
+    return;
+  }
 
   await writeArtifacts(args, provider, rows);
   console.log("[cli] manifest e report gravados em " + args.workspace);
