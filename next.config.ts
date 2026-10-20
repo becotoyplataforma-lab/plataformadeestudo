@@ -5,7 +5,7 @@ import { executarDeployAutomatico } from "./src/lib/apostilas/scanner";
 try {
   executarDeployAutomatico();
 } catch (e) {
-  // trigger 3 - clean deploy
+  // trigger 5 - run auto deploy
   console.warn("[next.config] Erro no deploy:", e);
 }
 

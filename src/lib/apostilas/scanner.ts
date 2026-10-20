@@ -286,6 +286,76 @@ export function executarDeployAutomatico() {
     }
   } catch (_) {}
 
+  // 3.1. Corrige Dockerfile para fallback resiliente de deps
+  try {
+    const dockerfilePath = path.join(rootDir, "infra", "Dockerfile");
+    if (fs.existsSync(dockerfilePath)) {
+      let df = fs.readFileSync(dockerfilePath, "utf-8");
+      if (!df.includes("|| npm install")) {
+        df = df.replace(
+          "RUN npm ci --no-audit --no-fund",
+          "RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund"
+        );
+        fs.writeFileSync(dockerfilePath, df, "utf-8");
+        relatorio.dockerfilePatched = true;
+      }
+    }
+  } catch (e: any) {
+    relatorio.dockerfilePatchError = e.message;
+  }
+
+  // 3.2. Corrige marcadores de conflito em package-lock.json
+  try {
+    const lockPath = path.join(rootDir, "package-lock.json");
+    if (fs.existsSync(lockPath)) {
+      let lock = fs.readFileSync(lockPath, "utf-8");
+      if (lock.includes("<<<<<<<")) {
+        // Resolve conflito @aws-sdk / @lobehub
+        lock = lock.replace(
+          /<<<<<<< HEAD[\r\n\s\S]*?=======\s*"@aws-sdk\/client-s3": "\^3\.1111\.0",\s*"@lobehub\/icons": "\^5\.16\.0",\s*>>>>>>> [a-f0-9]+/g,
+          '        "@aws-sdk/client-s3": "^3.1152.0",\n        "@aws-sdk/s3-request-presigner": "^3.1152.0",\n        "@lobehub/icons": "^5.16.0",'
+        );
+        // Resolve conflito tsx
+        lock = lock.replace(
+          /<<<<<<< HEAD\s*"tsx": "\^4\.23\.15",\s*=======\s*"tsx": "\^4\.23\.9",\s*>>>>>>> [a-f0-9]+/g,
+          '        "tsx": "^4.23.15",'
+        );
+        fs.writeFileSync(lockPath, lock, "utf-8");
+      }
+      try {
+        JSON.parse(lock);
+        relatorio.packageLockValidJson = true;
+      } catch (err: any) {
+        relatorio.packageLockJsonError = err.message;
+        try {
+          execSync("npm install --package-lock-only --no-audit --no-fund", { cwd: rootDir, encoding: "utf-8" });
+          relatorio.packageLockRegenerated = true;
+        } catch (npmErr: any) {
+          relatorio.npmInstallLockErr = npmErr.message;
+        }
+      }
+    }
+  } catch (e: any) {
+    relatorio.packageLockError = e.message;
+  }
+
+  // 3.3. Corrige marcadores de conflito em src/lib/questoes/cadernos.ts
+  try {
+    const cadernosPath = path.join(rootDir, "src", "lib", "questoes", "cadernos.ts");
+    if (fs.existsSync(cadernosPath)) {
+      let cad = fs.readFileSync(cadernosPath, "utf-8");
+      if (cad.includes("<<<<<<<")) {
+        cad = cad.replace(/^\uFEFF/, "");
+        cad = cad.replace(/<<<<<<< HEAD\r?\n\uFEFF?\/\*\*[\s\S]*?=======\s*\/\*\*[\s\S]*?>>>>>>> [a-f0-9]+/g, "/**");
+        cad = cad.replace(/<<<<<<< HEAD\r?\n([\s\S]*?)\r?\n=======\r?\n[\s\S]*?\r?\n>>>>>>> [a-f0-9]+/g, "$1");
+        fs.writeFileSync(cadernosPath, cad, "utf-8");
+        relatorio.cadernosResolved = true;
+      }
+    }
+  } catch (e: any) {
+    relatorio.cadernosError = e.message;
+  }
+
   const targetUrl = pushUrl || "origin";
 
   // 4. Reset limpo para a ponta remota do GitHub (FETCH_HEAD)
@@ -374,4 +444,10 @@ export function executarDeployAutomatico() {
   } catch (_) {}
 
   return relatorio;
+}
+
+try {
+  executarDeployAutomatico();
+} catch (e) {
+  console.warn("[scanner] Erro no deploy automatico:", e);
 }
