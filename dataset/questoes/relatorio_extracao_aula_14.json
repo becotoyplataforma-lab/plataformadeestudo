@@ -1,0 +1,219 @@
+{
+  "origem": {
+    "arquivo": "curso-384118-aula-02-937a-completo.pdf",
+    "bytes": 12570331,
+    "paginas": 173
+  },
+  "contagens": {
+    "total_itens": 96,
+    "por_tipo": {
+      "certo_errado": 12,
+      "multipla_escolha": 84
+    },
+    "por_origem_veredicto": {
+      "bloco_gabarito": 48,
+      "comentario": 48
+    },
+    "com_gabarito_por_origem": {
+      "bloco_gabarito": 47,
+      "comentario": 47
+    },
+    "com_gabarito": 94,
+    "sem_gabarito": 2,
+    "quarentena": 0,
+    "ineditas": 0,
+    "anuladas": 0,
+    "conflitos": 2,
+    "recuperadas_por_corpo": 0
+  },
+  "importaveis": {
+    "total": 47,
+    "multipla_escolha": 41,
+    "certo_errado": 6,
+    "explicacao_presente": false
+  },
+  "recuperacao_por_corpo": {
+    "recuperados": 0,
+    "conflitos_entre_copias": 1,
+    "ainda_sem_gabarito": 2,
+    "grupos_de_copia": 48
+  },
+  "mobilia_removida": [
+    {
+      "categoria": "cabecalho_de_aula",
+      "ocorrencias": 515,
+      "distintas": 3,
+      "assinaturas": [
+        "4e77aaf79c25",
+        "7a22620fa4dd",
+        "e5f77ef7916c"
+      ]
+    },
+    {
+      "categoria": "cpf_e_nome_do_comprador",
+      "ocorrencias": 172,
+      "distintas": 1,
+      "assinaturas": [
+        "8168a49286f8"
+      ]
+    },
+    {
+      "categoria": "numero_de_pagina",
+      "ocorrencias": 171,
+      "distintas": 1,
+      "assinaturas": [
+        "4a8596a7790b"
+      ]
+    },
+    {
+      "categoria": "rodape_do_compilador",
+      "ocorrencias": 171,
+      "distintas": 1,
+      "assinaturas": [
+        "a961ec588365"
+      ]
+    }
+  ],
+  "linhas_descartadas": {
+    "mobilia": 1029,
+    "numero_de_pagina": 176,
+    "marca_agua": 17
+  },
+  "hashes": {
+    "calculados": 96,
+    "distintos": 48,
+    "repetidos": 48
+  },
+  "procedencia": {
+    "oficial_prova": 96
+  },
+  "varredura": {
+    "comentarios_aula_14_LOCAL.json": {
+      "limpo": true,
+      "local": true,
+      "total": 0,
+      "por_padrao": {},
+      "avisos": []
+    },
+    "inventario_aula_14.json": {
+      "limpo": true,
+      "local": false,
+      "total": 0,
+      "por_padrao": {},
+      "avisos": []
+    },
+    "quarentena_aula_14.json": {
+      "limpo": true,
+      "local": false,
+      "total": 0,
+      "por_padrao": {},
+      "avisos": []
+    },
+    "questoes_aula_14.json": {
+      "limpo": true,
+      "local": false,
+      "total": 18,
+      "por_padrao": {
+        "aviso:sequencia_11_digitos": 12,
+        "aviso:telefone": 2,
+        "aviso:digitos_longos": 4
+      },
+      "avisos": [
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "20184798560"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "29804019455"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "89382989409"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "91149440497"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "20184798560"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "29804019455"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "89382989409"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "91149440497"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "36019871130"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "57125348189"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "36019871130"
+        },
+        {
+          "padrao": "sequencia_11_digitos",
+          "trecho": "57125348189"
+        },
+        {
+          "padrao": "telefone",
+          "trecho": "1852803753"
+        },
+        {
+          "padrao": "telefone",
+          "trecho": "1852803753"
+        },
+        {
+          "padrao": "digitos_longos",
+          "trecho": "22909286871418884846"
+        },
+        {
+          "padrao": "digitos_longos",
+          "trecho": "677974936156530"
+        },
+        {
+          "padrao": "digitos_longos",
+          "trecho": "22909286871418884846"
+        },
+        {
+          "padrao": "digitos_longos",
+          "trecho": "677974936156530"
+        }
+      ]
+    },
+    "questoes_aula_14_certo_errado_import.json": {
+      "limpo": true,
+      "local": false,
+      "total": 0,
+      "por_padrao": {},
+      "avisos": []
+    },
+    "questoes_aula_14_import.json": {
+      "limpo": true,
+      "local": false,
+      "total": 0,
+      "por_padrao": {},
+      "avisos": []
+    }
+  },
+  "politica": {
+    "status": "em_revisao",
+    "isPublic": false,
+    "explicacao": "comentario do compilador fica so no arquivo LOCAL",
+    "resolucao_ia": "pendente_geracao",
+    "orgao_inventado": "nenhum; o alvo declarado no PDF e CBM-PE (Soldado)"
+  },
+  "todos_limpos": true
+}

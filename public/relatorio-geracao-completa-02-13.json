@@ -1,0 +1,122 @@
+[
+  {
+    "aula": "02",
+    "status": "sucesso",
+    "titulo": "Aula 02 — Classes de Palavras I & Pronomes",
+    "paginas_originais": 173,
+    "capitulos_gerados": 18,
+    "arquivo": "aula-02-preview.html",
+    "url": "/preview/aula-02-preview.html#s01",
+    "tamanho_bytes": 1480948
+  },
+  {
+    "aula": "03",
+    "status": "sucesso",
+    "titulo": "Aula 03 — Classes de Palavras II: Conectivos (Preposições e Conjunções)",
+    "paginas_originais": 78,
+    "capitulos_gerados": 6,
+    "arquivo": "aula-03-preview.html",
+    "url": "/preview/aula-03-preview.html#s01",
+    "tamanho_bytes": 785038
+  },
+  {
+    "aula": "04",
+    "status": "sucesso",
+    "titulo": "Aula 04 — Classes de Palavras III: Verbos, Correlação e Vozes Verbais",
+    "paginas_originais": 143,
+    "capitulos_gerados": 17,
+    "arquivo": "aula-04-preview.html",
+    "url": "/preview/aula-04-preview.html#s01",
+    "tamanho_bytes": 1116914
+  },
+  {
+    "aula": "05",
+    "status": "sucesso",
+    "titulo": "Aula 05 — Sintaxe do Período Simples e Composto",
+    "paginas_originais": 168,
+    "capitulos_gerados": 19,
+    "arquivo": "aula-05-preview.html",
+    "url": "/preview/aula-05-preview.html#s01",
+    "tamanho_bytes": 1627075
+  },
+  {
+    "aula": "06",
+    "status": "sucesso",
+    "titulo": "Aula 06 — Pontuação e Emprego dos Sinais Gráficos",
+    "paginas_originais": 92,
+    "capitulos_gerados": 14,
+    "arquivo": "aula-06-preview.html",
+    "url": "/preview/aula-06-preview.html#s01",
+    "tamanho_bytes": 759217
+  },
+  {
+    "aula": "07",
+    "status": "sucesso",
+    "titulo": "Aula 07 — Concordância Verbal e Nominal",
+    "paginas_originais": 96,
+    "capitulos_gerados": 9,
+    "arquivo": "aula-07-preview.html",
+    "url": "/preview/aula-07-preview.html#s01",
+    "tamanho_bytes": 836493
+  },
+  {
+    "aula": "08",
+    "status": "sucesso",
+    "titulo": "Aula 08 — Regência Verbal, Nominal e Emprego da Crase",
+    "paginas_originais": 58,
+    "capitulos_gerados": 7,
+    "arquivo": "aula-08-preview.html",
+    "url": "/preview/aula-08-preview.html#s01",
+    "tamanho_bytes": 431145
+  },
+  {
+    "aula": "09",
+    "status": "sucesso",
+    "titulo": "Aula 09 — Coesão, Coerência Textual e Reescritura",
+    "paginas_originais": 53,
+    "capitulos_gerados": 7,
+    "arquivo": "aula-09-preview.html",
+    "url": "/preview/aula-09-preview.html#s01",
+    "tamanho_bytes": 581048
+  },
+  {
+    "aula": "10",
+    "status": "sucesso",
+    "titulo": "Aula 10 — Semântica e Significação das Palavras",
+    "paginas_originais": 66,
+    "capitulos_gerados": 12,
+    "arquivo": "aula-10-preview.html",
+    "url": "/preview/aula-10-preview.html#s01",
+    "tamanho_bytes": 554420
+  },
+  {
+    "aula": "11",
+    "status": "sucesso",
+    "titulo": "Aula 11 — Tipologia Textual e Interpretação de Textos",
+    "paginas_originais": 164,
+    "capitulos_gerados": 21,
+    "arquivo": "aula-11-preview.html",
+    "url": "/preview/aula-11-preview.html#s01",
+    "tamanho_bytes": 1417288
+  },
+  {
+    "aula": "12",
+    "status": "sucesso",
+    "titulo": "Aula 12 — Variação Linguística e Níveis de Linguagem",
+    "paginas_originais": 37,
+    "capitulos_gerados": 11,
+    "arquivo": "aula-12-preview.html",
+    "url": "/preview/aula-12-preview.html#s01",
+    "tamanho_bytes": 168920
+  },
+  {
+    "aula": "13",
+    "status": "sucesso",
+    "titulo": "Aula 13 — Redação Oficial (Manual da Presidência da República)",
+    "paginas_originais": 111,
+    "capitulos_gerados": 15,
+    "arquivo": "aula-13-preview.html",
+    "url": "/preview/aula-13-preview.html#s01",
+    "tamanho_bytes": 343171
+  }
+]

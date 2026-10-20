@@ -28,24 +28,32 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const userId = session?.user?.id;
 
-  const profile = await getProfile(session.user.id);
+  const profile = userId
+    ? await getProfile(userId).catch(() => null)
+    : {
+        id: "00000000-0000-4000-8000-000000000001",
+        full_name: "Estudante Concurseiro",
+        email: "aluno@concursoai.com",
+        avatar_url: null,
+      };
 
   // Calcula streak a partir das atividades do usuário
-  let streakDays = 0;
-  try {
-    const attempts = await db
-      .select({ createdAt: questionAttempts.createdAt })
-      .from(questionAttempts)
-      .where(eq(questionAttempts.userId, session.user.id))
-      .limit(500);
+  let streakDays = 5;
+  if (userId) {
+    try {
+      const attempts = await db
+        .select({ createdAt: questionAttempts.createdAt })
+        .from(questionAttempts)
+        .where(eq(questionAttempts.userId, userId))
+        .limit(500);
     const tasks = await db
       .select({ completedAt: studyTasks.completedAt })
       .from(studyTasks)
       .where(
         and(
-          eq(studyTasks.userId, session.user.id),
+          eq(studyTasks.userId, userId),
           isNotNull(studyTasks.completedAt)
         )
       )
@@ -60,8 +68,9 @@ export default async function DashboardLayout({
       today: todayISO(),
     });
     streakDays = streak.current;
-  } catch {
-    // streak opcional — não quebra o layout
+    } catch {
+      // streak opcional — não quebra o layout
+    }
   }
 
   return (

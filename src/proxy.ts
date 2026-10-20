@@ -15,12 +15,19 @@ const PUBLIC_PATHS = [
   "/login",
   "/cadastro",
   "/recuperar-senha",
+  "/questoes",
+  "/apostilas",
+  "/dashboard",
+  "/cronograma",
+  "/flashcards",
+  "/professor",
+  "/analises",
   "/deepseek-icons",
 ];
 
 function isPublic(pathname: string): boolean {
   return (
-    PUBLIC_PATHS.some((p) => pathname === p) ||
+    PUBLIC_PATHS.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/"))) ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||

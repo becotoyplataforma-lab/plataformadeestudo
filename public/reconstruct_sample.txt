@@ -1,0 +1,83 @@
+
+--- RECONSTRUCTED PAGE 3 (13 paragraphs) ---
+[1] NOÇÕES INICIAIS DE ORTOGRAFIA O estudo da pronúncia correta das palavras se chama ortoépia; o estudo da sílaba e da acentuação correta das palavras ﬁca por conta de uma parte da gramática chamada prosódia.
+
+[2] Por decorrência, acentuação é um assunto que envolve os dois.
+
+[3] Antes de falar de sílaba tônica, precisamos saber o que é ser tônico e, por exclusão, o que é ser átono. Uma sílaba tônica é uma sílaba que é pronunciada com mais força, com mais estresse, ou seja, ela recebe um acento tônico, marcado na fala.
+
+[4] A palavra “saci” tem acento tônico na última sílaba, mas não tem acento gráﬁco.
+
+[5] Já a palavra “café” tem acento tônico e acento gráﬁco em sua sílaba ﬁnal.
+
+[6] O acento gráﬁco e o acento tônico geralmente andam juntos, mas são conceitos diferentes. Os monossílabos tônicos têm autonomia fonética, são pronunciados com mais intensidade, sem se apoiar em outra palavra:
+
+
+--- RECONSTRUCTED PAGE 4 (11 paragraphs) ---
+[1] SONS, LETRAS, FONEMAS, DÍGRAFOS Para entender plenamente o assunto, é bom ter também uma noção de fonologia, isto é, da função dos sons na formação e distinção das palavras.
+
+[2] Essas noções de encontros vocálicos ou consonantais fazem parte do entendimento da estrutura da palavra e ajuda na separação de sílabas e na consequente classiﬁcação da sílaba tônica.
+
+[3] Vejamos o tema de modo objetivo, antes de entrarmos nas regras de acentuação propriamente ditas.
+
+[4] Fonema é uma unidade sonora que serve para formar palavras e distinguir uma palavra da outra. Como assim?
+
+[5] Observe: P-A-T-O >>> 4 (sons) fonemas unidos formam a palavra “PATO”. Se eu trocar o fonema /p/ pelo /g/, teremos uma palavra distinta: GATO.
+
+[6] Podemos formar várias palavras novas só trocando fonemas: moço / moça / maço / maçã… Letra é a representação gráﬁca de um som, é o símbolo “visual” do fonema. Porém, nem sempre um fonema (som) corresponde exatamente a uma letra, pois existem dígrafos e letras que não têm som próprio, como o “h” em “machado”.
+
+
+--- RECONSTRUCTED PAGE 7 (13 paragraphs) ---
+[1] ENCONTROS VOCÁLICOS Além dos encontros consonantais, temos também encontros de sons vocálicos, os ditongos, tritongos e hiatos.
+
+[2] DITONGO ( sv + V) OU (V + sv ): é o encontro de dois sons vocálicos na mesma sílaba, (uma vogal, pronunciada com mais intensidade e uma semivogal, pronunciada com menos intensidade).
+
+[3] Ex.: Glór ia, Sai, Meu, Céu, Imóvei s, Gíria...
+
+[4] Podem ser classiﬁcados em orais, nasais, crescentes, decrescentes, abertos, fechados. Veremos essas classiﬁcações ao longo da aula.
+
+[5] Ditongo Crescente x Decrescente A banca normalmente não pede para distinguir os ditongos. Contudo, em algumas questões, pode ser necessário ter esse conhecimento.
+
+[6] Observe que precárias e primário são paroxítonas terminadas em ditongo crescente, pois primeiro vem a semivogal (mais fraca) depois vem a vogal (mais forte), de modo que há um “crescimento” na entonação.
+
+
+--- RECONSTRUCTED PAGE 11 (10 paragraphs) ---
+[1] REGRAS GERAIS DE ACENTUAÇÃO As regras de acentuação levam em conta a classiﬁcação tônica (oxítona, paroxítona, proparoxítona...) e a terminação da palavra (terminação em A, E, O, ditongo...).
+
+[2] Há três posições para uma sílaba tônica.
+
+[3] Na língua portuguesa, a sílaba tônica é sempre uma das três últimas:
+
+[4] Nomenclatura Deﬁnição Exemplo Oxítona Última sílaba tônica Vata pá, carro ssel, deva gar Paroxítona Penúltima sílaba tônica Es co la, secre tá ria, la va bo Proparoxítona Antepenúltima sílaba tônica Mé dico, lâm pada, espe cí ﬁco Observe que nem todas as palavras que aparecem no quadro acima estão acentuadas, embora as sílabas tônicas estejam destacadas.
+
+[5] Isso acontece porque a acentuação segue algumas regras especíﬁcas.
+
+[6] É preciso destacar, também, que existem algumas palavras monossílabas (apresentam uma única sílaba) acentuadas e outras não.
+
+
+--- RECONSTRUCTED PAGE 19 (8 paragraphs) ---
+[1] ACENTUAÇÃO DO HIATO O hiato é o encontro de duas vogais em sílabas diferentes. Lembrando que vogal, para efeito de acentuação, é aquela que é pronunciada com tonicidade, em oposição a uma semivogal, que é átona, fraca.
+
+[2] Observe a diferença:
+
+[3] Eu Ca-Í (vogal Í), ele cAi (vogal A). A razão do acento nesses hiatos é impedir que se leia como um ditongo, que é o encontro de vogal (som vocálico forte) com uma semivogal (som vocálico átono).
+
+[4] A regra do Hiato se baseia na separação silábica. Repetimos: hiato é um tipo de classiﬁcação; oxítona e paroxítona é outro tipo de classiﬁcação, baseada na posição da sílaba tônica.
+
+[5] Então, por exemplo, a palavra “a-ça-í” é uma oxítona, mas traz um hiato, na separação entre “a” e “i”.
+
+[6] Regra: Devemos acentuar o i e o u tônicos, em hiato, formando sílaba sozinhos ou com s: ca í, fa ís ca, Para í ba, ego í sta, ru í do, sa ú de, sa ú va, bala ús tre. Essa é a principal regra fora daquele quadro e NÃO CONSIDERA A CLASSIFICAÇÃO TÔNICA, pois vale para oxítonas (a-ça-í) ou paroxítonas (sa-ú-de).
+
+
+--- RECONSTRUCTED PAGE 22 (7 paragraphs) ---
+[1] ACENTOS DIFERENCIAIS A maioria dos acentos diferenciais caiu com o advento deﬁnitivo da nova ortograﬁa. Não aconselho nem mencionar como era antes, para não confundir.
+
+[2] Guarde estes que permaneceram válidos com a nova ortograﬁa e saiba que qualquer outro constituirá desvio da norma culta.
+
+[3] Forma escrita Explicação Exemplo Pôde 3ª pessoa do singular do pretérito perfeito do indicativo do verbo PODER Ele não pôde comparecer à festa ontem. Pode 3ª pessoa do singular do presente do indicativo do verbo PODER Ela não pode comparecer agora.
+
+[4] Pôr Forma verbal A galinha não quer pôr ovos. Por Preposição A saída é por aqui. Acentos que marcam diferença de número (singular e plural) T e m Verbo TER ﬂexionado na 3 a pessoa singular do presente do indicativo Ele tem muitos amigos.
+
+[5] Têm Verbo TER ﬂexionado na 3 a pessoa plural do presente do indicativo Eles não têm problemas com horários. V e m Verbo VIR ﬂexionado na 3 a pessoa singula r do presente do indicativo Ela vem a pé Vêm Verbo VIR ﬂexionado na 3 a pessoa plural do presente do indicativo Elas vêm a pé Mant é m (e derivados) Verbo MANTER ﬂexionado na a pessoa singular do presente do indicativo Rubens mantém um relacionamento saudável com seus empregados.
+
+[6] Mantêm (e derivados) Verbo MANTER ﬂexionado na a pessoa plural do presente do indicativo Os patrões mantêm um relacionamento saudável com seus empregados.

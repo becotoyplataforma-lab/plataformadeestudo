@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+﻿/**
+=======
 /**
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
  * ConcursoAI — Catálogo de cadernos de questões.
  *
  * Este módulo é a costura entre o material físico e o domínio de estudo. Ele
@@ -70,6 +74,15 @@ export const CADERNOS: readonly Caderno[] = [
         descricao: "Aula 14 (Somente em PDF) · 17 assuntos",
         alvo: "CBM-PE (Soldado)",
       },
+<<<<<<< HEAD
+      {
+        origem: "aula-02",
+        arquivo: "questoes_aula_02.json",
+        descricao: "Aula 02 - Classes de Palavras e Pronomes",
+        alvo: "CBM-PE (Soldado)",
+      },
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     ],
   },
 ];
@@ -131,10 +144,34 @@ export function resolverRef(ref: string): RefResolvido {
 export const CHAVES_FILTRO = [
   "disciplina",
   "assunto",
+<<<<<<< HEAD
+  "leis",
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   "palavra",
   "banca",
   "orgao",
   "cargo",
+<<<<<<< HEAD
+  "nivel",
+  "dificuldade",
+  "area_formacao",
+  "area_atuacao",
+  "origem",
+  "ano",
+  "tipo",
+  "status_resolucao",
+  "bloco",
+  "gabarito",
+  "desatualizadas",
+  "anuladas",
+  "ineditas",
+  "meus_simulados",
+  "meus_cadernos",
+  "comentado",
+  "comentarios",
+  "meus_comentarios",
+=======
   "origem",
   "ano",
   "tipo",
@@ -142,6 +179,7 @@ export const CHAVES_FILTRO = [
   "gabarito",
   "anuladas",
   "ineditas",
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 ] as const;
 export type ChaveFiltro = (typeof CHAVES_FILTRO)[number];
 
@@ -149,10 +187,34 @@ export type ChaveFiltro = (typeof CHAVES_FILTRO)[number];
 export const ROTULO_DAS_CHAVES: Record<ChaveFiltro, string> = {
   disciplina: "Disciplina",
   assunto: "Assunto",
+<<<<<<< HEAD
+  leis: "Leis",
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   palavra: "Palavra-chave",
   banca: "Banca",
   orgao: "Instituição/Órgão",
   cargo: "Cargo",
+<<<<<<< HEAD
+  nivel: "Nível",
+  dificuldade: "Dificuldade",
+  area_formacao: "Área de Formação",
+  area_atuacao: "Área de Atuação",
+  origem: "Procedência",
+  ano: "Ano",
+  tipo: "Modalidade",
+  status_resolucao: "Status de Resolução",
+  bloco: "Aba",
+  gabarito: "Qualidade",
+  desatualizadas: "Desatualizadas",
+  anuladas: "Anuladas",
+  ineditas: "Inéditas",
+  meus_simulados: "Simulados",
+  meus_cadernos: "Cadernos",
+  comentado: "Gabarito Comentado",
+  comentarios: "Comentários",
+  meus_comentarios: "Meus Comentários",
+=======
   origem: "Procedência",
   ano: "Ano",
   tipo: "Modalidade",
@@ -160,6 +222,7 @@ export const ROTULO_DAS_CHAVES: Record<ChaveFiltro, string> = {
   gabarito: "Qualidade",
   anuladas: "Anuladas",
   ineditas: "Inéditas",
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 };
 
 /** Domínio fechado da qualidade: tem valor vigente mesmo quando a URL não diz nada. */
@@ -172,14 +235,29 @@ export type ModoExclusao = "excluir";
 export interface FiltrosCaderno {
   disciplina: string | null;
   assunto: string | null;
+<<<<<<< HEAD
+  leis: string | null;
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   /** Texto livre sobre enunciado, assunto, metadados e código do lote. */
   palavra: string | null;
   banca: string | null;
   orgao: string | null;
   cargo: string | null;
+<<<<<<< HEAD
+  nivel: string | null;
+  dificuldade: string | null;
+  area_formacao: string | null;
+  area_atuacao: string | null;
   origem: string | null;
   ano: number | null;
   tipo: string | null;
+  status_resolucao: string | null;
+=======
+  origem: string | null;
+  ano: number | null;
+  tipo: string | null;
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   /** Aba ativa (QConcursos: objetivas × fixação). Nunca é segmento de rota. */
   bloco: BlocoCaderno;
   /**
@@ -189,10 +267,23 @@ export interface FiltrosCaderno {
    * de qualidade, não procedência: por isso não casa com banca/ano/assunto.
    */
   gabarito: EstadoGabarito;
+<<<<<<< HEAD
+  /** `excluir` tira as desatualizadas; ausente deixa como está. */
+  desatualizadas: ModoExclusao | null;
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   /** `excluir` tira as questões que o material anulou; ausente deixa como está. */
   anuladas: ModoExclusao | null;
   /** `excluir` tira as inéditas do compilador; no lote de hoje não há nenhuma. */
   ineditas: ModoExclusao | null;
+<<<<<<< HEAD
+  meus_simulados: ModoExclusao | null;
+  meus_cadernos: ModoExclusao | null;
+  comentado: string | null;
+  comentarios: string | null;
+  meus_comentarios: string | null;
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 }
 
 /** Abaixo disso o texto livre não discrimina nada e só suja a URL. */
@@ -316,10 +407,34 @@ export const FILTROS_TRAVADOS: readonly FiltroTravado[] = [
 export const FILTRO_PADRAO: FiltrosCaderno = {
   disciplina: null,
   assunto: null,
+<<<<<<< HEAD
+  leis: null,
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   palavra: null,
   banca: null,
   orgao: null,
   cargo: null,
+<<<<<<< HEAD
+  nivel: null,
+  dificuldade: null,
+  area_formacao: null,
+  area_atuacao: null,
+  origem: null,
+  ano: null,
+  tipo: null,
+  status_resolucao: null,
+  bloco: "objetivas",
+  gabarito: "confiavel",
+  desatualizadas: null,
+  anuladas: null,
+  ineditas: null,
+  meus_simulados: null,
+  meus_cadernos: null,
+  comentado: null,
+  comentarios: null,
+  meus_comentarios: null,
+=======
   origem: null,
   ano: null,
   tipo: null,
@@ -327,6 +442,7 @@ export const FILTRO_PADRAO: FiltrosCaderno = {
   gabarito: "confiavel",
   anuladas: null,
   ineditas: null,
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 };
 
 export function filtroEhPadrao(f: FiltrosCaderno): boolean {
@@ -345,6 +461,11 @@ export function semAChave(filtros: FiltrosCaderno, chave: ChaveFiltro): FiltrosC
       return { ...filtros, disciplina: null };
     case "assunto":
       return { ...filtros, assunto: null };
+<<<<<<< HEAD
+    case "leis":
+      return { ...filtros, leis: null };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "palavra":
       return { ...filtros, palavra: null };
     case "banca":
@@ -353,20 +474,54 @@ export function semAChave(filtros: FiltrosCaderno, chave: ChaveFiltro): FiltrosC
       return { ...filtros, orgao: null };
     case "cargo":
       return { ...filtros, cargo: null };
+<<<<<<< HEAD
+    case "nivel":
+      return { ...filtros, nivel: null };
+    case "dificuldade":
+      return { ...filtros, dificuldade: null };
+    case "area_formacao":
+      return { ...filtros, area_formacao: null };
+    case "area_atuacao":
+      return { ...filtros, area_atuacao: null };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "origem":
       return { ...filtros, origem: null };
     case "ano":
       return { ...filtros, ano: null };
     case "tipo":
       return { ...filtros, tipo: null };
+<<<<<<< HEAD
+    case "status_resolucao":
+      return { ...filtros, status_resolucao: null };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "bloco":
       return { ...filtros, bloco: FILTRO_PADRAO.bloco };
     case "gabarito":
       return { ...filtros, gabarito: FILTRO_PADRAO.gabarito };
+<<<<<<< HEAD
+    case "desatualizadas":
+      return { ...filtros, desatualizadas: null };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "anuladas":
       return { ...filtros, anuladas: null };
     case "ineditas":
       return { ...filtros, ineditas: null };
+<<<<<<< HEAD
+    case "meus_simulados":
+      return { ...filtros, meus_simulados: null };
+    case "meus_cadernos":
+      return { ...filtros, meus_cadernos: null };
+    case "comentado":
+      return { ...filtros, comentado: null };
+    case "comentarios":
+      return { ...filtros, comentarios: null };
+    case "meus_comentarios":
+      return { ...filtros, meus_comentarios: null };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   }
 }
 
@@ -417,8 +572,14 @@ export function lerFiltros(
     const texto = Array.isArray(valor) ? valor[0] : valor;
     return typeof texto === "string" && texto.trim().length > 0 ? texto.trim() : null;
   };
+<<<<<<< HEAD
+  const exclusao = (
+    chave: "anuladas" | "ineditas" | "desatualizadas" | "meus_simulados" | "meus_cadernos"
+  ): ModoExclusao | null => (bruto(chave) === "excluir" ? "excluir" : null);
+=======
   const exclusao = (chave: "anuladas" | "ineditas"): ModoExclusao | null =>
     bruto(chave) === "excluir" ? "excluir" : null;
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 
   const anoTexto = bruto("ano");
   const anoNum = anoTexto === null ? Number.NaN : Number(anoTexto);
@@ -429,21 +590,47 @@ export function lerFiltros(
   return {
     disciplina: bruto("disciplina"),
     assunto: bruto("assunto"),
+<<<<<<< HEAD
+    leis: bruto("leis"),
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     palavra: agulha.length >= PALAVRA_MINIMA ? palavra : null,
     banca: bruto("banca"),
     orgao: bruto("orgao"),
     cargo: bruto("cargo"),
+<<<<<<< HEAD
+    nivel: bruto("nivel"),
+    dificuldade: bruto("dificuldade"),
+    area_formacao: bruto("area_formacao"),
+    area_atuacao: bruto("area_atuacao"),
     origem: bruto("origem"),
     ano: Number.isInteger(anoNum) && anoNum > 0 ? anoNum : null,
     tipo: bruto("tipo"),
+    status_resolucao: bruto("status_resolucao"),
+=======
+    origem: bruto("origem"),
+    ano: Number.isInteger(anoNum) && anoNum > 0 ? anoNum : null,
+    tipo: bruto("tipo"),
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     // Tag fechada, com valor vigente: só `fixacao` estreita. Outro valor volta ao
     // padrão em vez de virar aba que a lista não sabe aplicar.
     bloco: bruto("bloco") === "fixacao" ? "fixacao" : "objetivas",
     // Idem: `confiavel` é o que se aplica quando a URL não diz nada, então a
     // única coisa que um `?gabarito=` pode fazer é ligar `todos`.
     gabarito: bruto("gabarito") === "todos" ? "todos" : "confiavel",
+<<<<<<< HEAD
+    desatualizadas: exclusao("desatualizadas"),
     anuladas: exclusao("anuladas"),
     ineditas: exclusao("ineditas"),
+    meus_simulados: exclusao("meus_simulados"),
+    meus_cadernos: exclusao("meus_cadernos"),
+    comentado: bruto("comentado"),
+    comentarios: bruto("comentarios"),
+    meus_comentarios: bruto("meus_comentarios"),
+=======
+    anuladas: exclusao("anuladas"),
+    ineditas: exclusao("ineditas"),
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   };
 }
 
@@ -610,6 +797,33 @@ export function aplicarFiltros(
     if (agulha.length > 0 && !textoDeBusca(q).includes(agulha)) return false;
 
     if (filtros.ano !== null && q.ano !== filtros.ano) return false;
+<<<<<<< HEAD
+    if (filtros.leis !== null && !textoDeBusca(q).includes(normalizar(filtros.leis))) return false;
+    if (filtros.comentado === "sim" && q.secao_tipo !== "comentada") return false;
+    if (filtros.nivel !== null) {
+      const nivNorm = normalizar(filtros.nivel);
+      const qNiv = q.nivel ? normalizar(q.nivel) : "";
+      const qCargo = q.cargo ? normalizar(q.cargo) : "";
+      const nivelCasa =
+        qNiv === nivNorm ||
+        (nivNorm === "medio" && (qCargo.includes("soldado") || qCargo.includes("tecnico"))) ||
+        (nivNorm === "superior" && (qCargo.includes("professor") || qCargo.includes("analista") || qCargo.includes("delegado")));
+      if (!nivelCasa) return false;
+    }
+    if (filtros.area_atuacao !== null) {
+      const atNorm = normalizar(filtros.area_atuacao);
+      const busca = textoDeBusca(q);
+      const atuacaoCasa =
+        busca.includes(atNorm) ||
+        (atNorm.includes("policial") && (busca.includes("cbm") || busca.includes("pm") || busca.includes("soldado"))) ||
+        (atNorm.includes("militar") && (busca.includes("cbm") || busca.includes("militar") || busca.includes("soldado")));
+      if (!atuacaoCasa) return false;
+    }
+    if (filtros.area_formacao !== null && !textoDeBusca(q).includes(normalizar(filtros.area_formacao))) {
+      return false;
+    }
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     const etiquetas = etiquetasNormalizadas(item);
     if (alvos.disciplina !== null && etiquetas.disciplina !== alvos.disciplina) return false;
     if (alvos.assunto !== null && etiquetas.assunto !== alvos.assunto) return false;
@@ -733,26 +947,65 @@ export function alternarFiltro(
       return { ...base, gabarito: valor === "todos" ? "todos" : "confiavel" };
     case "bloco":
       return { ...base, bloco: valor === "fixacao" ? "fixacao" : "objetivas" };
+<<<<<<< HEAD
+    case "desatualizadas":
+      return { ...base, desatualizadas: "excluir" };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "anuladas":
       return { ...base, anuladas: "excluir" };
     case "ineditas":
       return { ...base, ineditas: "excluir" };
+<<<<<<< HEAD
+    case "meus_simulados":
+      return { ...base, meus_simulados: "excluir" };
+    case "meus_cadernos":
+      return { ...base, meus_cadernos: "excluir" };
+    case "comentado":
+      return { ...base, comentado: valor };
+    case "comentarios":
+      return { ...base, comentarios: valor };
+    case "meus_comentarios":
+      return { ...base, meus_comentarios: valor };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "palavra":
       return { ...base, palavra: valor };
     case "disciplina":
       return { ...base, disciplina: valor };
     case "assunto":
       return { ...base, assunto: valor };
+<<<<<<< HEAD
+    case "leis":
+      return { ...base, leis: valor };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "banca":
       return { ...base, banca: valor };
     case "orgao":
       return { ...base, orgao: valor };
     case "cargo":
       return { ...base, cargo: valor };
+<<<<<<< HEAD
+    case "nivel":
+      return { ...base, nivel: valor };
+    case "dificuldade":
+      return { ...base, dificuldade: valor };
+    case "area_formacao":
+      return { ...base, area_formacao: valor };
+    case "area_atuacao":
+      return { ...base, area_atuacao: valor };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     case "origem":
       return { ...base, origem: valor };
     case "tipo":
       return { ...base, tipo: valor };
+<<<<<<< HEAD
+    case "status_resolucao":
+      return { ...base, status_resolucao: valor };
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   }
 }
 
@@ -783,10 +1036,27 @@ export function chipsDeFiltro(filtros: FiltrosCaderno): ChipFiltro[] {
       chips.push({ chave, rotulo: ROTULO_DAS_CHAVES[chave], valor: aba?.rotulo ?? String(valor) });
       continue;
     }
+<<<<<<< HEAD
+    if (
+      chave === "desatualizadas" ||
+      chave === "anuladas" ||
+      chave === "ineditas" ||
+      chave === "meus_simulados" ||
+      chave === "meus_cadernos"
+    ) {
+      chips.push({ chave, rotulo: "Excluir questões", valor: ROTULO_DAS_CHAVES[chave] });
+      continue;
+    }
+    if (chave === "comentado" || chave === "comentarios" || chave === "meus_comentarios") {
+      chips.push({ chave, rotulo: "Questões com", valor: ROTULO_DAS_CHAVES[chave] });
+      continue;
+    }
+=======
     if (chave === "anuladas" || chave === "ineditas") {
       chips.push({ chave, rotulo: "Excluir questões", valor: ROTULO_DAS_CHAVES[chave] });
       continue;
     }
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     const texto = String(valor);
     chips.push({
       chave,

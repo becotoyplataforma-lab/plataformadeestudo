@@ -22,8 +22,11 @@ import type { Question, QuestionOption } from "@/types";
 interface QuestionRow {
   id: string;
   knowledgeSubjectId: string;
+<<<<<<< HEAD
+=======
   knowledgeTopicId: string | null;
   topic: string | null;
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   subjectId: string | null;
   subjectName: string | null;
   subjectSlug: string | null;
@@ -46,8 +49,11 @@ function toQuestion(row: QuestionRow, options: QuestionOption[] = []): Question 
   return {
     id: row.id,
     subject_id: row.knowledgeSubjectId,
+<<<<<<< HEAD
+=======
     topic_id: row.knowledgeTopicId,
     topic: row.topic,
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     banca: row.banca,
     cargo: row.cargo,
     ano: row.ano,
@@ -74,8 +80,11 @@ function toQuestion(row: QuestionRow, options: QuestionOption[] = []): Question 
 const BASE_SELECT = {
   id: questions.id,
   knowledgeSubjectId: questions.knowledgeSubjectId,
+<<<<<<< HEAD
+=======
   knowledgeTopicId: questions.knowledgeTopicId,
   topic: questions.topic,
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   subjectId: knowledgeSubjects.id,
   subjectName: knowledgeSubjects.name,
   subjectSlug: knowledgeSubjects.slug,
@@ -176,11 +185,18 @@ async function listOptionsForQuestions(
 export async function listQuestions(
   filters: QuestionFilters
 ): Promise<{ data: Question[]; total: number }> {
+<<<<<<< HEAD
+  const { subject_id, banca, nivel, page = 1, pageSize = 15 } = filters;
+
+  const conditions = publicConditions();
+  if (subject_id) conditions.push(eq(questions.knowledgeSubjectId, subject_id));
+=======
   const { subject_id, topic_id, banca, nivel, page = 1, pageSize = 15 } = filters;
 
   const conditions = publicConditions();
   if (subject_id) conditions.push(eq(questions.knowledgeSubjectId, subject_id));
   if (topic_id) conditions.push(eq(questions.knowledgeTopicId, topic_id));
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   if (banca) conditions.push(eq(questions.banca, banca));
   if (nivel) conditions.push(eq(questions.nivel, nivel));
 

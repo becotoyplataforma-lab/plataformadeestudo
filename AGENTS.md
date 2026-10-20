@@ -7,6 +7,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+<<<<<<< HEAD
+=======
 
 ## Seguranca de banco de dados (obrigatorio ler antes de escrever teste ou CLI)
 
@@ -122,3 +124,4 @@ scripts/knowledge-mcp-server.ts`). Ferramentas: `knowledge_mcp_catalog`,
 `scripts/db-guard.ts`, que usa `src/lib/db/cli-db-guard.ts` para decidir o destino
 (URL do ambiente + project ref do `supabase link`) e recusa antes de iniciar o
 comando filho. `db:check` e `db:generate` continuam direto porque nao escrevem.
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6

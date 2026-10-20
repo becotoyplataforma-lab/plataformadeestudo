@@ -53,6 +53,7 @@ permitir troca futura.
 **Consequência:** Melhor UX; API route com `runtime = "nodejs"` e `maxDuration` maior.
 
 ## ADR-010 — DTOs validados por Zod nas fronteiras
+
 **Status:** Aceita
 **Decisão:** Toda API route e Server Action retorna DTOs validados por Zod
 (`src/lib/dto/*`), com mappers `toXxxDto`. Entradas validadas em
@@ -61,6 +62,24 @@ permitir troca futura.
 schema do banco; campos sensíveis nunca vazam. (Infra criada; aplicado a partir
 das novas funcionalidades.)
 
+<<<<<<< HEAD
+## ADR-011 — StorageAdapter com proxy autenticado para arquivos
+**Status:** Aceita (refina o ADR-003)
+**Decisão:** O acesso a binários do Knowledge Core passa pela interface única `StorageAdapter`
+(`src/lib/storage/`), com dois drivers escolhidos por `STORAGE_DRIVER` — `local` (dev, disco)
+e `r2` (Cloudflare R2 via S3-compatível). A leitura pelo cliente é feita pela rota autenticada
+`/api/apostilas/[id]/arquivo`, que transmite o stream; `documents.storage_path` nunca sai em
+DTO. Presigned URLs continuam disponíveis via `R2StorageAdapter.getUrl()`, mas não são o
+caminho padrão do produto.
+**Consequência:** Dev funciona sem credenciais de nuvem; trocar de provedor não toca
+UI/serviço/repositório; a posse é verificada no servidor a cada leitura; exige
+`@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` e suporte a HTTP Range (leitores de PDF
+pedem blocos do arquivo). Não há fallback silencioso: `STORAGE_DRIVER=r2` sem credenciais
+falha com `CONFIG_MISSING` em vez de ler do disco. Desde a **Fase 2** o mesmo adaptador também
+**grava** os bytes na ingestão e os **remove** na exclusão de documento (com rollback quando o
+banco falha); scripts de dev que importem `@/lib/storage` precisam de
+`--conditions=react-server` por causa do guard `server-only`.
+=======
 ## ADR-011 — Backend de storage local para desenvolvimento e ingestão offline
 **Status:** Aceita
 **Decisão:** Além de Supabase Storage e R2, existe o backend `local`
@@ -74,3 +93,4 @@ no banco não é possível, a ingestão guarda a metade já concluída na fila
 teste disponível; a migração local → R2/Supabase é cópia de chave para chave e
 `documents.storage_path` continua válida. Ver
 `.ai/adr/ADR-011-LOCAL-STORAGE-INGEST.md`.
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6

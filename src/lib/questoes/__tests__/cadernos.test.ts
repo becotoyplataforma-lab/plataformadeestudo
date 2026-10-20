@@ -304,10 +304,34 @@ describe("leitura de filtros da URL", () => {
     const VALOR: Record<ChaveFiltro, string> = {
       disciplina: "Direito",
       assunto: "Pontuação",
+<<<<<<< HEAD
+      leis: "CF/88",
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
       palavra: "crase",
       banca: "FGV",
       orgao: "TRT - 15ª Região - SP",
       cargo: "Soldado",
+<<<<<<< HEAD
+      nivel: "superior",
+      dificuldade: "medio",
+      area_formacao: "direito",
+      area_atuacao: "policial",
+      origem: "aula-14",
+      ano: "2019",
+      tipo: "certo_errado",
+      status_resolucao: "resolvidas",
+      bloco: "fixacao",
+      gabarito: "todos",
+      desatualizadas: "excluir",
+      anuladas: "excluir",
+      ineditas: "excluir",
+      meus_simulados: "excluir",
+      meus_cadernos: "excluir",
+      comentado: "sim",
+      comentarios: "sim",
+      meus_comentarios: "sim",
+=======
       origem: "aula-14",
       ano: "2019",
       tipo: "certo_errado",
@@ -315,6 +339,7 @@ describe("leitura de filtros da URL", () => {
       gabarito: "todos",
       anuladas: "excluir",
       ineditas: "excluir",
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     };
     for (const chave of CHAVES_FILTRO) {
       const aplicado = alternarFiltro(FILTRO_PADRAO, chave, VALOR[chave]);
@@ -821,10 +846,34 @@ describe("filtros da barra avançada", () => {
     expect(CHAVES_FILTRO).toEqual([
       "disciplina",
       "assunto",
+<<<<<<< HEAD
+      "leis",
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
       "palavra",
       "banca",
       "orgao",
       "cargo",
+<<<<<<< HEAD
+      "nivel",
+      "dificuldade",
+      "area_formacao",
+      "area_atuacao",
+      "origem",
+      "ano",
+      "tipo",
+      "status_resolucao",
+      "bloco",
+      "gabarito",
+      "desatualizadas",
+      "anuladas",
+      "ineditas",
+      "meus_simulados",
+      "meus_cadernos",
+      "comentado",
+      "comentarios",
+      "meus_comentarios",
+=======
       "origem",
       "ano",
       "tipo",
@@ -832,14 +881,39 @@ describe("filtros da barra avançada", () => {
       "gabarito",
       "anuladas",
       "ineditas",
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     ]);
     const VALOR: Record<ChaveFiltro, string> = {
       disciplina: "Direito",
       assunto: "Pontuação",
+<<<<<<< HEAD
+      leis: "CF/88",
+=======
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
       palavra: "crase",
       banca: "FGV",
       orgao: "TRT - 15ª Região - SP",
       cargo: "Soldado",
+<<<<<<< HEAD
+      nivel: "superior",
+      dificuldade: "medio",
+      area_formacao: "direito",
+      area_atuacao: "policial",
+      origem: "aula-14",
+      ano: "2019",
+      tipo: "certo_errado",
+      status_resolucao: "resolvidas",
+      bloco: "fixacao",
+      gabarito: "todos",
+      desatualizadas: "excluir",
+      anuladas: "excluir",
+      ineditas: "excluir",
+      meus_simulados: "excluir",
+      meus_cadernos: "excluir",
+      comentado: "sim",
+      comentarios: "sim",
+      meus_comentarios: "sim",
+=======
       origem: "aula-14",
       ano: "2019",
       tipo: "certo_errado",
@@ -847,6 +921,7 @@ describe("filtros da barra avançada", () => {
       gabarito: "todos",
       anuladas: "excluir",
       ineditas: "excluir",
+>>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     };
     // Cobertura por chave: filtro novo sem casa em `alternarFiltro` ou sem rótulo
     // viraria botão morto na barra e chip sem nome.

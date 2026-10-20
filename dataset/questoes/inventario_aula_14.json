@@ -1,0 +1,62 @@
+[
+  {
+    "secao": 15,
+    "tipo": "comentada",
+    "tema": "Classes de palavras - AOCP",
+    "pagina_inicial": 102,
+    "pagina_final": 118,
+    "grupos": 1,
+    "itens": 18,
+    "itens_unicos": 18,
+    "chaves_de_gabarito": 0,
+    "com_gabarito": 18,
+    "ineditas": 0,
+    "numeracao_ausente": [],
+    "fora_do_fluxo": 0
+  },
+  {
+    "secao": 16,
+    "tipo": "lista",
+    "tema": "Classes de palavras - AOCP",
+    "pagina_inicial": 119,
+    "pagina_final": 129,
+    "grupos": 1,
+    "itens": 18,
+    "itens_unicos": 18,
+    "chaves_de_gabarito": 18,
+    "com_gabarito": 18,
+    "ineditas": 0,
+    "numeracao_ausente": [],
+    "fora_do_fluxo": 0
+  },
+  {
+    "secao": 17,
+    "tipo": "comentada",
+    "tema": "Pronomes",
+    "pagina_inicial": 130,
+    "pagina_final": 157,
+    "grupos": 1,
+    "itens": 30,
+    "itens_unicos": 30,
+    "chaves_de_gabarito": 0,
+    "com_gabarito": 29,
+    "ineditas": 0,
+    "numeracao_ausente": [],
+    "fora_do_fluxo": 0
+  },
+  {
+    "secao": 18,
+    "tipo": "lista",
+    "tema": "Pronomes",
+    "pagina_inicial": 158,
+    "pagina_final": 173,
+    "grupos": 1,
+    "itens": 30,
+    "itens_unicos": 30,
+    "chaves_de_gabarito": 30,
+    "com_gabarito": 29,
+    "ineditas": 0,
+    "numeracao_ausente": [],
+    "fora_do_fluxo": 0
+  }
+]

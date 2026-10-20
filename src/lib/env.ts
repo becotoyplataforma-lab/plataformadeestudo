@@ -54,22 +54,23 @@ const serverEnvSchema = z.object({
   EMBEDDING_MODEL: z.string().default("BAAI/bge-m3"),
   EMBEDDING_DIMENSION: z.coerce.number().int().default(1024),
 
-  // Cloudflare R2 (storage S3-compatível).
-  // STORAGE_BACKEND decide o backend de forma EXPLÍCITA (sem fallback automático):
-  //   "r2"        → somente Cloudflare R2 (falha se R2 não configurado)
-  //   "supabase"  → somente Supabase Storage
-  //   ausente     → fail-fast em produção (dev/teste assume "supabase")
+  // --- Storage de arquivos (Knowledge Core / apostilas) ---
+  STORAGE_DRIVER: z.enum(["local", "r2"]).default("local"),
+  STORAGE_LOCAL_DIR: z.string().default(".storage/apostilas"),
   STORAGE_BACKEND: z
     .preprocess(emptyToUndefined, z.enum(["r2", "supabase"]).optional()),
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().default("concursoai-documents"),
   R2_BUCKET: z.string().optional(),
   R2_ENDPOINT: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  R2_PUBLIC_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().url().optional()
+  ),
 
   // Superadmin — nível administrativo máximo (docs/15 §2).
-  // Lista separada por vírgula de e-mails com acesso total (gerenciar admins,
-  // configurações do sistema, auditoria). Fallback: system_settings['superadmin.emails'].
   SUPERADMIN_EMAILS: z.string().optional(),
 });
 
@@ -87,8 +88,6 @@ if (!result.success) {
 }
 
 // Fail-fast de segurança: em produção, AUTH_SECRET NUNCA pode ser o default
-// de desenvolvimento. Se não foi definido explicitamente no ambiente, o app
-// deve crashar na startup em vez de rodar com uma chave de assinatura pública.
 const isNextProductionBuild =
   process.env.NEXT_PHASE === "phase-production-build";
 
@@ -111,9 +110,6 @@ export const env: z.infer<typeof serverEnvSchema> = result.success
   : serverEnvSchema.parse({});
 
 /** Chaves públicas (seguras para o cliente) */
-// Usa os mesmos placeholders do schema para que o app rode localmente
-// antes de configurar o Supabase de verdade. Preencha o .env.local
-// (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY) para produção.
 export const publicEnv = {
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   appName: process.env.NEXT_PUBLIC_APP_NAME ?? "ConcursoAI",

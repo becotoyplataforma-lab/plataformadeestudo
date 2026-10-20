@@ -13,3 +13,6 @@ export {
   DocumentTopicRepository,
   DocumentTagRepository,
 } from "./junction.repository";
+export { ApostilasRepository } from "./apostilas.repository";
+export type { ApostilaFilter } from "./apostilas.repository";
+

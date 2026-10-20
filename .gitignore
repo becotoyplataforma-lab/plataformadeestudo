@@ -68,6 +68,13 @@ supabase/.temp
 # (removido do gitignore em 2026-08-22 — Fase 1: consolidar schema)
 # drizzle/
 
+# storage local de arquivos de usuários (NUNCA commitar — ver .ai/08-SECURITY-STANDARDS)
+/.storage/
+
+# Arquivos brutos sincronizados do Drive (nao commitar no git)
+/public/apostilas/
+/.apostilas-work/
+
 # IDE
 .vscode/*
 !.vscode/extensions.json
@@ -128,3 +135,6 @@ __pycache__/
 # Storage local (STORAGE_BACKEND=local) e fila de ingestao pendente:
 # bytes de apostila e caminhos do posto de trabalho. Nunca versionar.
 /.storage/
+
+public/deploy-*.json
+public/deploy-*.txt

@@ -1,0 +1,67 @@
+{
+  "10": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 3998815
+  },
+  "11": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 9339458
+  },
+  "12": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 1319360
+  },
+  "13": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 1999908
+  },
+  "01": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 1859047
+  },
+  "02": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 9893455
+  },
+  "03": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 5553920
+  },
+  "04": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 7352832
+  },
+  "05": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 10513972
+  },
+  "06": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 4862908
+  },
+  "07": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 5523407
+  },
+  "08": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 2958219
+  },
+  "09": {
+    "sucesso": true,
+    "jaExistia": true,
+    "tamanhoBytes": 4054611
+  }
+}

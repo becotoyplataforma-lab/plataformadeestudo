@@ -29,28 +29,15 @@ interface NavItem {
   disabled?: boolean;
 }
 
-/** Navegação principal do aluno (padrão "Meus Cursos"). */
+/** Navegação principal do aluno. */
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  {
-    href: "/catalogo",
-    label: "Catálogo de Cursos",
-    icon: Compass,
-    badge: "Em breve",
-    disabled: true,
-  },
   { href: "/apostilas", label: "Minhas Apostilas", icon: BookOpen },
-  { href: "/cronograma", label: "Trilhas Estratégicas", icon: CalendarCheck2 },
   { href: "/questoes", label: "Caderno de Questões", icon: FileQuestion },
+  { href: "/cronograma", label: "Cronograma", icon: CalendarCheck2 },
+  { href: "/flashcards", label: "Flashcards", icon: Layers },
+  { href: "/professor", label: "Professor IA", icon: MessagesSquare },
   { href: "/analises", label: "Monitor de Performance", icon: BarChart3 },
-  {
-    href: "/simulados",
-    label: "Simulados",
-    icon: Target,
-    badge: "Em breve",
-    disabled: true,
-  },
-  { href: "/perfil", label: "Minhas Preferências", icon: Settings },
 ];
 
 /** Ferramentas extras já existentes na plataforma. */
@@ -62,13 +49,6 @@ const extraItems: NavItem[] = [
 
 /**
  * Cadernos por matéria, derivados do catálogo (`src/lib/questoes/cadernos.ts`).
- *
- * O rótulo é domínio ("Português · Banco de Questões"), nunca o número de um
- * PDF: a aula, o curso de terceiro e a prova-alvo são metadado de procedência e
- * viram tag de filtro dentro do caderno. Enquanto um caderno tiver lote local
- * ainda não importado, o badge diz "Revisão" — a tela existe e responde, o que
- * falta é a conferência humana do conteúdo, não o recurso. Apostila nova é uma
- * linha no catálogo; nada aqui precisa saber dela.
  */
 const trilhaItems: NavItem[] = itensDeMenu().map((item) => ({
   href: item.href,
