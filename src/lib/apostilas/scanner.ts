@@ -297,10 +297,14 @@ export function executarDeployAutomatico() {
           "RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund"
         );
       }
-      if (!df.includes("AUTH_SECRET=build-time-placeholder")) {
+      df = df.replace(
+        /ENV NEXT_PHASE=[^\r\n]+/,
+        "ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars\nRUN npm run build"
+      );
+      if (!df.includes("AUTH_SECRET=dev-secret-change-me")) {
         df = df.replace(
           "RUN npm run build",
-          "ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars\\nRUN npm run build"
+          "ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars\nRUN npm run build"
         );
       }
       fs.writeFileSync(dockerfilePath, df, "utf-8");

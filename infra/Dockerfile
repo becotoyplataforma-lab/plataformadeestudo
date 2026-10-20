@@ -40,7 +40,8 @@ COPY . .
 # Garante que a pasta public exista (o projeto ainda não tem public/)
 RUN mkdir -p public
 
-ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars\nRUN npm run build
+ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars
+RUN npm run build
 
 # ---------- RUNNER ----------
 FROM base AS runner
