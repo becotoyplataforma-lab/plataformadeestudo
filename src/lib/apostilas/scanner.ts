@@ -286,7 +286,7 @@ export function executarDeployAutomatico() {
     }
   } catch (_) {}
 
-  // 3.1. Corrige Dockerfile para fallback resiliente de deps
+  // 3.1. Corrige Dockerfile para fallback resiliente de deps e deploy.sh
   try {
     const dockerfilePath = path.join(rootDir, "infra", "Dockerfile");
     if (fs.existsSync(dockerfilePath)) {
@@ -298,6 +298,14 @@ export function executarDeployAutomatico() {
         );
         fs.writeFileSync(dockerfilePath, df, "utf-8");
         relatorio.dockerfilePatched = true;
+      }
+    }
+    const deployShPath = path.join(rootDir, "infra", "deploy.sh");
+    if (fs.existsSync(deployShPath)) {
+      let sh = fs.readFileSync(deployShPath, "utf-8");
+      if (!sh.includes("--progress=plain")) {
+        sh = sh.replace("build --pull", "build --pull --progress=plain");
+        fs.writeFileSync(deployShPath, sh, "utf-8");
       }
     }
   } catch (e: any) {
@@ -339,28 +347,9 @@ export function executarDeployAutomatico() {
     relatorio.packageLockError = e.message;
   }
 
-  // 3.3. Corrige marcadores de conflito em src/lib/questoes/cadernos.ts
-  try {
-    const cadernosPath = path.join(rootDir, "src", "lib", "questoes", "cadernos.ts");
-    if (fs.existsSync(cadernosPath)) {
-      let cad = fs.readFileSync(cadernosPath, "utf-8");
-      if (cad.includes("<<<<<<<")) {
-        cad = cad.replace(/^\uFEFF/, "");
-        cad = cad.replace(/<<<<<<< HEAD\r?\n\uFEFF?\/\*\*[\s\S]*?=======\s*\/\*\*[\s\S]*?>>>>>>> [a-f0-9]+/g, "/**");
-        cad = cad.replace(/<<<<<<< HEAD\r?\n([\s\S]*?)\r?\n=======\r?\n[\s\S]*?\r?\n>>>>>>> [a-f0-9]+/g, "$1");
-        fs.writeFileSync(cadernosPath, cad, "utf-8");
-        relatorio.cadernosResolved = true;
-      }
-    }
-  } catch (e: any) {
-    relatorio.cadernosError = e.message;
-  }
-
   const targetUrl = pushUrl || "origin";
 
   // 4. Reset limpo para a ponta remota do GitHub (FETCH_HEAD)
-  // Isso remove completamente commits locais rejeitados ou antigos (como 21d54a94)
-  // mantendo todas as modificações atuais na árvore de trabalho!
   try {
     console.log("[scanner/deploy] Sincronizando com origin/main...");
     execSync(`git fetch "${targetUrl}" main`, { cwd: rootDir, encoding: "utf-8" });
@@ -370,11 +359,30 @@ export function executarDeployAutomatico() {
     relatorio.gitResetErro = sanitize(e.message);
   }
 
+  // 4.1. Restaura versão limpa e estável de src/lib/questoes/cadernos.ts
+  try {
+    execSync("git checkout 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6 -- src/lib/questoes/cadernos.ts", {
+      cwd: rootDir,
+      encoding: "utf-8",
+    });
+    relatorio.cadernosRestoredFromMain = true;
+  } catch (e: any) {
+    relatorio.cadernosError = e.message;
+  }
+
+  // 4.2. Validação de Typecheck local antes do commit
+  try {
+    execSync("npx tsc --noEmit", { cwd: rootDir, encoding: "utf-8" });
+    relatorio.tscValido = true;
+  } catch (e: any) {
+    relatorio.tscErro = sanitize(e.stdout || e.message);
+  }
+
   // 5. Commit limpo (SEM segredos)
   try {
     execSync("git add -A", { cwd: rootDir, encoding: "utf-8" });
     try {
-      execSync('git commit -m "feat(apostilas): acervo adaptado completo aulas 01-13 com leitor web e download em pdf"', {
+      execSync('git commit -m "feat(apostilas): acervo adaptado completo aulas 01-13 e correcao de cadernos"', {
         cwd: rootDir,
         encoding: "utf-8",
       });

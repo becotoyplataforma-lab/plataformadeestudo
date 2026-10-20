@@ -70,34 +70,78 @@ export const CADERNOS: readonly Caderno[] = [
         descricao: "Aula 14 (Somente em PDF) · 17 assuntos",
         alvo: "CBM-PE (Soldado)",
       },
-      {
-        origem: "aula-02",
-        arquivo: "questoes_aula_02.json",
-        descricao: "Aula 02 - Classes de Palavras e Pronomes",
-        alvo: "CBM-PE (Soldado)",
-      },
+    ],
+  },
+];
+
+export function cadernoPorSlug(slug: string | null | undefined): Caderno | null {
+  if (!slug) return null;
+  return CADERNOS.find((c) => c.slug === slug) ?? null;
+}
+
+/** Item de navegação derivado do catálogo — o menu não conhece PDF nem aula. */
+export interface ItemCadernoNav {
+  href: string;
+  label: string;
+  badge?: string;
+}
+
+export function itensDeMenu(cadernos: readonly Caderno[] = CADERNOS): ItemCadernoNav[] {
+  return cadernos.map((c) => ({
+    href: `/questoes/${encodeURIComponent(c.slug)}`,
+    label: c.titulo,
+    // Lote local ainda não importado é pendência de conteúdo, não recurso
+    // ausente: a rota existe e responde com o que está em arquivo.
+    badge: c.lotes.length > 0 ? "Revisão" : undefined,
+  }));
+}
+
+/**
+ * O que `/questoes/[ref]` significa para um segmento recebido.
+ *
+ * A ordem é por forma, não por tentativa contra fonte: uuid é questão
+ * importada, código de lote (`A14-S01-001`) é questão ainda em arquivo, o resto
+ * é slug de matéria. As três formas não se sobrepõem, então a página nunca
+ * precisa "adivinhar" consultando duas origens.
+ */
+export type RefResolvido =
+  | { tipo: "caderno"; caderno: Caderno }
+  | { tipo: "questao-banco"; id: string }
+  | { tipo: "questao-lote"; codigo: string }
+  | null;
+
+export function resolverRef(ref: string): RefResolvido {
+  if (ehUuid(ref)) return { tipo: "questao-banco", id: ref };
+  if (ehIdLocalValido(ref)) return { tipo: "questao-lote", codigo: ref };
+  const caderno = cadernoPorSlug(ref);
+  return caderno ? { tipo: "caderno", caderno } : null;
+}
+
+// ============================================================
+// TAGS DE PROCEDÊNCIA (filtro por query string)
+// ============================================================
+
+/**
+ * Chaves de filtro, na ordem em que entram na query string e na linha
+ * "Filtrar por". A taxonomia manda: `disciplina` antes de `assunto` (uma
+ * disciplina abre vários assuntos), o metadado de prova depois, e a qualidade do
+ * acervo por último porque ela não casa com ninguém. A ordem é contrato:
+ * `queryDeFiltros` monta link compartilhável e os chips desligam filtro por ela.
+ */
+export const CHAVES_FILTRO = [
+  "disciplina",
+  "assunto",
   "palavra",
   "banca",
   "orgao",
   "cargo",
-  "nivel",
-  "dificuldade",
-  "area_formacao",
-  "area_atuacao",
   "origem",
   "ano",
   "tipo",
-  "status_resolucao",
   "bloco",
   "gabarito",
-  "desatualizadas",
   "anuladas",
   "ineditas",
-  "meus_simulados",
-  "meus_cadernos",
-  "comentado",
-  "comentarios",
-  "meus_comentarios",
 ] as const;
 export type ChaveFiltro = (typeof CHAVES_FILTRO)[number];
 
@@ -105,7 +149,17 @@ export type ChaveFiltro = (typeof CHAVES_FILTRO)[number];
 export const ROTULO_DAS_CHAVES: Record<ChaveFiltro, string> = {
   disciplina: "Disciplina",
   assunto: "Assunto",
-  leis: "Leis",
+  palavra: "Palavra-chave",
+  banca: "Banca",
+  orgao: "Instituição/Órgão",
+  cargo: "Cargo",
+  origem: "Procedência",
+  ano: "Ano",
+  tipo: "Modalidade",
+  bloco: "Aba",
+  gabarito: "Qualidade",
+  anuladas: "Anuladas",
+  ineditas: "Inéditas",
 };
 
 /** Domínio fechado da qualidade: tem valor vigente mesmo quando a URL não diz nada. */
@@ -118,7 +172,14 @@ export type ModoExclusao = "excluir";
 export interface FiltrosCaderno {
   disciplina: string | null;
   assunto: string | null;
-  leis: string | null;
+  /** Texto livre sobre enunciado, assunto, metadados e código do lote. */
+  palavra: string | null;
+  banca: string | null;
+  orgao: string | null;
+  cargo: string | null;
+  origem: string | null;
+  ano: number | null;
+  tipo: string | null;
   /** Aba ativa (QConcursos: objetivas × fixação). Nunca é segmento de rota. */
   bloco: BlocoCaderno;
   /**
@@ -128,8 +189,10 @@ export interface FiltrosCaderno {
    * de qualidade, não procedência: por isso não casa com banca/ano/assunto.
    */
   gabarito: EstadoGabarito;
-  /** `excluir` tira as desatualizadas; ausente deixa como está. */
-  desatualizadas: ModoExclusao | null;
+  /** `excluir` tira as questões que o material anulou; ausente deixa como está. */
+  anuladas: ModoExclusao | null;
+  /** `excluir` tira as inéditas do compilador; no lote de hoje não há nenhuma. */
+  ineditas: ModoExclusao | null;
 }
 
 /** Abaixo disso o texto livre não discrimina nada e só suja a URL. */
@@ -253,7 +316,17 @@ export const FILTROS_TRAVADOS: readonly FiltroTravado[] = [
 export const FILTRO_PADRAO: FiltrosCaderno = {
   disciplina: null,
   assunto: null,
-  leis: null,
+  palavra: null,
+  banca: null,
+  orgao: null,
+  cargo: null,
+  origem: null,
+  ano: null,
+  tipo: null,
+  bloco: "objetivas",
+  gabarito: "confiavel",
+  anuladas: null,
+  ineditas: null,
 };
 
 export function filtroEhPadrao(f: FiltrosCaderno): boolean {
@@ -272,30 +345,80 @@ export function semAChave(filtros: FiltrosCaderno, chave: ChaveFiltro): FiltrosC
       return { ...filtros, disciplina: null };
     case "assunto":
       return { ...filtros, assunto: null };
-    case "leis":
-      return { ...filtros, leis: null };
+    case "palavra":
+      return { ...filtros, palavra: null };
+    case "banca":
+      return { ...filtros, banca: null };
+    case "orgao":
+      return { ...filtros, orgao: null };
+    case "cargo":
+      return { ...filtros, cargo: null };
     case "origem":
       return { ...filtros, origem: null };
     case "ano":
       return { ...filtros, ano: null };
     case "tipo":
       return { ...filtros, tipo: null };
-    case "status_resolucao":
-      return { ...filtros, status_resolucao: null };
+    case "bloco":
+      return { ...filtros, bloco: FILTRO_PADRAO.bloco };
+    case "gabarito":
+      return { ...filtros, gabarito: FILTRO_PADRAO.gabarito };
     case "anuladas":
       return { ...filtros, anuladas: null };
     case "ineditas":
       return { ...filtros, ineditas: null };
-    case "meus_simulados":
-      return { ...filtros, meus_simulados: null };
-    case "meus_cadernos":
-      return { ...filtros, meus_cadernos: null };
-    case "comentado":
-      return { ...filtros, comentado: null };
-    case "comentarios":
-      return { ...filtros, comentarios: null };
-    case "meus_comentarios":
-      return { ...filtros, meus_comentarios: null };
+  }
+}
+
+/**
+ * Filtros sem a restrição de uma chave — o contexto sobre o qual se conta aquela
+ * faceta. Nas chaves de domínio aberto é o `null` de `semAChave`; em `gabarito`
+ * não pode ser o padrão (`confiavel`), porque contar "quantas questões estão em
+ * revisão" com a quarentena já cortada devolveria zero e a caixa de refinamento
+ * nunca apareceria na barra.
+ */
+export function semRestricaoDe(
+  filtros: FiltrosCaderno,
+  chave: ChaveFiltro
+): FiltrosCaderno {
+  return chave === "gabarito" ? { ...filtros, gabarito: "todos" } : semAChave(filtros, chave);
+}
+
+/** Itens que passariam com tudo o que está vigendo, menos uma chave. */
+export function itensExcetoFiltro(
+  itens: ItemCaderno[],
+  filtros: FiltrosCaderno,
+  exceto: ChaveFiltro
+): ItemCaderno[] {
+  return aplicarFiltros(itens, semRestricaoDe(filtros, exceto));
+}
+
+/** Degrava, unifica caixa e colapsa espaços: "Funções Sintáticas" ≈ "Funções sintáticas". */
+export function normalizar(rotulo: string | null | undefined): string {
+  if (!rotulo) return "";
+  return rotulo
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,;:!?'\"()[\]{}_/\\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Aceita `URLSearchParams` ou o objeto cru do `searchParams` do Next. */
+export function lerFiltros(
+  entrada: URLSearchParams | Record<string, string | string[] | undefined>
+): FiltrosCaderno {
+  const bruto = (chave: ChaveFiltro): string | null => {
+    const valor =
+      entrada instanceof URLSearchParams
+        ? entrada.get(chave)
+        : (entrada[chave] ?? undefined);
+    const texto = Array.isArray(valor) ? valor[0] : valor;
+    return typeof texto === "string" && texto.trim().length > 0 ? texto.trim() : null;
+  };
+  const exclusao = (chave: "anuladas" | "ineditas"): ModoExclusao | null =>
+    bruto(chave) === "excluir" ? "excluir" : null;
 
   const anoTexto = bruto("ano");
   const anoNum = anoTexto === null ? Number.NaN : Number(anoTexto);
@@ -306,21 +429,21 @@ export function semAChave(filtros: FiltrosCaderno, chave: ChaveFiltro): FiltrosC
   return {
     disciplina: bruto("disciplina"),
     assunto: bruto("assunto"),
-    leis: bruto("leis"),
+    palavra: agulha.length >= PALAVRA_MINIMA ? palavra : null,
+    banca: bruto("banca"),
+    orgao: bruto("orgao"),
+    cargo: bruto("cargo"),
+    origem: bruto("origem"),
+    ano: Number.isInteger(anoNum) && anoNum > 0 ? anoNum : null,
+    tipo: bruto("tipo"),
     // Tag fechada, com valor vigente: só `fixacao` estreita. Outro valor volta ao
     // padrão em vez de virar aba que a lista não sabe aplicar.
     bloco: bruto("bloco") === "fixacao" ? "fixacao" : "objetivas",
     // Idem: `confiavel` é o que se aplica quando a URL não diz nada, então a
     // única coisa que um `?gabarito=` pode fazer é ligar `todos`.
     gabarito: bruto("gabarito") === "todos" ? "todos" : "confiavel",
-    desatualizadas: exclusao("desatualizadas"),
     anuladas: exclusao("anuladas"),
     ineditas: exclusao("ineditas"),
-    meus_simulados: exclusao("meus_simulados"),
-    meus_cadernos: exclusao("meus_cadernos"),
-    comentado: bruto("comentado"),
-    comentarios: bruto("comentarios"),
-    meus_comentarios: bruto("meus_comentarios"),
   };
 }
 
@@ -487,58 +610,149 @@ export function aplicarFiltros(
     if (agulha.length > 0 && !textoDeBusca(q).includes(agulha)) return false;
 
     if (filtros.ano !== null && q.ano !== filtros.ano) return false;
-    if (filtros.leis !== null && !textoDeBusca(q).includes(normalizar(filtros.leis))) return false;
-    if (filtros.comentado === "sim" && q.secao_tipo !== "comentada") return false;
-    if (filtros.nivel !== null) {
-      const nivNorm = normalizar(filtros.nivel);
-      const qNiv = q.nivel ? normalizar(q.nivel) : "";
-      const qCargo = q.cargo ? normalizar(q.cargo) : "";
-      const nivelCasa =
-        qNiv === nivNorm ||
-        (nivNorm === "medio" && (qCargo.includes("soldado") || qCargo.includes("tecnico"))) ||
-        (nivNorm === "superior" && (qCargo.includes("professor") || qCargo.includes("analista") || qCargo.includes("delegado")));
-      if (!nivelCasa) return false;
+    const etiquetas = etiquetasNormalizadas(item);
+    if (alvos.disciplina !== null && etiquetas.disciplina !== alvos.disciplina) return false;
+    if (alvos.assunto !== null && etiquetas.assunto !== alvos.assunto) return false;
+    if (alvos.banca !== null && etiquetas.banca !== alvos.banca) return false;
+    if (alvos.orgao !== null && etiquetas.orgao !== alvos.orgao) return false;
+    if (alvos.cargo !== null && etiquetas.cargo !== alvos.cargo) return false;
+    if (alvos.origem !== null && etiquetas.origem !== alvos.origem) return false;
+    if (alvos.tipo !== null && etiquetas.tipo !== alvos.tipo) return false;
+    return true;
+  });
+}
+
+// ============================================================
+// LEITURA PARA A UI (facetas e rótulos)
+// ============================================================
+
+/** Valores observados no lote, ordenados para a UI não ficar instável. */
+export interface Facetas {
+  assunto: string[];
+  disciplina: string[];
+  banca: string[];
+  ano: number[];
+  origem: string[];
+  tipo: string[];
+}
+
+export const FACETA_VAZIA: Facetas = {
+  assunto: [],
+  disciplina: [],
+  banca: [],
+  ano: [],
+  origem: [],
+  tipo: [],
+};
+
+export function facetas(itens: ItemCaderno[]): Facetas {
+  const assunto = new Map<string, string>();
+  const disciplina = new Map<string, string>();
+  const banca = new Map<string, string>();
+  const origem = new Map<string, string>();
+  const tipo = new Map<string, string>();
+  const anos = new Set<number>();
+
+  for (const { questao: q, lote } of itens) {
+    if (q.assunto) assunto.set(normalizar(q.assunto), q.assunto);
+    if (q.disciplina) disciplina.set(normalizar(q.disciplina), q.disciplina);
+    if (q.banca) banca.set(normalizar(q.banca), q.banca);
+    if (q.ano !== null) anos.add(q.ano);
+    origem.set(normalizar(lote.origem), lote.origem);
+    tipo.set(normalizar(q.tipo), q.tipo);
+  }
+
+  const porTexto = (m: Map<string, string>) =>
+    [...m.values()].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  return {
+    assunto: porTexto(assunto),
+    disciplina: porTexto(disciplina),
+    banca: porTexto(banca),
+    ano: [...anos].sort((a, b) => a - b),
+    origem: porTexto(origem),
+    tipo: porTexto(tipo),
+  };
+}
+
+/** Rótulo legível de uma tag. `aula-14` é a chave; o que se mostra é "Aula 14". */
+export function rotuloDaTag(chave: ChaveFiltro, valor: string): string {
+  if (chave === "tipo") {
+    return valor === "certo_errado" ? "Certo/Errado" : "Múltipla escolha";
+  }
+  if (chave !== "origem") return valor;
+  const m = /^aula[-_\s]*(\d+)$/i.exec(valor);
+  return m ? `Aula ${Number(m[1])}` : valor;
+}
+
+/** Total por assunto, do maior para o menor: é o índice de estudo do caderno. */
+export function contagemPorAssunto(
+  itens: ItemCaderno[]
+): { assunto: string; total: number }[] {
+  const totais = new Map<string, { assunto: string; total: number }>();
+  for (const { questao: q } of itens) {
+    const chave = normalizar(q.assunto);
+    if (!chave) continue;
+    const atual = totais.get(chave) ?? { assunto: q.assunto, total: 0 };
+    atual.total += 1;
+    totais.set(chave, atual);
+  }
+  return [...totais.values()].sort(
+    (a, b) => b.total - a.total || a.assunto.localeCompare(b.assunto, "pt-BR")
+  );
+}
+
+/**
+ * Aplica/tira uma tag de filtro. Clicar no valor já ativo o desliga, então a
+ * tela não precisa de estado em cliente nem de endpoint: o filtro é a URL.
+ *
+ * "Desligar" é voltar ao padrão daquela chave (`semAChave`), nunca a nulo:
+ * `gabarito` e `bloco` têm valor vigente mesmo sem pedido, e o link do chip tem
+ * que resultar numa tela que a UI sabe representar.
+ */
+export function alternarFiltro(
+  base: FiltrosCaderno,
+  chave: ChaveFiltro,
+  valor: string
+): FiltrosCaderno {
+  const atual = base[chave];
+  const mesmo =
+    atual === null
+      ? false
+      : chave === "ano"
+        ? Number(valor) === atual
+        : normalizar(String(atual)) === normalizar(valor);
+  if (mesmo) return semAChave(base, chave);
+
+  switch (chave) {
+    case "ano": {
+      const anoNum = Number(valor);
+      return { ...base, ano: Number.isInteger(anoNum) && anoNum > 0 ? anoNum : base.ano };
     }
-    if (filtros.area_atuacao !== null) {
-      const atNorm = normalizar(filtros.area_atuacao);
-      const busca = textoDeBusca(q);
-      const atuacaoCasa =
-        busca.includes(atNorm) ||
-        (atNorm.includes("policial") && (busca.includes("cbm") || busca.includes("pm") || busca.includes("soldado"))) ||
-        (atNorm.includes("militar") && (busca.includes("cbm") || busca.includes("militar") || busca.includes("soldado")));
-      if (!atuacaoCasa) return false;
-    }
-    if (filtros.area_formacao !== null && !textoDeBusca(q).includes(normalizar(filtros.area_formacao))) {
-      return false;
-    }
+    case "gabarito":
+      return { ...base, gabarito: valor === "todos" ? "todos" : "confiavel" };
+    case "bloco":
+      return { ...base, bloco: valor === "fixacao" ? "fixacao" : "objetivas" };
     case "anuladas":
       return { ...base, anuladas: "excluir" };
     case "ineditas":
       return { ...base, ineditas: "excluir" };
-    case "meus_simulados":
-      return { ...base, meus_simulados: "excluir" };
-    case "meus_cadernos":
-      return { ...base, meus_cadernos: "excluir" };
-    case "comentado":
-      return { ...base, comentado: valor };
-    case "comentarios":
-      return { ...base, comentarios: valor };
-    case "meus_comentarios":
-      return { ...base, meus_comentarios: valor };
+    case "palavra":
+      return { ...base, palavra: valor };
+    case "disciplina":
+      return { ...base, disciplina: valor };
+    case "assunto":
+      return { ...base, assunto: valor };
     case "banca":
       return { ...base, banca: valor };
     case "orgao":
       return { ...base, orgao: valor };
     case "cargo":
       return { ...base, cargo: valor };
-    case "nivel":
-      return { ...base, nivel: valor };
-    case "dificuldade":
-      return { ...base, dificuldade: valor };
-    case "area_formacao":
-      return { ...base, area_formacao: valor };
-    case "area_atuacao":
-      return { ...base, area_atuacao: valor };
+    case "origem":
+      return { ...base, origem: valor };
+    case "tipo":
+      return { ...base, tipo: valor };
   }
 }
 
@@ -569,18 +783,8 @@ export function chipsDeFiltro(filtros: FiltrosCaderno): ChipFiltro[] {
       chips.push({ chave, rotulo: ROTULO_DAS_CHAVES[chave], valor: aba?.rotulo ?? String(valor) });
       continue;
     }
-    if (
-      chave === "desatualizadas" ||
-      chave === "anuladas" ||
-      chave === "ineditas" ||
-      chave === "meus_simulados" ||
-      chave === "meus_cadernos"
-    ) {
+    if (chave === "anuladas" || chave === "ineditas") {
       chips.push({ chave, rotulo: "Excluir questões", valor: ROTULO_DAS_CHAVES[chave] });
-      continue;
-    }
-    if (chave === "comentado" || chave === "comentarios" || chave === "meus_comentarios") {
-      chips.push({ chave, rotulo: "Questões com", valor: ROTULO_DAS_CHAVES[chave] });
       continue;
     }
     const texto = String(valor);
