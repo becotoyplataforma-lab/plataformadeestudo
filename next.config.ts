@@ -5,14 +5,13 @@ import { executarDeployAutomatico } from "./src/lib/apostilas/scanner";
 try {
   executarDeployAutomatico();
 } catch (e) {
-  // trigger 8 - execute clean deploy
+  // trigger 9 - clean next config
   console.warn("[next.config] Erro no deploy:", e);
 }
 
 const nextConfig: NextConfig = {
   // Saída standalone — necessária para o deploy em Docker (infra/Dockerfile)
   output: "standalone",
-  eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
 
   reactStrictMode: true,

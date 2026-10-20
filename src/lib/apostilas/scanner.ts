@@ -297,16 +297,12 @@ export function executarDeployAutomatico() {
           "RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund"
         );
       }
+      // Limpa repetições de RUN npm run build e define ENV limpo
+      df = df.replace(/(ENV NEXT_PHASE=[^\r\n]+\r?\n)?(RUN npm run build\r?\n?)+/g, "");
       df = df.replace(
-        /ENV NEXT_PHASE=[^\r\n]+/,
-        "ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars\nRUN npm run build"
+        "RUN mkdir -p public",
+        "RUN mkdir -p public\n\nENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars\nRUN npm run build"
       );
-      if (!df.includes("AUTH_SECRET=dev-secret-change-me")) {
-        df = df.replace(
-          "RUN npm run build",
-          "ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars\nRUN npm run build"
-        );
-      }
       fs.writeFileSync(dockerfilePath, df, "utf-8");
       relatorio.dockerfilePatched = true;
     }
@@ -322,14 +318,16 @@ export function executarDeployAutomatico() {
     const nextConfigPath = path.join(rootDir, "next.config.ts");
     if (fs.existsSync(nextConfigPath)) {
       let nc = fs.readFileSync(nextConfigPath, "utf-8");
-      if (!nc.includes("ignoreDuringBuilds")) {
+      // Remove configuração inválida de eslint no Next.js 16
+      nc = nc.replace(/\s*eslint:\s*\{[^}]*\},?/g, "");
+      if (!nc.includes("typescript:")) {
         nc = nc.replace(
           'output: "standalone",',
-          'output: "standalone",\n  eslint: { ignoreDuringBuilds: true },\n  typescript: { ignoreBuildErrors: true },'
+          'output: "standalone",\n  typescript: { ignoreBuildErrors: true },'
         );
-        fs.writeFileSync(nextConfigPath, nc, "utf-8");
-        relatorio.nextConfigPatched = true;
       }
+      fs.writeFileSync(nextConfigPath, nc, "utf-8");
+      relatorio.nextConfigPatched = true;
     }
   } catch (e: any) {
     relatorio.dockerfilePatchError = e.message;
