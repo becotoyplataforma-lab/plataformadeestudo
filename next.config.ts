@@ -1,14 +1,5 @@
 import type { NextConfig } from "next";
 import { buildCspHeader } from "./src/lib/security/csp";
-import { executarDeployAutomatico } from "./src/lib/apostilas/scanner";
-
-try {
-  executarDeployAutomatico();
-} catch (e) {
-  // trigger 12 - deploy now
-  console.warn("[next.config] Erro no deploy:", e);
-}
-
 const nextConfig: NextConfig = {
   // Saída standalone — necessária para o deploy em Docker (infra/Dockerfile)
   output: "standalone",
