@@ -18,13 +18,10 @@ import { rotasQuestoes } from "@/lib/questoes/rotas";
  * O filtro vive na URL, não em estado de cliente: `<form method="get">` com
  * selects nativos. A tela continua renderizada em servidor, o link continua
  * compartilhável e a página 2 de um assunto continua sendo um link.
-<<<<<<< HEAD
-=======
  *
  * O card deixou de ser envolvido por `<Link>`: dentro de um link, marcar
  * alternativa e abrir sanfona virava navegação. O card é interativo e o detalhe
  * tem link próprio.
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
  */
 
 export interface CadernoMateriaProps {
@@ -45,130 +42,6 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
   const quarentena = acervo.itens.filter(({ questao }) => questao.quarantined).length;
 
   return (
-<<<<<<< HEAD
-    <div className="w-full">
-      {/* Top Teal Header Banner with "Questões" title and navigation sub-tabs */}
-      <div className="-mx-4 -mt-6 md:-mx-8 md:-mt-6 bg-[#006472] pt-8 pb-3 px-4 sm:px-6 lg:px-8 text-white shadow-xs">
-        <div className="max-w-6xl mx-auto space-y-4">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Questões</h1>
-
-          {/* Subnavigation Tabs */}
-          <nav className="flex items-center gap-1.5 pt-2">
-            <div className="px-5 py-2.5 rounded-t-xl bg-[#00525d] text-white font-medium text-sm flex items-center gap-2 border-t border-x border-[#004751] shadow-2xs">
-              Filtro de questões
-            </div>
-            <Link
-              href="/cadernos"
-              className="px-5 py-2.5 text-white/80 hover:text-white font-medium text-sm transition-colors rounded-t-xl hover:bg-white/10"
-            >
-              Cadernos
-            </Link>
-            <Link
-              href="#filtros-salvos"
-              className="px-5 py-2.5 text-white/80 hover:text-white font-medium text-sm transition-colors rounded-t-xl hover:bg-white/10"
-            >
-              Filtros salvos
-            </Link>
-          </nav>
-        </div>
-      </div>
-
-      {/* Main Container below banner */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <BarraFiltros
-          acao={rotasQuestoes.caderno(caderno.slug)}
-          filtros={filtros}
-          opcoes={listagem.opcoes}
-          abas={listagem.abas}
-          refinamentos={listagem.refinamentos}
-          porPagina={pagina.porPagina}
-        />
-
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-semibold tracking-tight">{caderno.titulo}</h2>
-            <Badge variant="secondary">{confiaveis} questões</Badge>
-            {acervo.semGabaritoConfiavel > 0 && (
-              <span className="text-xs text-muted-foreground" data-pendencia>
-                {acervo.itens.length} no acervo total: {acervo.semGabaritoConfiavel} em revisão
-              </span>
-            )}
-          </div>
-          <p data-contagem className="text-sm font-medium text-foreground">
-            {pagina.totalItens === 0
-              ? "Nenhuma questão com esses filtros"
-              : `Exibindo ${pagina.inicio} a ${pagina.fim} de ${pagina.totalItens} questões`}
-          </p>
-        </div>
-
-        <Sanfona rotulo="Sobre este acervo" id="lote">
-          <ul className="space-y-1 text-xs">
-            <li>
-              Linhas no lote: {acervo.linhas}. Cópia idêntica desconsiderada:{" "}
-              {acervo.duplicatas} — o PDF publica a mesma questão na seção comentada e
-              na lista de gabaritos, e somar as duas seria inflar o acervo.
-            </li>
-            <li>
-              Gabarito que o material sustenta: {confiaveis}. Sem resposta confiável:{" "}
-              {acervo.semGabaritoConfiavel} (em quarentena: {quarentena}).
-            </li>
-            <li>
-              Assuntos: {assuntos.length}. Sem banca declarada: {semBanca} de{" "}
-              {acervo.itens.length}.
-            </li>
-            <li>
-              O que já foi importado e publicado fica no navegador do banco:{" "}
-              <Link href={rotasQuestoes.banco()} className="underline">
-                /questoes/banco
-              </Link>
-              .
-            </li>
-            {carga && carga.descartadas.length > 0 && (
-              <li>
-                {carga.descartadas.length} linha(s) descartada(s) por violação de forma
-                ({carga.descartadas
-                  .slice(0, 5)
-                  .map((d) => `${d.id}: ${d.motivo}`)
-                  .join("; ")}
-                {carga.descartadas.length > 5 ? "; …" : ""}) — nada é ignorado em silêncio.
-              </li>
-            )}
-            {!carga && (
-              <li>
-                Nenhum lote local lido: o diretório do dataset não está configurado
-                (`MATERIAIS_DATASET_DIR`) ou os arquivos do caderno não existem nele.
-              </li>
-            )}
-          </ul>
-        </Sanfona>
-
-        {ausentes.length > 0 && (
-          <p className="text-xs text-amber-400">
-            Lote(s) declarado(s) no catálogo sem arquivo no diretório: {ausentes.join(", ")}.
-          </p>
-        )}
-
-        {filtrados.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border p-8 text-center bg-card">
-            <p className="text-sm font-medium">Nenhuma questão com esses filtros</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              O filtro é a URL: limpe a barra acima para voltar ao acervo inteiro.
-            </p>
-          </div>
-        ) : (
-          visiveis.map(({ questao, lote }) => (
-            <QuestaoCard
-              key={questao.id_local}
-              questao={questao}
-              lote={lote}
-              hrefDetalhe={rotasQuestoes.questao(questao.id_local)}
-            />
-          ))
-        )}
-
-        <Paginacao slug={caderno.slug} filtros={filtros} pagina={pagina} />
-      </div>
-=======
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 sm:px-6">
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -283,7 +156,6 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
       )}
 
       <Paginacao slug={caderno.slug} filtros={filtros} pagina={pagina} />
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     </div>
   );
 }

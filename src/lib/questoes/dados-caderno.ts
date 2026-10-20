@@ -117,18 +117,7 @@ function carregarArquivo(caminho: string, lote: LoteProcedencia) {
  */
 export function carregarCaderno(caderno: Caderno): CargaCaderno | null {
   const diretorio = direcaoDataset();
-<<<<<<< HEAD
-  let caminhoBase = diretorio?.caminho;
-  if (!caminhoBase || !existsSync(caminhoBase)) {
-    const local = join(process.cwd(), "dataset", "questoes");
-    if (existsSync(local)) {
-      caminhoBase = local;
-    }
-  }
-  if (!caminhoBase) return null;
-=======
   if (!diretorio) return null;
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 
   const itens: ItemCaderno[] = [];
   const descartadas: DescarteLote[] = [];
@@ -137,11 +126,7 @@ export function carregarCaderno(caderno: Caderno): CargaCaderno | null {
   let bytes = 0;
 
   for (const lote of caderno.lotes) {
-<<<<<<< HEAD
-    const caminho = join(caminhoBase, lote.arquivo);
-=======
     const caminho = join(diretorio.caminho, lote.arquivo);
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     if (!existsSync(caminho)) {
       ausentes.push(lote.origem);
       continue;
@@ -160,11 +145,7 @@ export function carregarCaderno(caderno: Caderno): CargaCaderno | null {
     itens,
     descartadas,
     ausentes,
-<<<<<<< HEAD
-    origem: { caminho: caminhoBase, bytes, arquivos },
-=======
     origem: { caminho: diretorio.caminho, bytes, arquivos },
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   };
 }
 

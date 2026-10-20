@@ -2,22 +2,16 @@
  * ConcursoAI — IngestionService
  *
  * Orquestra o upload de documentos: validação, deduplicação,
- * gravação dos bytes reais no storage (local em dev / R2 em produção) e
- * registro no banco.
+ * armazenamento no Cloudflare R2 e registro no banco.
  *
- * Segue: .ai/blueprints/01-ingestion.blueprint.md, specs/knowledge-apostilas.md, ADR-011
+ * Segue: .ai/blueprints/01-ingestion.blueprint.md
  */
 import { createHash } from "crypto";
-import { getStorage } from "@/lib/storage";
 import { DocumentRepository } from "../repositories/document.repository";
-<<<<<<< HEAD
-import { DocumentSubjectRepository } from "../repositories/junction.repository";
-=======
 import { storageBackend } from "../storage/backend";
 import { resolveUserLimits } from "@/lib/billing/services/limits.resolver";
 import { MIME_TO_DOCUMENT_TYPE, TEXT_EXTRACTABLE_MIME_TYPES } from "../format-contract";
 import { DEFAULT_FREE_LIMITS } from "@/lib/billing/types";
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 
 // ============================================================
 // Tipos
@@ -29,12 +23,6 @@ export interface IngestionInput {
   sourceType?: "upload" | "edital" | "url";
   sourceUrl?: string;
   externalId?: string;
-  /** Título do documento; default é derivado do nome do arquivo. */
-  title?: string;
-  /** Metadados iniciais (ex.: `{ concurso: "CBM-RJ" }`); default `{}`. */
-  metadata?: Record<string, unknown>;
-  /** Matéria do Knowledge Core a associar já na ingestão (document_subjects). */
-  subjectId?: string;
 }
 
 export interface IngestionOutput {
@@ -159,21 +147,6 @@ function mapMimeToType(mimeType: string): "pdf" | "docx" | "txt" | "markdown" | 
   return "txt";
 }
 
-/** Remove os bytes já gravados quando o registro no banco falha (sem órfãos). */
-async function reverterRegistro(storagePath: string): Promise<void> {
-  try {
-    await getStorage().delete(storagePath);
-  } catch (erroRemocao) {
-    // Não mascara o erro original: o operador recebe a pista para limpar à mão.
-    console.error("[ingestion] falha ao remover bytes órfãos:", erroRemocao);
-  }
-}
-
-/** Mensagem legível de um erro desconhecido (para details do IngestionError). */
-function mensagemDe(erro: unknown): string {
-  return erro instanceof Error ? erro.message : String(erro);
-}
-
 // ============================================================
 // Service
 // ============================================================
@@ -181,19 +154,10 @@ function mensagemDe(erro: unknown): string {
 export const IngestionService = {
   /**
    * Orquestrar upload completo.
-   * Fluxo: validar → hash → dedup → gravar bytes → register → vínculo → DTO.
+   * Fluxo: validar → hash → dedup → R2 → register → DTO.
    */
   async ingest(input: IngestionInput): Promise<IngestionOutput> {
-    const {
-      userId,
-      file,
-      sourceType = "upload",
-      sourceUrl,
-      externalId,
-      title,
-      metadata,
-      subjectId,
-    } = input;
+    const { userId, file, sourceType = "upload", sourceUrl, externalId } = input;
 
     // 1. Validar MIME
     if (!ALLOWED_MIME_TYPES.includes(file.type as typeof ALLOWED_MIME_TYPES[number])) {
@@ -227,56 +191,6 @@ export const IngestionService = {
       );
     }
 
-<<<<<<< HEAD
-    // 5. Chave lógica do storage (nunca exposta ao cliente — .ai/08)
-    const docId = crypto.randomUUID();
-    const storagePath = `${userId}/${docId}/${file.name}`;
-
-    // 6. Gravar os bytes reais no storage (driver por STORAGE_DRIVER: local | r2)
-    try {
-      await getStorage().upload(storagePath, buffer, file.type);
-    } catch (erroStorage) {
-      throw new IngestionError(
-        "UPLOAD_FAILED",
-        "Não foi possível gravar o arquivo no storage.",
-        { motivo: mensagemDe(erroStorage) }
-      );
-    }
-
-    // 7. Registrar o documento; se o banco falhar, não deixar bytes órfãos
-    let document;
-    try {
-      document = await DocumentRepository.create({
-        id: docId,
-        userId,
-        type: mapMimeToType(file.type),
-        title: title?.trim() || deriveTitle(file.name),
-        storagePath,
-        status: "pending",
-        fileSize: file.size,
-        mimeType: file.type,
-        sourceType,
-        sourceUrl: sourceUrl ?? undefined,
-        externalId: externalId ?? undefined,
-        fileHash,
-        metadata: metadata ?? {},
-      });
-    } catch (erroBanco) {
-      await reverterRegistro(storagePath);
-      throw erroBanco;
-    }
-
-    // 8. Associação à matéria (opcional); falha reverte o registro recém-criado
-    if (subjectId) {
-      try {
-        await DocumentSubjectRepository.upsert(document.id, subjectId, 100);
-      } catch (erroJuncao) {
-        await DocumentRepository.softDelete(document.id);
-        await reverterRegistro(storagePath);
-        throw erroJuncao;
-      }
-    }
-=======
     // 4.1. Quota maxDocuments (best-effort, após duplicidade e antes do create).
     // Limite oficial via resolveUserLimits; fallback segue mecanismo existente
     // (DEFAULT_FREE_LIMITS). Conta apenas documents com deletedAt IS NULL.
@@ -318,7 +232,6 @@ export const IngestionService = {
       fileHash,
       metadata: {},
     });
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 
     return {
       documentId: document.id,

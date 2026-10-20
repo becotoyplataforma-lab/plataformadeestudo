@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-<<<<<<< HEAD
-=======
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db/drizzle";
 import { getDashboardSummary, getPerformanceBySubject, getEvolution } from "@/lib/db/repositories/analises";
@@ -19,7 +16,6 @@ import { LessonRepository } from "@/lib/study/repositories/lesson.repository";
 import { WeaknessAnalysisService } from "@/lib/study/services/weakness-analysis.service";
 import { contests, positions } from "@/db/schema/contest";
 import { firstName } from "@/lib/utils";
-import type { DashboardSummary, EvolutionPoint, Profile, SubjectPerformance } from "@/types";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -27,71 +23,8 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const session = await auth();
-  const userId = session?.user?.id;
+  if (!session?.user?.id) redirect("/login");
 
-<<<<<<< HEAD
-  const defaultSummary: DashboardSummary = {
-    total_questoes: 50,
-    acertos: 42,
-    taxa_acerto: 84,
-    streak_dias: 5,
-    meta_hoje_min: 120,
-    estudado_hoje_min: 75,
-    revisoes_pendentes: 4,
-    tarefas_hoje: 6,
-    tarefas_concluidas_hoje: 4,
-  };
-
-  const defaultProfile: Profile = {
-    id: "00000000-0000-4000-8000-000000000001",
-    full_name: "Estudante Concurseiro",
-    email: "aluno@concursoai.com",
-    avatar_url: null,
-    plano: "pro",
-    nivel: "intermediario",
-    concurso_alvo: "Tribunais / Carreiras Policiais",
-    banca_preferida: "CEBRASPE",
-    contest_id: null,
-    position_id: null,
-    meta_diaria_min: 120,
-    modelo_ia_padrao: "flash",
-    is_admin: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-
-  let summary: DashboardSummary = defaultSummary;
-  let bySubject: SubjectPerformance[] = [
-    { materia: "Direito Constitucional", total: 20, acertos: 18, taxa: 90, color: "#ef4444" },
-    { materia: "Direito Administrativo", total: 15, acertos: 12, taxa: 80, color: "#f97316" },
-    { materia: "Língua Portuguesa", total: 15, acertos: 12, taxa: 80, color: "#3b82f6" },
-  ];
-  let evolution: EvolutionPoint[] = [
-    { dia: "Seg", total: 15, acertos: 12, taxa: 80 },
-    { dia: "Ter", total: 18, acertos: 15, taxa: 83 },
-    { dia: "Qua", total: 12, acertos: 10, taxa: 83 },
-    { dia: "Qui", total: 16, acertos: 14, taxa: 88 },
-    { dia: "Sex", total: 11, acertos: 9, taxa: 82 },
-  ];
-  let profile: Profile = defaultProfile;
-
-  if (userId) {
-    try {
-      const [s, b, e, p] = await Promise.all([
-        getDashboardSummary(userId).catch(() => defaultSummary),
-        getPerformanceBySubject(userId).catch(() => bySubject),
-        getEvolution(userId, 30).catch(() => evolution),
-        getProfile(userId).catch(() => defaultProfile),
-      ]);
-      summary = s ?? defaultSummary;
-      bySubject = b && b.length > 0 ? b : bySubject;
-      evolution = e && e.length > 0 ? e : evolution;
-      profile = p ?? defaultProfile;
-    } catch {
-      // Mantém fallbacks padrão
-    }
-  }
-=======
   const [summary, bySubject, evolution, profile, lessons, weakness] = await Promise.all([
     getDashboardSummary(session.user.id),
     getPerformanceBySubject(session.user.id),
@@ -100,7 +33,6 @@ export default async function DashboardPage() {
     LessonRepository.listForStudent(session.user.id, 8),
     WeaknessAnalysisService.analyze(session.user.id, { minAttempts: 1, maxAccuracy: 0.7 }),
   ]);
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 
   // Apostilas visiveis no dashboard: as proprias + as compartilhadas com o
   // cargo ou o edital vigente do aluno. Mesmo filtro usado pela busca e pela

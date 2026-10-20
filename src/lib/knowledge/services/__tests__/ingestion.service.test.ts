@@ -1,45 +1,18 @@
 /**
  * Testes unitários do IngestionService.
- *
- * O storage é o LocalStorageAdapter real num diretório temporário: assim os
- * testes provam que os bytes CHEGAM ao disco (e são limpos em rollback),
- * sem tocar em `.storage/` do projeto (.ai/11-TDD-STRICT).
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockFindByHash = vi.fn();
 const mockCreate = vi.fn();
 const mockGetStorageUsage = vi.fn();
-<<<<<<< HEAD
-const mockSoftDelete = vi.fn();
-const mockUpsertSubject = vi.fn();
-=======
 const mockCountActiveByUser = vi.fn();
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 
 vi.mock("../../repositories/document.repository", () => ({
   DocumentRepository: {
     findByHash: (...args: unknown[]) => mockFindByHash(...args),
     create: (...args: unknown[]) => mockCreate(...args),
     getStorageUsage: (...args: unknown[]) => mockGetStorageUsage(...args),
-<<<<<<< HEAD
-    softDelete: (...args: unknown[]) => mockSoftDelete(...args),
-  },
-}));
-
-vi.mock("../../repositories/junction.repository", () => ({
-  DocumentSubjectRepository: {
-    upsert: (...args: unknown[]) => mockUpsertSubject(...args),
-  },
-}));
-
-import { setStorageForTests } from "@/lib/storage";
-import { LocalStorageAdapter } from "@/lib/storage/local.adapter";
-import { StorageError, type StorageAdapter } from "@/lib/storage/types";
-=======
     countActiveByUser: (...args: unknown[]) => mockCountActiveByUser(...args),
   },
 }));
@@ -49,38 +22,15 @@ vi.mock("@/lib/billing/services/limits.resolver", () => ({
   resolveUserLimits: (...args: unknown[]) => mockResolveUserLimits(...args),
 }));
 
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 import { IngestionService, IngestionError } from "../ingestion.service";
-
-const RAIZ_TESTE = mkdtempSync(path.join(tmpdir(), "concursoai-ingest-"));
-
-/** Caminho físico de uma chave lógica no diretório temporário. */
-function discoDaChave(chave: string): string {
-  return path.join(RAIZ_TESTE, ...chave.split("/"));
-}
-
-/** A chave usada pelo último create (o docId é gerado dentro do service). */
-function chaveRegistrada(): string {
-  const argumento = mockCreate.mock.calls.at(-1)?.[0] as { storagePath: string };
-  return argumento.storagePath;
-}
 
 describe("IngestionService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-<<<<<<< HEAD
-    setStorageForTests(new LocalStorageAdapter(RAIZ_TESTE));
-  });
-
-  afterAll(() => {
-    setStorageForTests(null);
-    rmSync(RAIZ_TESTE, { recursive: true, force: true });
-=======
     mockFindByHash.mockResolvedValue(null);
     // Quota maxDocuments (FASE 3C-5C): default abaixo do limite Free (0/3).
     mockResolveUserLimits.mockResolvedValue({ maxDocuments: 3 });
     mockCountActiveByUser.mockResolvedValue(0);
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   });
 
   describe("validateQuota", () => {
@@ -159,111 +109,6 @@ describe("IngestionService", () => {
       expect(mockCreate).toHaveBeenCalledTimes(1);
     });
 
-<<<<<<< HEAD
-    it("grava os bytes reais no storage antes de registrar no banco", async () => {
-      mockFindByHash.mockResolvedValue(null);
-      mockCreate.mockResolvedValue({ id: "new-doc", storagePath: "user-1/new-doc/meu arquivo.txt" });
-
-      const file = new File(["apostila de verdade"], "meu arquivo.txt", { type: "text/plain" });
-      await IngestionService.ingest({ userId: "user-1", file });
-
-      const chave = chaveRegistrada();
-      expect(chave).toMatch(/^user-1\/[0-9a-f-]{36}\/meu arquivo\.txt$/); // docId gerado no service
-      expect(existsSync(discoDaChave(chave))).toBe(true);
-      expect(readFileSync(discoDaChave(chave), "utf8")).toBe("apostila de verdade");
-    });
-
-    it("respeita título e metadados explícitos (ex.: concurso)", async () => {
-      mockFindByHash.mockResolvedValue(null);
-      mockCreate.mockResolvedValue({ id: "new-doc" });
-
-      const file = new File(["x"], "curso-384118-aula-01.pdf", { type: "application/pdf" });
-      await IngestionService.ingest({
-        userId: "user-1",
-        file,
-        title: "Aula 01 - Completo",
-        metadata: { concurso: "CBM-RJ" },
-      });
-
-      expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: "pdf",
-          title: "Aula 01 - Completo",
-          metadata: { concurso: "CBM-RJ" },
-        })
-      );
-    });
-
-    it("associa a matéria quando subjectId é informado", async () => {
-      mockFindByHash.mockResolvedValue(null);
-      mockCreate.mockResolvedValue({ id: "doc-1" });
-
-      const file = new File(["x"], "aula.txt", { type: "text/plain" });
-      await IngestionService.ingest({
-        userId: "user-1",
-        file,
-        subjectId: "3f0f9b1a-0000-4000-8000-000000000001",
-      });
-
-      expect(mockUpsertSubject).toHaveBeenCalledWith(
-        "doc-1",
-        "3f0f9b1a-0000-4000-8000-000000000001",
-        100
-      );
-    });
-
-    it("não registra no banco quando o storage recusa o upload", async () => {
-      mockFindByHash.mockResolvedValue(null);
-      const deleteSpy = vi.fn().mockResolvedValue(undefined);
-      const adaptadorFalho: StorageAdapter = {
-        driver: "local",
-        upload: vi.fn().mockRejectedValue(new StorageError("UPLOAD_FAILED", "disco cheio")),
-        getStream: vi.fn(),
-        getUrl: vi.fn(),
-        delete: deleteSpy,
-        exists: vi.fn().mockResolvedValue(false),
-      };
-      setStorageForTests(adaptadorFalho);
-
-      const file = new File(["x"], "aula.txt", { type: "text/plain" });
-      await expect(IngestionService.ingest({ userId: "user-1", file })).rejects.toMatchObject({
-        code: "UPLOAD_FAILED",
-      });
-
-      expect(mockCreate).not.toHaveBeenCalled();
-      expect(deleteSpy).not.toHaveBeenCalled();
-    });
-
-    it("remove os bytes recém-gravados se o registro no banco falhar", async () => {
-      mockFindByHash.mockResolvedValue(null);
-      mockCreate.mockRejectedValue(new Error("insert falhou"));
-
-      const file = new File(["bytes a limpar"], "aula.txt", { type: "text/plain" });
-      await expect(IngestionService.ingest({ userId: "user-1", file })).rejects.toThrow(
-        "insert falhou"
-      );
-
-      const chave = chaveRegistrada();
-      expect(existsSync(discoDaChave(chave))).toBe(false);
-    });
-
-    it("reverte linha e bytes se a associação à matéria falhar", async () => {
-      mockFindByHash.mockResolvedValue(null);
-      mockCreate.mockResolvedValue({ id: "doc-1" });
-      mockUpsertSubject.mockRejectedValue(new Error("fk violation"));
-
-      const file = new File(["x"], "aula.txt", { type: "text/plain" });
-      await expect(
-        IngestionService.ingest({
-          userId: "user-1",
-          file,
-          subjectId: "3f0f9b1a-0000-4000-8000-000000000001",
-        })
-      ).rejects.toThrow("fk violation");
-
-      expect(mockSoftDelete).toHaveBeenCalledWith("doc-1");
-      expect(existsSync(discoDaChave(chaveRegistrada()))).toBe(false);
-=======
     it("sanitiza filename com path traversal no storagePath", async () => {
       mockFindByHash.mockResolvedValue(null);
       mockCreate.mockImplementation((input: { storagePath: string }) => ({
@@ -508,7 +353,6 @@ describe("IngestionService", () => {
 
       const result = await IngestionService.ingest({ userId: "user-1", file });
       expect(result.documentId).toBe("new-doc");
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     });
   });
 });

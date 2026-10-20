@@ -1,10 +1,4 @@
 import Link from "next/link";
-<<<<<<< HEAD
-import { ChevronDown, RotateCcw, Search } from "lucide-react";
-
-import {
-  chipsDeFiltro,
-=======
 import { BookOpen, ChevronDown, ListChecks, Minus, Plus, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,23 +10,16 @@ import {
   alternarFiltro,
   chipsDeFiltro,
   filtroEhPadrao,
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   queryDeFiltros,
   rotuloDaTag,
   semAChave,
   type AbaComTotal,
   type ChaveDeContagem,
-<<<<<<< HEAD
-  type ChaveFiltro,
-=======
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   type FiltrosCaderno,
   type OpcaoFaceta,
   type RefinamentosCaderno,
 } from "@/lib/questoes/cadernos";
 
-<<<<<<< HEAD
-=======
 /**
  * Barra de filtros do caderno — formulário GET de servidor, sem ilha de cliente.
  *
@@ -50,7 +37,6 @@ import {
  * listado no rodapé com o motivo — não como caixa muda (docs/31 §7.7).
  */
 
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 export interface BarraFiltrosProps {
   /** Rota do caderno, sem query — vira o `action` do formulário. */
   acao: string;
@@ -63,121 +49,6 @@ export interface BarraFiltrosProps {
   porPagina: number;
 }
 
-<<<<<<< HEAD
-const OPCOES_LEIS = [
-  { valor: "cf88", rotulo: "CF/88 - Constituição Federal" },
-  { valor: "lei_8112", rotulo: "Lei 8.112/1990 - Servidores Públicos" },
-  { valor: "lei_14133", rotulo: "Lei 14.133/2021 - Licitações e Contratos" },
-  { valor: "lei_8429", rotulo: "Lei 8.429/1992 - Improbidade Administrativa" },
-  { valor: "codigo_penal", rotulo: "Código Penal (CP)" },
-  { valor: "processo_penal", rotulo: "Código de Processo Penal (CPP)" },
-  { valor: "codigo_civil", rotulo: "Código Civil (CC)" },
-  { valor: "lei_9784", rotulo: "Lei 9.784/1999 - Processo Administrativo" },
-  { valor: "lei_13146", rotulo: "Lei 13.146/2015 - Estatuto da PCD" },
-  { valor: "lei_12527", rotulo: "Lei 12.527/2011 - Acesso à Informação" },
-];
-
-const OPCOES_NIVEL = [
-  { valor: "superior", rotulo: "Nível Superior" },
-  { valor: "medio", rotulo: "Nível Médio" },
-  { valor: "fundamental", rotulo: "Nível Fundamental" },
-  { valor: "tecnico", rotulo: "Nível Técnico" },
-];
-
-const OPCOES_DIFICULDADE = [
-  { valor: "muito_facil", rotulo: "Muito Fácil" },
-  { valor: "facil", rotulo: "Fácil" },
-  { valor: "medio", rotulo: "Médio" },
-  { valor: "dificil", rotulo: "Difícil" },
-  { valor: "muito_dificil", rotulo: "Muito Difícil" },
-];
-
-const OPCOES_AREA_FORMACAO = [
-  { valor: "administracao", rotulo: "Administração" },
-  { valor: "direito", rotulo: "Direito" },
-  { valor: "educacao", rotulo: "Educação / Pedagogia" },
-  { valor: "engenharia", rotulo: "Engenharia" },
-  { valor: "ti", rotulo: "Informática / TI" },
-  { valor: "saude", rotulo: "Saúde / Enfermagem / Medicina" },
-  { valor: "contabilidade", rotulo: "Contabilidade / Economia" },
-  { valor: "letras", rotulo: "Letras / Comunicação" },
-];
-
-const OPCOES_AREA_ATUACAO = [
-  { valor: "policial", rotulo: "Policial / Segurança Pública" },
-  { valor: "fiscal", rotulo: "Fiscal / Tributária" },
-  { valor: "tribunais", rotulo: "Tribunais / Judiciária" },
-  { valor: "administrativa", rotulo: "Administrativa" },
-  { valor: "bancaria", rotulo: "Bancária" },
-  { valor: "militar", rotulo: "Militar / Forças Armadas" },
-  { valor: "saude", rotulo: "Saúde" },
-  { valor: "educacao", rotulo: "Educação" },
-  { valor: "legislativa", rotulo: "Legislativa" },
-];
-
-const STATUS_PILLS = [
-  { valor: "todas", rotulo: "Todas" },
-  { valor: "nao_resolvidas", rotulo: "Não Resolvidas" },
-  { valor: "resolvidas", rotulo: "Resolvidas" },
-  { valor: "acertei", rotulo: "Acertei" },
-  { valor: "errei", rotulo: "Errei" },
-];
-
-function SelectField({
-  name,
-  placeholder,
-  value,
-  options,
-}: {
-  name: string;
-  placeholder: string;
-  value: string | number | null;
-  options: { valor: string; rotulo: string; total?: number }[];
-}) {
-  return (
-    <div className="relative">
-      <select
-        name={name}
-        defaultValue={value ? String(value) : ""}
-        className="w-full h-10 appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-8 text-xs sm:text-sm text-slate-700 focus:border-[#007482] focus:outline-none focus:ring-1 focus:ring-[#007482] cursor-pointer"
-        data-faceta={name}
-      >
-        <option value="">{placeholder}</option>
-        {options.map((opt) => (
-          <option key={opt.valor} value={opt.valor}>
-            {opt.rotulo}
-            {opt.total !== undefined ? ` (${opt.total})` : ""}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-    </div>
-  );
-}
-
-function CheckboxField({
-  name,
-  label,
-  value = "excluir",
-  defaultChecked = false,
-}: {
-  name: string;
-  label: string;
-  value?: string;
-  defaultChecked?: boolean;
-}) {
-  return (
-    <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-700 hover:text-slate-900">
-      <input
-        type="checkbox"
-        name={name}
-        value={value}
-        defaultChecked={defaultChecked}
-        className="h-4 w-4 rounded border-slate-300 text-[#007482] accent-[#007482] focus:ring-[#007482] cursor-pointer"
-        data-refinamento={name}
-      />
-      <span>{label}</span>
-=======
 const CLASSE_CAMPO =
   "h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 const CLASSE_ROTULO = "block text-xs font-medium text-muted-foreground";
@@ -225,13 +96,10 @@ function Campo({
           </option>
         ))}
       </select>
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     </label>
   );
 }
 
-<<<<<<< HEAD
-=======
 function Caixa({
   nome,
   rotulo,
@@ -264,19 +132,10 @@ const ICONES_DAS_ABAS = {
   fixacao: BookOpen,
 } as const;
 
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
 export function BarraFiltros({
   acao,
   filtros,
   opcoes,
-<<<<<<< HEAD
-  refinamentos,
-}: BarraFiltrosProps) {
-  const chips = chipsDeFiltro(filtros);
-
-  /** Link com um filtro desligado — o "x" do chip. */
-  const hrefSem = (chave: ChaveFiltro) => {
-=======
   abas,
   refinamentos,
   porPagina,
@@ -308,89 +167,10 @@ export function BarraFiltros({
 
   /** Link com um filtro desligado — o "x" do chip e a aba do topo. */
   const hrefSem = (chave: Parameters<typeof semAChave>[1]) => {
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
     const query = queryDeFiltros(semAChave(filtros, chave));
     return query.length > 0 ? `${acao}?${query}` : acao;
   };
 
-<<<<<<< HEAD
-  const opcoesDisciplina =
-    opcoes.disciplina?.map((o) => ({ valor: o.valor, rotulo: o.valor, total: o.total })) ?? [
-      { valor: "Língua Portuguesa", rotulo: "Língua Portuguesa", total: 886 },
-    ];
-
-  const opcoesAssunto =
-    opcoes.assunto?.map((o) => ({ valor: o.valor, rotulo: o.valor, total: o.total })) ?? [];
-
-  const opcoesBanca =
-    opcoes.banca?.map((o) => ({ valor: o.valor, rotulo: o.valor, total: o.total })) ?? [];
-
-  const opcoesAno =
-    opcoes.ano?.map((o) => ({ valor: o.valor, rotulo: o.valor, total: o.total })) ?? [];
-
-  const opcoesOrgao =
-    opcoes.orgao?.map((o) => ({ valor: o.valor, rotulo: o.valor, total: o.total })) ?? [];
-
-  const opcoesCargo =
-    opcoes.cargo?.map((o) => ({ valor: o.valor, rotulo: o.valor, total: o.total })) ?? [];
-
-  const opcoesTipo = [
-    { valor: "multipla_escolha", rotulo: "Múltipla escolha" },
-    { valor: "certo_errado", rotulo: "Certo/Errado" },
-  ];
-
-  return (
-    <div className="bg-white rounded-2xl shadow-xl border border-slate-200/80 overflow-hidden text-slate-800">
-      {/* Sub-tabs bar at the top of the card */}
-      <div className="flex items-stretch border-b border-slate-100 bg-slate-50/50">
-        <button
-          type="button"
-          className="px-8 py-3 bg-[#e2f3f4] text-[#006977] font-semibold text-sm border-b-2 border-[#006977] flex items-center justify-center transition-colors"
-        >
-          Filtro clássico
-        </button>
-        <button
-          type="button"
-          className="px-8 py-3 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2 transition-colors"
-        >
-          <span>Filtro novo</span>
-          <span className="bg-[#008290] text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-            Novidade
-          </span>
-        </button>
-      </div>
-
-      <div className="flex flex-col lg:flex-row">
-        {/* Left column: Main Filters Form */}
-        <form method="get" action={acao} className="flex-1 p-6 sm:p-8 space-y-6">
-          {/* Resolution Status Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            {STATUS_PILLS.map((pill) => {
-              const ativo =
-                filtros.status_resolucao === pill.valor ||
-                (!filtros.status_resolucao && pill.valor === "todas");
-              return (
-                <button
-                  key={pill.valor}
-                  type="submit"
-                  name="status_resolucao"
-                  value={pill.valor}
-                  className={`rounded-full px-4 py-1.5 text-xs sm:text-sm font-medium transition-all cursor-pointer ${
-                    ativo
-                      ? "bg-[#007482] text-white border border-[#007482] shadow-xs"
-                      : "bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  {pill.rotulo}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Keyword Search Input */}
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-=======
   const hrefAba = (valor: FiltrosCaderno["bloco"]) => {
     const query = queryDeFiltros(alternarFiltro(filtros, "bloco", valor));
     return query.length > 0 ? `${acao}?${query}` : acao;
@@ -448,243 +228,10 @@ export function BarraFiltros({
               className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
             <input
               type="search"
               name="palavra"
               defaultValue={filtros.palavra ?? ""}
-<<<<<<< HEAD
-              placeholder="Faça uma busca por palavra chave"
-              className="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-[#007482] focus:outline-none focus:ring-1 focus:ring-[#007482]"
-              data-faceta="palavra"
-            />
-          </div>
-
-          {/* Section: Filtros mais usados */}
-          <div className="space-y-2.5">
-            <h3 className="text-sm font-semibold text-slate-800">Filtros mais usados</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Row 1 */}
-              <SelectField
-                name="disciplina"
-                placeholder="Disciplina"
-                value={filtros.disciplina}
-                options={opcoesDisciplina}
-              />
-              <SelectField
-                name="assunto"
-                placeholder="Assunto"
-                value={filtros.assunto}
-                options={opcoesAssunto}
-              />
-              <SelectField
-                name="leis"
-                placeholder="Leis"
-                value={filtros.leis}
-                options={OPCOES_LEIS}
-              />
-              <SelectField
-                name="banca"
-                placeholder="Banca"
-                value={filtros.banca}
-                options={opcoesBanca}
-              />
-
-              {/* Row 2 */}
-              <SelectField
-                name="ano"
-                placeholder="Ano"
-                value={filtros.ano}
-                options={opcoesAno}
-              />
-              <SelectField
-                name="orgao"
-                placeholder="Instituição"
-                value={filtros.orgao}
-                options={opcoesOrgao}
-              />
-              <SelectField
-                name="cargo"
-                placeholder="Cargo"
-                value={filtros.cargo}
-                options={opcoesCargo}
-              />
-              <SelectField
-                name="nivel"
-                placeholder="Nível"
-                value={filtros.nivel}
-                options={OPCOES_NIVEL}
-              />
-            </div>
-          </div>
-
-          {/* Section: Filtros avançados */}
-          <div className="space-y-2.5">
-            <h3 className="text-sm font-semibold text-slate-800">Filtros avançados</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <SelectField
-                name="dificuldade"
-                placeholder="Dificuldade"
-                value={filtros.dificuldade}
-                options={OPCOES_DIFICULDADE}
-              />
-              <SelectField
-                name="tipo"
-                placeholder="Modalidade"
-                value={filtros.tipo}
-                options={opcoesTipo}
-              />
-              <SelectField
-                name="area_formacao"
-                placeholder="Área de Formação"
-                value={filtros.area_formacao}
-                options={OPCOES_AREA_FORMACAO}
-              />
-              <SelectField
-                name="area_atuacao"
-                placeholder="Área de Atuação"
-                value={filtros.area_atuacao}
-                options={OPCOES_AREA_ATUACAO}
-              />
-            </div>
-          </div>
-
-          {/* Section: Checkboxes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-            <div>
-              <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-2.5">
-                Excluir questões
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <div className="space-y-2">
-                  <CheckboxField
-                    name="desatualizadas"
-                    label="Desatualizadas"
-                    defaultChecked={
-                      filtros.desatualizadas === "excluir" || filtros.desatualizadas === null
-                    }
-                  />
-                  <CheckboxField
-                    name="anuladas"
-                    label="Anuladas"
-                    defaultChecked={
-                      filtros.anuladas === "excluir" || filtros.anuladas === null
-                    }
-                  />
-                  <CheckboxField
-                    name="ineditas"
-                    label="Inéditas"
-                    defaultChecked={filtros.ineditas === "excluir"}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <CheckboxField
-                    name="meus_simulados"
-                    label="Dos meus simulados"
-                    defaultChecked={filtros.meus_simulados === "excluir"}
-                  />
-                  <CheckboxField
-                    name="meus_cadernos"
-                    label="Dos meus cadernos"
-                    defaultChecked={filtros.meus_cadernos === "excluir"}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-2.5">
-                Questões com
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <div className="space-y-2">
-                  <CheckboxField
-                    name="comentado"
-                    label="Gabarito comentado"
-                    value="sim"
-                    defaultChecked={filtros.comentado === "sim"}
-                  />
-                  <CheckboxField
-                    name="meus_comentarios"
-                    label="Meus comentários"
-                    value="sim"
-                    defaultChecked={filtros.meus_comentarios === "sim"}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <CheckboxField
-                    name="comentarios"
-                    label="Comentários"
-                    value="sim"
-                    defaultChecked={filtros.comentarios === "sim"}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action bar at bottom */}
-          <div className="flex items-center justify-end gap-5 pt-4 border-t border-slate-100">
-            <Link
-              href={acao}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 inline-flex items-center gap-1.5 transition-colors"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Limpar
-            </Link>
-            <button
-              type="submit"
-              className="bg-[#33939f] hover:bg-[#287d89] text-white px-7 py-2.5 rounded-lg font-medium text-sm shadow-sm transition-colors cursor-pointer"
-            >
-              Buscar questões
-            </button>
-          </div>
-        </form>
-
-        {/* Right column: "Filtros aplicados" panel */}
-        <aside className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-slate-100 bg-[#fafcfc] p-6 flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Filtros aplicados</h3>
-            {chips.length === 0 ? (
-              <p className="text-xs text-slate-400 font-normal">
-                Você ainda não aplicou nenhum filtro
-              </p>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {chips.map((chip) => (
-                    <span
-                      key={chip.chave}
-                      data-chip={chip.chave}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs shadow-2xs"
-                    >
-                      <span className="text-slate-500 font-normal">{chip.rotulo}:</span>
-                      <span className="font-semibold text-slate-800">{chip.valor}</span>
-                      <Link
-                        href={hrefSem(chip.chave)}
-                        aria-label={`Remover filtro de ${chip.rotulo.toLowerCase()}`}
-                        className="ml-1 text-slate-400 hover:text-slate-800 font-bold"
-                      >
-                        ×
-                      </Link>
-                    </span>
-                  ))}
-                </div>
-                <div className="pt-3">
-                  <Link
-                    href={acao}
-                    className="text-xs text-[#007482] hover:underline font-medium inline-block"
-                  >
-                    Limpar todos os filtros
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-      </div>
-    </div>
-=======
               placeholder="enunciado, assunto, banca, código"
               className={`${CLASSE_CAMPO} pl-8`}
               data-faceta="palavra"
@@ -834,7 +381,6 @@ export function BarraFiltros({
         </div>
       </div>
     </form>
->>>>>>> 477edfa3d4cab3171c49db8fa48b1dfb1a7dbcd6
   );
 }
 
