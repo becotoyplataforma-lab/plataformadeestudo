@@ -30,7 +30,7 @@ PREV_IMAGE_ID="$(docker inspect --format '{{.Image}}' "$(docker compose ps -q ap
 # --env-file .env.production: os build args NEXT_PUBLIC_* (embutidos no
 # bundle em build-time) são lidos desse arquivo.
 echo "📦 Building imagem (BuildKit)..."
-docker compose --env-file "$ENV_FILE" build --pull --progress=plain
+docker compose --progress plain --env-file "$ENV_FILE" build --pull
 
 # 3) Subir / atualizar serviços
 echo "⬆️  Subindo serviços..."

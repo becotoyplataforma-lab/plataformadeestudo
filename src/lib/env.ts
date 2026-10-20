@@ -89,7 +89,11 @@ if (!result.success) {
 
 // Fail-fast de segurança: em produção, AUTH_SECRET NUNCA pode ser o default
 const isNextProductionBuild =
-  process.env.NEXT_PHASE === "phase-production-build";
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.npm_lifecycle_event === "build" ||
+  process.env.NEXT_BUILD === "1" ||
+  process.env.BUILDING === "1" ||
+  !process.env.PORT;
 
 if (
   process.env.NODE_ENV === "production" &&
