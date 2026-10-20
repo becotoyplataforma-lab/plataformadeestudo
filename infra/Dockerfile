@@ -43,6 +43,7 @@ RUN mkdir -p public
 ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change-me-please-set-a-real-secret-32chars
 RUN npm run build
 RUN npm run build
+RUN npm run build
 
 # ---------- RUNNER ----------
 FROM base AS runner
