@@ -44,6 +44,7 @@ ENV NEXT_PHASE=phase-production-build NEXT_BUILD=1 AUTH_SECRET=dev-secret-change
 RUN npm run build
 
 
+
 # ---------- RUNNER ----------
 FROM base AS runner
 ENV NODE_ENV=production
