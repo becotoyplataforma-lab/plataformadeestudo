@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     urlParam?.includes("matematica") ||
     fileParam?.includes("matematica") ||
     ident.toLowerCase().startsWith("m0") ||
+    ident.toLowerCase().startsWith("b0") ||
     encontradoPorId?.materia === "Matemática";
 
   let numAula = "01";

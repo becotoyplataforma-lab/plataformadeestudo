@@ -13,7 +13,7 @@
  *
  * Toda consulta filtra por userId: a posse nunca vem do cliente (.ai/04 §4).
  */
-import { and, desc, eq, ilike, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
 import {
   documentSubjects,

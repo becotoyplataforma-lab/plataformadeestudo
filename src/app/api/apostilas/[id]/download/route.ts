@@ -14,7 +14,10 @@ export async function GET(request: NextRequest, context: Contexto) {
 
   let numAula = "01";
   const item = APOSTILAS_PDF_CATALOG.find((cat) => cat.id.toLowerCase() === id.toLowerCase());
-  const isMatematica = id.toLowerCase().startsWith("m0") || item?.materia === "Matemática";
+  const isMatematica =
+    id.toLowerCase().startsWith("m0") ||
+    id.toLowerCase().startsWith("b0") ||
+    item?.materia === "Matemática";
 
   if (item) {
     numAula = item.aula;

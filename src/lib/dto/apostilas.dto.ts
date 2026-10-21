@@ -114,9 +114,12 @@ export function toApostilaDto(row: unknown): ApostilaDto | null {
     materia_id: source.subjectId ?? null,
     materia_nome: source.subjectName ?? null,
     materia_cor: source.subjectColor ?? null,
-    arquivo_url: apostilaArquivoUrl(source.id),
-    pdf_url: `/api/apostilas/${source.id}/download`,
-    download_url: `/api/apostilas/${source.id}/download`,
+    arquivo_url:
+      (source.metadata as any)?.preview_url || apostilaArquivoUrl(source.id),
+    pdf_url:
+      (source.metadata as any)?.download_url || `/api/apostilas/${source.id}/download`,
+    download_url:
+      (source.metadata as any)?.download_url || `/api/apostilas/${source.id}/download`,
     criado_em: source.createdAt.toISOString(),
   });
 }
