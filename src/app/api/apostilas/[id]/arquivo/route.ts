@@ -20,7 +20,6 @@ type Contexto = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: Contexto) {
   const session = await auth();
-  const userId = session?.user?.id ?? "00000000-0000-4000-8000-000000000001";
 
   let apostilaId: string;
   try {
@@ -32,7 +31,7 @@ export async function GET(request: NextRequest, context: Contexto) {
     return apiError(400, "Parâmetro inválido.");
   }
 
-  // 1. Tenta servir o arquivo PDF autêntico do acervo físico
+  // 1. Tenta servir o arquivo PDF autêntico do acervo físico (recurso estático/catálogo)
   const infoOriginal = obterInfoPdf(apostilaId);
   if (infoOriginal && fs.existsSync(infoOriginal.filePath)) {
     try {
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest, context: Contexto) {
     }
   }
 
-  // Verifica se é uma apostila de demonstração
+  // 2. Verifica se é uma apostila de demonstração pública
   const todasDemoApostilas = DEMO_APOSTILAS_LISTA.materias.flatMap((m) => m.apostilas);
   const demoApostila = todasDemoApostilas.find((a) => a.id === apostilaId);
 
@@ -73,6 +72,12 @@ export async function GET(request: NextRequest, context: Contexto) {
     });
   }
 
+  // 3. Documentos do usuário: exige autenticação estrita (prevenção contra IDOR)
+  if (!session?.user?.id) {
+    return apiError(401, "Não autenticado.");
+  }
+  const userId = session.user.id;
+
   let leitura;
   try {
     leitura = await ApostilasService.abrirArquivo(
@@ -87,21 +92,7 @@ export async function GET(request: NextRequest, context: Contexto) {
   }
 
   if (!leitura) {
-    // Se não encontrou no banco, mas temos o ID válido, gera PDF de fallback
-    const pdfBuffer = generateSamplePdf(
-      "Apostila de Estudos",
-      "Concurso Público",
-      "Material com Gabarito Oficial"
-    );
-
-    return new Response(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Length": String(pdfBuffer.length),
-        "Content-Disposition": 'inline; filename="apostila_estudos.pdf"',
-      },
-    });
+    return apiError(404, "Apostila não encontrada.");
   }
 
   if (leitura.status === "range_nao_satisfeita") {

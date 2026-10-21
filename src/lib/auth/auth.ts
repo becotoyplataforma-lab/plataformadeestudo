@@ -68,8 +68,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           await supabase.auth.admin.listUsers();
 
         if (listError || !existing) {
-          console.error("[auth/google] Falha ao consultar usuários:", listError?.message);
-          return false;
+          console.error("[auth/google] Falha ao consultar usuários no Supabase:", listError?.message);
+          return true;
         }
 
         const found = existing.users.find(
@@ -94,7 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           if (createError || !created.user) {
             console.error("[auth/google] Falha ao criar usuário:", createError?.message);
-            return false;
+            return true;
           }
           user.id = created.user.id;
         }

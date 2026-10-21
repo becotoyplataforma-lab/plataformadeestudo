@@ -3,47 +3,102 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { auth } from "@/lib/auth/auth";
+import { AdminGuardService } from "@/lib/administration/services/admin-guard.service";
 import { DEMO_APOSTILAS_LISTA } from "@/lib/constants/demo-apostilas";
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
+function sanitizeString(str: unknown, maxLen = 120): string {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/[<>'"\\]/g, "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .trim()
+    .slice(0, maxLen);
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Autenticação obrigatória
     const session = await auth();
-    const userId = session?.user?.id ?? "00000000-0000-4000-8000-000000000001";
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+    const userId = session.user.id;
 
+    // 2. Autorização: apenas administradores e professores podem enviar apostilas
+    const canUpload = await AdminGuardService.isProfessorOrAdmin(
+      session.user.email
+    ).catch(() => false);
+
+    if (!canUpload) {
+      return NextResponse.json(
+        {
+          error: "FORBIDDEN",
+          message: "Apenas administradores e professores podem enviar apostilas.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // 3. Validação dos dados do formulário
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const titulo = (formData.get("titulo") as string) || "Nova Apostila";
-    const concurso = (formData.get("concurso") as string) || "CBM-RJ";
-    const materiaNome = (formData.get("materia") as string) || "Língua Portuguesa";
+    const rawTitulo = formData.get("titulo");
+    const rawConcurso = formData.get("concurso");
+    const rawMateria = formData.get("materia");
 
     if (!file) {
       return NextResponse.json({ error: "Nenhum arquivo enviado." }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const id = crypto.randomUUID();
-    const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    const fileName = `${id}-${safeName}`;
+    // 4. Limite de tamanho de arquivo (máximo 50MB)
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "Arquivo muito grande. O limite máximo é 50 MB." },
+        { status: 413 }
+      );
+    }
 
-    // 1. Salva em public/apostilas para acesso imediato no navegador
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // 5. Validação de Magic Bytes (%PDF-)
+    if (buffer.length < 5 || buffer.subarray(0, 4).toString("latin1") !== "%PDF") {
+      return NextResponse.json(
+        { error: "Formato de arquivo inválido. O arquivo deve ser um documento PDF autêntico." },
+        { status: 400 }
+      );
+    }
+
+    // 6. Sanitização de nome e entradas textuais
+    const safeBaseName = path.basename(file.name).replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const safeExt = safeBaseName.endsWith(".pdf") ? "" : ".pdf";
+    const id = crypto.randomUUID();
+    const fileName = `${id}-${safeBaseName}${safeExt}`;
+
+    const titulo = sanitizeString(rawTitulo) || "Nova Apostila";
+    const concurso = sanitizeString(rawConcurso) || "CBM-RJ";
+    const materiaNome = sanitizeString(rawMateria) || "Língua Portuguesa";
+
+    // 7. Salva em .storage/apostilas para persistência estruturada e segura
+    const storageDir = path.join(process.cwd(), ".storage", "apostilas", userId, id);
+    fs.mkdirSync(storageDir, { recursive: true });
+    fs.writeFileSync(path.join(storageDir, fileName), buffer);
+
+    // 8. Salva em public/apostilas para acesso imediato no leitor web
     const publicApostilasDir = path.join(process.cwd(), "public", "apostilas");
     fs.mkdirSync(publicApostilasDir, { recursive: true });
     const publicFilePath = path.join(publicApostilasDir, fileName);
     fs.writeFileSync(publicFilePath, buffer);
 
-    // 2. Salva em .storage/apostilas para persistência estruturada
-    const storageDir = path.join(process.cwd(), ".storage", "apostilas", userId, id);
-    fs.mkdirSync(storageDir, { recursive: true });
-    fs.writeFileSync(path.join(storageDir, fileName), buffer);
-
-    // 3. Registra a nova apostila na lista
+    // 9. Registra a nova apostila no catálogo
     const novaApostila = {
       id,
       titulo,
-      tipo: "pdf",
+      tipo: "pdf" as const,
       status: "indexed" as const,
       tamanho_bytes: buffer.byteLength,
-      mime_type: file.type || "application/pdf",
+      mime_type: "application/pdf",
       concurso,
       materia_id: "b3000000-0000-4000-8000-000000000003",
       materia_nome: materiaNome,
@@ -81,7 +136,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       apostila: novaApostila,
-      message: "Apostila enviada com sucesso! Disponível imediatamente no leitor.",
+      message: "Apostila enviada e validada com sucesso!",
     });
   } catch (error: any) {
     console.error("[api/apostilas/upload] Falha no upload:", error);

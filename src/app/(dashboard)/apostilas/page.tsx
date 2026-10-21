@@ -54,18 +54,22 @@ export default async function ApostilasPage() {
   }
 
   const session = await auth();
-  const userId = session?.user?.id ?? "00000000-0000-4000-8000-000000000001";
+  const userId = session?.user?.id;
 
   let inicial: ApostilasListaDto | null = null;
-  try {
-    const res = await ApostilasService.listar({ userId });
-    if (res && res.total_apostilas > 0) {
-      inicial = res;
-    } else {
+  if (userId) {
+    try {
+      const res = await ApostilasService.listar({ userId });
+      if (res && res.total_apostilas > 0) {
+        inicial = res;
+      } else {
+        inicial = DEMO_APOSTILAS_LISTA;
+      }
+    } catch (error) {
+      console.error("[apostilas] SSR fallback para demo apostilas:", error);
       inicial = DEMO_APOSTILAS_LISTA;
     }
-  } catch (error) {
-    console.error("[apostilas] SSR fallback para demo apostilas:", error);
+  } else {
     inicial = DEMO_APOSTILAS_LISTA;
   }
 

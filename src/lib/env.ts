@@ -1,3 +1,4 @@
+import "server-only";
 import { z } from "zod";
 
 /**
@@ -113,12 +114,4 @@ export const env: z.infer<typeof serverEnvSchema> = result.success
   ? result.data
   : serverEnvSchema.parse({});
 
-/** Chaves públicas (seguras para o cliente) */
-export const publicEnv = {
-  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  appName: process.env.NEXT_PUBLIC_APP_NAME ?? "ConcursoAI",
-  supabaseUrl:
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co",
-  supabaseAnonKey:
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "missing-anon-key",
-} as const;
+export { publicEnv } from "./public-env";

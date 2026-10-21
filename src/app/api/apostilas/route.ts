@@ -35,24 +35,26 @@ export async function GET(request: NextRequest) {
   }
 
   const session = await auth();
-  const userId = session?.user?.id ?? "00000000-0000-4000-8000-000000000001";
+  const userId = session?.user?.id;
 
   try {
     const filtro = parseApostilasFilter(request.nextUrl.searchParams);
 
-    try {
-      const lista = await ApostilasService.listar({
-        userId,
-        materiaId: filtro.materia_id,
-        concurso: filtro.concurso,
-        busca: filtro.busca,
-      });
+    if (userId) {
+      try {
+        const lista = await ApostilasService.listar({
+          userId,
+          materiaId: filtro.materia_id,
+          concurso: filtro.concurso,
+          busca: filtro.busca,
+        });
 
-      if (lista && lista.total_apostilas > 0) {
-        return apiOk(lista);
+        if (lista && lista.total_apostilas > 0) {
+          return apiOk(lista);
+        }
+      } catch {
+        // Banco indisponível ou vazio, usa o fallback abaixo
       }
-    } catch {
-      // Banco indisponível ou vazio, usa o fallback abaixo
     }
 
     // Fallback gracioso com filtragem local

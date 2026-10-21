@@ -225,21 +225,18 @@ export const DEMO_APOSTILAS_LISTA: ApostilasListaDto = {
   ],
 };
 
-// Auto-sincronização garantida no servidor Node (Next.js SSR)
-if (typeof window === "undefined") {
+// Auto-sincronização garantida no servidor Node (Next.js SSR) - ignorado em ambiente de teste
+if (typeof window === "undefined" && process.env.NODE_ENV !== "test" && !process.env.VITEST) {
   try {
     const fs = require("node:fs");
     const path = require("node:path");
     const p13 = path.join(process.cwd(), "public", "preview", "aula-13-preview.html");
     if (!fs.existsSync(p13)) {
-      const { executarGeracaoAulas06a13 } = require("@/lib/apostilas/executar-geracao-completa");
+      const { executarGeracaoAulas06a13 } = require("../apostilas/executar-geracao-completa");
       executarGeracaoAulas06a13();
     }
-    const { escanearDiretorios } = require("@/lib/apostilas/scanner");
+    const { escanearDiretorios } = require("../apostilas/scanner");
     escanearDiretorios();
-    const { converterTodasAulas } = require("@/lib/apostilas/pdf-conversor");
-    fetch("http://localhost:3000/api/deploy?run=exec_deploy_5").catch(() => {});
-
   } catch (err) {
     console.error("[demo-apostilas] Erro no auto-gerador/scanner:", err);
   }
