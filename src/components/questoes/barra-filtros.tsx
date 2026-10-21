@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  BookOpen,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -43,8 +42,8 @@ export interface BarraFiltrosProps {
 }
 
 const CLASSE_SELECT =
-  "h-10 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs text-slate-800 dark:text-slate-200 shadow-2xs transition-all focus:border-[#005c53] focus:outline-none focus:ring-1 focus:ring-[#005c53]";
-const CLASSE_LABEL = "block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1";
+  "h-10 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 text-xs text-slate-200 shadow-2xs transition-all focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30";
+const CLASSE_LABEL = "block text-[11px] font-semibold text-slate-300 mb-1";
 
 /** Opções padrão para filtros quando não indexados no acervo local */
 const LEIS_OPCOES = [
@@ -123,21 +122,21 @@ export function BarraFiltros({
     <form
       method="get"
       action={acao}
-      className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden"
+      className="rounded-2xl border border-white/10 bg-slate-900 shadow-xl overflow-hidden"
       aria-label="Filtros de questões"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
+      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
         {/* ================= COLUNA PRINCIPAL DE FILTROS (ESQUERDA: ~75%) ================= */}
         <div className="lg:col-span-9 p-5 sm:p-6 space-y-5">
           {/* 1. SUB-TABS: FILTRO CLÁSSICO / FILTRO NOVO */}
-          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2 border-b border-white/10 pb-3">
             <button
               type="button"
               onClick={() => setSubAba("classico")}
-              className={`rounded-t-lg px-5 py-2 text-xs sm:text-sm font-semibold transition-all ${
+              className={`rounded-t-xl px-5 py-2 text-xs sm:text-sm font-semibold transition-all ${
                 subAba === "classico"
-                  ? "bg-[#e6f4f2] text-[#005c53] dark:bg-teal-950/60 dark:text-teal-300 border-b-2 border-[#005c53]"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                  ? "border-b-2 border-cyan-400 bg-cyan-500/10 text-cyan-300"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
               Filtro clássico
@@ -145,14 +144,14 @@ export function BarraFiltros({
             <button
               type="button"
               onClick={() => setSubAba("novo")}
-              className={`rounded-t-lg px-5 py-2 text-xs sm:text-sm font-medium flex items-center gap-2 transition-all ${
+              className={`rounded-t-xl px-5 py-2 text-xs sm:text-sm font-medium flex items-center gap-2 transition-all ${
                 subAba === "novo"
-                  ? "bg-[#e6f4f2] text-[#005c53] dark:bg-teal-950/60 dark:text-teal-300 border-b-2 border-[#005c53]"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                  ? "border-b-2 border-cyan-400 bg-cyan-500/10 text-cyan-300"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
               <span>Filtro novo</span>
-              <span className="bg-[#00a896] text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="bg-cyan-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                 Novidade
               </span>
             </button>
@@ -160,7 +159,7 @@ export function BarraFiltros({
 
           {/* 2. STATUS PILLS ("Minhas questões") */}
           <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
               Minhas questões
             </span>
             <div className="flex flex-wrap items-center gap-2">
@@ -181,8 +180,8 @@ export function BarraFiltros({
                     onClick={() => setStatusQuestao(p.id)}
                     className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                       ativo
-                        ? "bg-[#005c53] text-white shadow-2xs"
-                        : "border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        ? "bg-cyan-600 text-white shadow-sm shadow-cyan-950"
+                        : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
                     }`}
                   >
                     {p.label}
@@ -203,7 +202,7 @@ export function BarraFiltros({
               name="palavra"
               defaultValue={filtros.palavra ?? ""}
               placeholder="Faça uma busca por palavra chave"
-              className="h-11 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 pl-10 pr-4 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#005c53] focus:outline-none focus:ring-1 focus:ring-[#005c53] transition-all shadow-2xs"
+              className="h-11 w-full rounded-xl border border-white/10 bg-white/5 pl-10 pr-4 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all shadow-2xs"
               data-faceta="palavra"
             />
           </div>
@@ -211,8 +210,8 @@ export function BarraFiltros({
           {/* 4. FILTROS MAIS USADOS (8 DROPDOWNS: 2 LINHAS DE 4) */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center gap-1.5">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-[#005c53]" />
-              <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <SlidersHorizontal className="h-3.5 w-3.5 text-cyan-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
                 Filtros mais usados
               </h3>
             </div>
@@ -371,8 +370,8 @@ export function BarraFiltros({
           {/* 5. FILTROS AVANÇADOS (4 DROPDOWNS: 1 LINHA DE 4) */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center gap-1.5">
-              <Filter className="h-3.5 w-3.5 text-[#005c53]" />
-              <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <Filter className="h-3.5 w-3.5 text-cyan-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
                 Filtros avançados
               </h3>
             </div>
@@ -450,42 +449,42 @@ export function BarraFiltros({
           </div>
 
           {/* 6. CHECKBOXES (2 COLUNAS: EXCLUIR QUESTÕES / QUESTÕES COM) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-white/10">
             {/* Coluna 1: Excluir questões */}
             <div className="space-y-2">
-              <span className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <span className="block text-xs font-bold text-slate-300">
                 Excluir questões
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="desatualizadas"
                       value="excluir"
                       defaultChecked
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                     />
                     <span>Desatualizadas</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="anuladas"
                       value="excluir"
                       defaultChecked={filtros.anuladas === "excluir" || filtros.anuladas === null}
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                       data-refinamento="anuladas"
                     />
                     <span>Anuladas</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="ineditas"
                       value="excluir"
                       defaultChecked={filtros.ineditas === "excluir"}
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                       data-refinamento="ineditas"
                     />
                     <span>Inéditas</span>
@@ -493,21 +492,21 @@ export function BarraFiltros({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="excluir_simulados"
                       value="1"
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                     />
                     <span>Dos meus simulados</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="excluir_cadernos"
                       value="1"
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                     />
                     <span>Dos meus cadernos</span>
                   </label>
@@ -517,38 +516,38 @@ export function BarraFiltros({
 
             {/* Coluna 2: Questões com */}
             <div className="space-y-2">
-              <span className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <span className="block text-xs font-bold text-slate-300">
                 Questões com
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="com_gabarito_comentado"
                       value="1"
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                     />
                     <span>Gabarito comentado</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="com_meus_comentarios"
                       value="1"
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                     />
                     <span>Meus comentários</span>
                   </label>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                     <input
                       type="checkbox"
                       name="com_comentarios"
                       value="1"
-                      className="h-4 w-4 rounded border-slate-300 accent-[#005c53] focus:ring-[#005c53]"
+                      className="h-4 w-4 rounded border-white/20 bg-slate-950 accent-cyan-500 focus:ring-cyan-500"
                     />
                     <span>Comentários</span>
                   </label>
@@ -558,10 +557,10 @@ export function BarraFiltros({
           </div>
 
           {/* 7. BARRA DE AÇÃO INFERIOR */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between pt-3 border-t border-white/10">
             <Link
               href={acao}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Limpar</span>
@@ -569,7 +568,7 @@ export function BarraFiltros({
 
             <Button
               type="submit"
-              className="bg-[#005c53] hover:bg-[#004741] text-white font-bold text-xs sm:text-sm px-7 py-2.5 rounded-lg shadow-sm transition-all"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm px-7 py-2.5 rounded-xl shadow-md shadow-cyan-950 transition-all"
             >
               Buscar questões
             </Button>
@@ -577,30 +576,30 @@ export function BarraFiltros({
         </div>
 
         {/* ================= CARD LATERAL: FILTROS APLICADOS (DIREITA: ~25%) ================= */}
-        <aside className="lg:col-span-3 p-5 sm:p-6 bg-slate-50/50 dark:bg-slate-950/40">
+        <aside className="lg:col-span-3 p-5 sm:p-6 bg-slate-950/40">
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
               Filtros aplicados
             </h4>
 
             {/* Minhas questões */}
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">
+              <span className="text-[11px] font-medium text-slate-400 block">
                 Minhas questões
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1 text-xs font-medium text-slate-800 dark:text-slate-200">
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200">
                 <span>{statusQuestao === "todas" ? "Todas" : statusQuestao}</span>
                 <span className="text-slate-400 text-xs">⊗</span>
               </span>
             </div>
 
             {/* Lista de chips aplicados */}
-            <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-800">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">
+            <div className="space-y-2 pt-2 border-t border-white/10">
+              <span className="text-[11px] font-medium text-slate-400 block">
                 Filtros ativos ({chips.length})
               </span>
               {chips.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">
+                <p className="text-xs text-slate-500 italic">
                   Nenhum filtro de busca ativo
                 </p>
               ) : (
@@ -609,16 +608,16 @@ export function BarraFiltros({
                     <span
                       key={chip.chave}
                       data-chip={chip.chave}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 dark:border-teal-900 bg-teal-50 dark:bg-teal-950/60 px-3 py-1 text-xs text-teal-900 dark:text-teal-200"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/60 px-3 py-1 text-xs text-cyan-200"
                     >
-                      <span className="font-semibold text-teal-700 dark:text-teal-400">
+                      <span className="font-semibold text-cyan-400">
                         {chip.rotulo}:
                       </span>
                       <span>{chip.valor}</span>
                       <Link
                         href={hrefSem(chip.chave)}
                         aria-label={`Remover filtro de ${chip.rotulo.toLowerCase()}`}
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-teal-200/50 dark:hover:bg-teal-800 text-teal-700 dark:text-teal-300 transition-colors"
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-cyan-900 text-cyan-400 hover:text-white transition-colors"
                       >
                         <X className="h-3 w-3" />
                       </Link>
@@ -629,13 +628,13 @@ export function BarraFiltros({
             </div>
 
             {/* Seletor de itens por página */}
-            <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800">
-              <label className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-400">
+            <div className="pt-3 border-t border-white/10">
+              <label className="flex items-center justify-between text-xs font-medium text-slate-400">
                 <span>Exibir por página:</span>
                 <select
                   name="por"
                   defaultValue={porPagina === TAMANHO_DE_PAGINA ? "" : String(porPagina)}
-                  className="h-8 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-[#005c53] focus:ring-1 focus:ring-[#005c53]"
+                  className="h-8 rounded-lg border border-white/10 bg-slate-950 px-2.5 text-xs font-semibold text-slate-200 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                 >
                   {TAMANHOS_DE_PAGINA.map((n) => (
                     <option key={n} value={n === TAMANHO_DE_PAGINA ? "" : String(n)}>
@@ -647,10 +646,10 @@ export function BarraFiltros({
             </div>
 
             {/* Ações da lateral */}
-            <div className="pt-3 space-y-2 border-t border-slate-200/60 dark:border-slate-800">
+            <div className="pt-3 space-y-2 border-t border-white/10">
               <Button
                 type="submit"
-                className="w-full bg-[#005c53] hover:bg-[#004741] text-white font-bold text-xs py-2 rounded-lg shadow-2xs transition-all"
+                className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs py-2 rounded-xl shadow-md shadow-cyan-950 transition-all"
               >
                 Buscar questões
               </Button>
@@ -658,7 +657,7 @@ export function BarraFiltros({
               {!filtroEhPadrao(filtros) && (
                 <Link
                   href={acao}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 py-1.5 text-xs font-semibold text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
                 >
                   <RotateCcw className="h-3 w-3" />
                   Limpar todos os filtros
