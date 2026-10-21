@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   CheckCircle2,
@@ -97,16 +98,46 @@ export function BarraFiltros({
   refinamentos,
   porPagina,
 }: BarraFiltrosProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const statusParam = searchParams.get("status") as
+    | "todas"
+    | "nao_resolvidas"
+    | "resolvidas"
+    | "acertei"
+    | "errei"
+    | null;
+
   const [subAba, setSubAba] = React.useState<"classico" | "novo">("classico");
   const [statusQuestao, setStatusQuestao] = React.useState<
     "todas" | "nao_resolvidas" | "resolvidas" | "acertei" | "errei"
-  >("todas");
+  >(statusParam ?? "todas");
+
+  React.useEffect(() => {
+    if (statusParam) {
+      setStatusQuestao(statusParam);
+    }
+  }, [statusParam]);
 
   const chips = chipsDeFiltro(filtros);
 
   const hrefSem = (chave: Parameters<typeof semAChave>[1]) => {
     const query = queryDeFiltros(semAChave(filtros, chave));
     return query.length > 0 ? `${acao}?${query}` : acao;
+  };
+
+  const handleMudarStatus = (
+    novoStatus: "todas" | "nao_resolvidas" | "resolvidas" | "acertei" | "errei"
+  ) => {
+    setStatusQuestao(novoStatus);
+    const params = new URLSearchParams(window.location.search);
+    if (novoStatus === "todas") {
+      params.delete("status");
+    } else {
+      params.set("status", novoStatus);
+    }
+    params.delete("pagina");
+    router.push(`${acao}?${params.toString()}`);
   };
 
   // Garante que Disciplina contenha as opções reais do sistema
@@ -125,6 +156,7 @@ export function BarraFiltros({
       className="rounded-2xl border border-white/10 bg-slate-900 shadow-xl overflow-hidden"
       aria-label="Filtros de questões"
     >
+      <input type="hidden" name="status" value={statusQuestao} />
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
         {/* ================= COLUNA PRINCIPAL DE FILTROS (ESQUERDA: ~75%) ================= */}
         <div className="lg:col-span-9 p-5 sm:p-6 space-y-5">
@@ -177,7 +209,7 @@ export function BarraFiltros({
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => setStatusQuestao(p.id)}
+                    onClick={() => handleMudarStatus(p.id)}
                     className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                       ativo
                         ? "bg-cyan-600 text-white shadow-sm shadow-cyan-950"

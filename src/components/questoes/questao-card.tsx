@@ -2,12 +2,18 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, Flag, Sparkles } from "lucide-react";
+import { Bookmark, Check, Flag, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NotaDoAluno } from "@/components/questoes/nota-do-aluno";
 import { Sanfona } from "@/components/questoes/sanfona";
+import { ModalSalvarCaderno } from "@/components/questoes/modal-salvar-caderno";
+import {
+  obterTentativa,
+  questaoEstaEmQuaisCadernos,
+  registrarTentativaLocal,
+} from "@/lib/questoes/user-storage";
 import { cn } from "@/lib/utils";
 import { rotuloDaTag, type LoteProcedencia } from "@/lib/questoes/cadernos";
 import {
@@ -77,20 +83,68 @@ export interface QuestaoCardProps {
 export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCardProps) {
   const [selecionada, setSelecionada] = React.useState<string | null>(null);
   const [respondida, setRespondida] = React.useState(false);
+  const [modalCadernoAberto, setModalCadernoAberto] = React.useState(false);
+  const [cadernosDestaQuestao, setCadernosDestaQuestao] = React.useState<string[]>([]);
 
   const confiavel = gabaritoConfiavel(questao);
   const acerto = respondida && confiavel ? selecionada === questao.gabarito : null;
   const alternativas = alternativasOrdenadas(questao);
   const ehCertoErrado = questao.tipo === "certo_errado";
 
+  // Carrega tentativa prévia e cadernos personalizados ao montar no client
+  React.useEffect(() => {
+    const tentativa = obterTentativa(questao.id_local);
+    if (tentativa) {
+      setSelecionada(tentativa.letraSelecionada);
+      setRespondida(true);
+    }
+    setCadernosDestaQuestao(questaoEstaEmQuaisCadernos(questao.id_local));
+
+    const handleAtualizacao = () => {
+      setCadernosDestaQuestao(questaoEstaEmQuaisCadernos(questao.id_local));
+    };
+    window.addEventListener("concursoai_cadernos_atualizado", handleAtualizacao);
+    return () => {
+      window.removeEventListener("concursoai_cadernos_atualizado", handleAtualizacao);
+    };
+  }, [questao.id_local]);
+
+  function handleResponder() {
+    if (!selecionada || !confiavel) return;
+    setRespondida(true);
+    const acertou = selecionada === questao.gabarito;
+    registrarTentativaLocal(questao.id_local, selecionada, acertou);
+
+    try {
+      fetch(`/api/questoes/${questao.id_local}/responder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selectedLetter: selecionada,
+          isCorrect: acertou,
+        }),
+      }).catch(() => {
+        // Modo offline / questão sintética
+      });
+    } catch {
+      // Ignora erro de rede
+    }
+  }
+
+  function handleRefazer() {
+    setRespondida(false);
+    setSelecionada(null);
+  }
+
   return (
-    <article
-      data-questao={questao.id_local}
-      className={cn(
-        "overflow-hidden rounded-[var(--radius)] border border-border bg-card text-card-foreground shadow-md",
-        className
-      )}
-    >
+    <>
+      <article
+        data-questao={questao.id_local}
+        className={cn(
+          "overflow-hidden rounded-[var(--radius)] border border-border bg-card text-card-foreground shadow-md",
+          className
+        )}
+      >
       <header className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border px-5 py-3">
         <Selo chave="disciplina" variante="materia">
           {questao.disciplina || "Questão"}
@@ -168,7 +222,7 @@ export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCa
           <Button
             size="sm"
             disabled={!selecionada || !confiavel || respondida}
-            onClick={() => setRespondida(true)}
+            onClick={handleResponder}
           >
             Responder
           </Button>
@@ -187,14 +241,32 @@ export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCa
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => {
-                setRespondida(false);
-                setSelecionada(null);
-              }}
+              onClick={handleRefazer}
             >
               Refazer
             </Button>
           )}
+          <Button
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => setModalCadernoAberto(true)}
+            className={cn(
+              "border-white/10 hover:border-cyan-500/40 text-xs gap-1.5 transition-all",
+              cadernosDestaQuestao.length > 0 && "border-cyan-500/50 bg-cyan-500/10 text-cyan-400 font-semibold"
+            )}
+            title="Salvar questão em listas e cadernos personalizados"
+          >
+            <Bookmark
+              className={cn(
+                "h-3.5 w-3.5 transition-transform",
+                cadernosDestaQuestao.length > 0 && "fill-cyan-400 text-cyan-400 scale-110"
+              )}
+            />
+            {cadernosDestaQuestao.length > 0
+              ? `Salva (${cadernosDestaQuestao.length})`
+              : "Caderno"}
+          </Button>
           {hrefDetalhe && (
             <Link
               href={hrefDetalhe}
@@ -307,6 +379,14 @@ export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCa
         </Sanfona>
       </footer>
     </article>
+
+    <ModalSalvarCaderno
+      questaoId={questao.id_local}
+      aberto={modalCadernoAberto}
+      onOpenChange={setModalCadernoAberto}
+      enunciadoResumido={questao.enunciado.slice(0, 140)}
+    />
+  </>
   );
 }
 

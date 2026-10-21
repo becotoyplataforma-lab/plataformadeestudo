@@ -34,6 +34,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/apostilas", label: "Minhas Apostilas", icon: BookOpen },
   { href: "/questoes", label: "Caderno de Questões", icon: FileQuestion },
+  { href: "/simulados", label: "Simulados", icon: Target, badge: "Novo" },
   { href: "/cronograma", label: "Cronograma", icon: CalendarCheck2 },
   { href: "/flashcards", label: "Flashcards", icon: Layers },
   { href: "/professor", label: "Professor IA", icon: MessagesSquare },
