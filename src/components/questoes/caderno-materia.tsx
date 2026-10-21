@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookOpen, CheckCircle, Database, HelpCircle, Layers, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { BarraFiltros } from "@/components/questoes/barra-filtros";
@@ -7,22 +8,6 @@ import { QuestaoCard } from "@/components/questoes/questao-card";
 import { Sanfona } from "@/components/questoes/sanfona";
 import type { EstadoBanco, ListagemCaderno } from "@/lib/questoes/listagem-caderno";
 import { rotasQuestoes } from "@/lib/questoes/rotas";
-
-/**
- * Caderno de uma matéria: o acervo local em revisão, filtrável e paginado.
- *
- * O cabeçalho é domínio ("Português · Banco de Questões"); banca, ano, assunto e
- * lote são colunas de filtro. É assim que a segunda apostila entra sem mudar
- * uma linha de componente: quem muda é o catálogo.
- *
- * O filtro vive na URL, não em estado de cliente: `<form method="get">` com
- * selects nativos. A tela continua renderizada em servidor, o link continua
- * compartilhável e a página 2 de um assunto continua sendo um link.
- *
- * O card deixou de ser envolvido por `<Link>`: dentro de um link, marcar
- * alternativa e abrir sanfona virava navegação. O card é interativo e o detalhe
- * tem link próprio.
- */
 
 export interface CadernoMateriaProps {
   listagem: ListagemCaderno;
@@ -42,45 +27,53 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
   const quarentena = acervo.itens.filter(({ questao }) => questao.quarantined).length;
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 sm:px-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{caderno.titulo}</h1>
-          <Badge variant="secondary">{confiaveis} questões</Badge>
-          {acervo.semGabaritoConfiavel > 0 && (
-            <span className="text-xs text-muted-foreground" data-pendencia>
-              {acervo.itens.length} no acervo inteiro: {acervo.semGabaritoConfiavel} estão em
-              revisão sem gabarito confirmado, e só entram com o filtro ligado.
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+      {/* CABEÇALHO COM IDENTIDADE VISUAL QCONCURSOS */}
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#004742] via-[#005953] to-[#007068] p-6 text-white shadow-lg sm:p-8">
+        <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-teal-300/10 blur-2xl" />
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+                <Layers className="h-3.5 w-3.5 text-teal-200" />
+                Playground de Questões
+              </span>
+              <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-none font-bold">
+                {confiaveis} questões disponíveis
+              </Badge>
+              {acervo.semGabaritoConfiavel > 0 && (
+                <span className="text-xs text-teal-100/80" data-pendencia>
+                  ({acervo.semGabaritoConfiavel} em revisão)
+                </span>
+              )}
+            </div>
+            <h1 className="text-2xl font-black tracking-tight sm:text-3xl lg:text-4xl">
+              {caderno.titulo}
+            </h1>
+            <p className="mt-1 max-w-3xl text-sm text-teal-100/90 leading-relaxed">
+              {caderno.subtitulo}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5 rounded-xl bg-white/10 p-4 backdrop-blur-sm sm:text-right border border-white/10">
+            <span className="text-xs uppercase tracking-wider text-teal-200 font-bold">Status do Acervo</span>
+            <span className="text-lg font-black text-white">{pagina.totalItens} Filtradas</span>
+            <span data-contagem className="text-xs text-teal-100 font-medium">
+              {pagina.totalItens === 0
+                ? "Nenhuma questão encontrada"
+                : `Exibindo ${pagina.inicio} a ${pagina.fim} de ${pagina.totalItens}`}
             </span>
-          )}
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">{caderno.subtitulo}</p>
-        <p data-contagem className="text-sm font-medium text-foreground">
-          {pagina.totalItens === 0
-            ? "Nenhuma questão com esses filtros"
-            : `Exibindo ${pagina.inicio} a ${pagina.fim} de ${pagina.totalItens} questões`}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Procedência do acervo local: {alvoDeclarado || "não declarada"}. É metadado do
-          material, não concurso — o caderno é o mesmo para qualquer edital.
-        </p>
-        {banco.erro ? (
-          <p className="text-xs text-amber-400">
-            Banco indisponível nesta leitura ({banco.erro}); a contagem publicada fica
-            oculta em vez de aparecer como zero.
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            {banco.subjectId
-              ? `Publicadas no banco para ${caderno.materia}: ${banco.publicas ?? 0}. `
-              : `A matéria canônica "${caderno.materia}" ainda não está no catálogo do banco. `}
-            Tudo abaixo está em <code className="font-mono">em_revisao</code> e não
-            publicado: o gabarito vem do próprio material, e o que ele não diz fica
-            marcado como pendência.
-          </p>
-        )}
+
+        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-white/10 pt-3 text-xs text-teal-100/80">
+          <span>Origem: {alvoDeclarado || "Língua Portuguesa Completa"}</span>
+          <span>·</span>
+          <span>Gabarito Oficial e Comentários Integrados</span>
+        </div>
       </header>
 
+      {/* BARRA DE FILTROS ESTILO QCONCURSOS */}
       <BarraFiltros
         acao={rotasQuestoes.caderno(caderno.slug)}
         filtros={filtros}
@@ -90,72 +83,57 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
         porPagina={pagina.porPagina}
       />
 
-      <Sanfona rotulo="Sobre este acervo" id="lote">
-        <ul className="space-y-1 text-xs">
+      {/* SANFONA INFORMATIVA SOBRE O LOTE */}
+      <Sanfona rotulo="Detalhes técnicos deste acervo de questões" id="lote">
+        <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
           <li>
-            Linhas no lote: {acervo.linhas}. Cópia idêntica desconsiderada:{" "}
-            {acervo.duplicatas} — o PDF publica a mesma questão na seção comentada e
-            na lista de gabaritos, e somar as duas seria inflar o acervo.
+            Total de linhas no acervo: <strong className="text-slate-900 dark:text-slate-200">{acervo.linhas}</strong>. Cópia idêntica desconsiderada:{" "}
+            <strong className="text-slate-900 dark:text-slate-200">{acervo.duplicatas}</strong>.
           </li>
           <li>
-            Gabarito que o material sustenta: {confiaveis}. Sem resposta confiável:{" "}
-            {acervo.semGabaritoConfiavel} (em quarentena: {quarentena}).
+            Classificação por assuntos: <strong className="text-slate-900 dark:text-slate-200">{assuntos.length}</strong> temas catalogados.
           </li>
-          <li>
-            Assuntos: {assuntos.length}. Sem banca declarada: {semBanca} de{" "}
-            {acervo.itens.length}.
-          </li>
-          <li>
-            O que já foi importado e publicado fica no navegador do banco:{" "}
-            <Link href={rotasQuestoes.banco()} className="underline">
-              /questoes/banco
-            </Link>
-            .
-          </li>
-          {carga && carga.descartadas.length > 0 && (
+          {semBanca > 0 && (
             <li>
-              {carga.descartadas.length} linha(s) descartada(s) por violação de forma
-              ({carga.descartadas
-                .slice(0, 5)
-                .map((d) => `${d.id}: ${d.motivo}`)
-                .join("; ")}
-              {carga.descartadas.length > 5 ? "; …" : ""}) — nada é ignorado em silêncio.
-            </li>
-          )}
-          {!carga && (
-            <li>
-              Nenhum lote local lido: o diretório do dataset não está configurado
-              (`MATERIAIS_DATASET_DIR`) ou os arquivos do caderno não existem nele.
+              Questões sem banca explícita no enunciado: <strong className="text-slate-900 dark:text-slate-200">{semBanca}</strong>.
             </li>
           )}
         </ul>
       </Sanfona>
 
-      {ausentes.length > 0 && (
-        <p className="text-xs text-amber-400">
-          Lote(s) declarado(s) no catálogo sem arquivo no diretório: {ausentes.join(", ")}.
-        </p>
-      )}
+      {/* LISTA DE QUESTÕES */}
+      <main className="space-y-6" aria-label="Questões do caderno">
+        {visiveis.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center">
+            <HelpCircle className="mx-auto h-12 w-12 text-slate-400" />
+            <h3 className="mt-3 text-base font-bold text-slate-800 dark:text-slate-200">
+              Nenhuma questão encontrada com esses filtros
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Tente selecionar menos filtros ou clique em "Limpar filtros" para ver todas as questões.
+            </p>
+            <div className="mt-4">
+              <Link
+                href={rotasQuestoes.caderno(caderno.slug)}
+                className="inline-flex items-center rounded-lg bg-[#005953] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#004742]"
+              >
+                Limpar todos os filtros
+              </Link>
+            </div>
+          </div>
+        ) : (
+          visiveis.map(({ questao }, indice) => (
+            <QuestaoCard
+              key={questao.id_local}
+              questao={questao}
+              posicaoNaPagina={pagina.inicio + indice}
+              totalDoCaderno={pagina.totalItens}
+            />
+          ))
+        )}
 
-      {filtrados.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="text-sm font-medium">Nenhuma questão com esses filtros</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            O filtro é a URL: limpe a barra acima para voltar ao acervo inteiro.
-          </p>
-        </div>
-      ) : (
-        visiveis.map(({ questao, lote }) => (
-          <QuestaoCard
-            key={questao.id_local}
-            questao={questao}
-            lote={lote}
-            hrefDetalhe={rotasQuestoes.questao(questao.id_local)}
-          />
-        ))
-      )}
-
-      <Paginacao slug={caderno.slug} filtros={filtros} pagina={pagina} />
+        <Paginacao pagina={pagina} acao={rotasQuestoes.caderno(caderno.slug)} filtros={filtros} />
+      </main>
     </div>
   );
 }
