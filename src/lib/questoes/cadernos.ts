@@ -72,6 +72,22 @@ export const CADERNOS: readonly Caderno[] = [
       },
     ],
   },
+  {
+    slug: "matematica",
+    materia: "Matemática",
+    materiaPublicada: "Matemática",
+    titulo: "Matemática · Banco de Questões",
+    subtitulo:
+      "Caderno de treino de Matemática. Banca, ano, assunto e origem são tags de filtro: o conteúdo programático é transversal a qualquer edital.",
+    lotes: [
+      {
+        origem: "curso-384822",
+        arquivo: "questoes_matematica.json",
+        descricao: "Matemática Completa · Aulas 00 a 19",
+        alvo: "CBM-PE (Soldado)",
+      },
+    ],
+  },
 ];
 
 export function cadernoPorSlug(slug: string | null | undefined): Caderno | null {

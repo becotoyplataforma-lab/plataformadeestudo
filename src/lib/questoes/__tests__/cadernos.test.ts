@@ -182,9 +182,10 @@ describe("catálogo de cadernos", () => {
     expect(menu).toHaveLength(CADERNOS.length + 1);
     expect(menu.map((m) => m.href)).toEqual([
       rotasQuestoes.caderno("portugues"),
+      rotasQuestoes.caderno("matematica"),
       rotasQuestoes.caderno("direito"),
     ]);
-    expect(menu.map((m) => m.badge)).toEqual(["Revisão", "Revisão"]);
+    expect(menu.map((m) => m.badge)).toEqual(["Revisão", "Revisão", "Revisão"]);
   });
 });
 
