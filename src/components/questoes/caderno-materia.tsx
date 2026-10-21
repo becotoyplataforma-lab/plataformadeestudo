@@ -122,17 +122,17 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
             </div>
           </div>
         ) : (
-          visiveis.map(({ questao }, indice) => (
+          visiveis.map(({ questao, lote }) => (
             <QuestaoCard
               key={questao.id_local}
               questao={questao}
-              posicaoNaPagina={pagina.inicio + indice}
-              totalDoCaderno={pagina.totalItens}
+              lote={lote}
+              hrefDetalhe={rotasQuestoes.questao(questao.id_local)}
             />
           ))
         )}
 
-        <Paginacao pagina={pagina} acao={rotasQuestoes.caderno(caderno.slug)} filtros={filtros} />
+        <Paginacao slug={caderno.slug} filtros={filtros} pagina={pagina} />
       </main>
     </div>
   );

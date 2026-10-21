@@ -115,24 +115,54 @@ function carregarArquivo(caminho: string, lote: LoteProcedencia) {
  * existe: a tela trata isso como "acervo local ausente" e continua servindo o
  * que estiver em banco, em vez de inventar conteúdo de exemplo.
  */
-export function carregarCaderno(caderno: Caderno): CargaCaderno | null {
-  const diretorio = direcaoDataset();
-  if (!diretorio) return null;
+function encontrarCaminhoLote(arquivo: string): { caminho: string; diretorioOrigem: string } | null {
+  const configurado = direcaoDataset();
+  const candidatos: string[] = [];
+  if (configurado?.caminho) {
+    candidatos.push(configurado.caminho);
+  }
+  candidatos.push(
+    join(process.cwd(), "dataset", "questoes"),
+    join(process.cwd(), "data", "questoes"),
+    join(process.cwd(), "..", "dataset", "questoes"),
+    join(process.cwd(), "..", "data", "questoes"),
+    "/app/dataset/questoes",
+    "/app/data/questoes",
+    "/opt/apps/plataformadeestudo/dataset/questoes",
+    "/opt/apps/plataformadeestudo/data/questoes"
+  );
 
+  for (const dir of candidatos) {
+    if (!dir) continue;
+    try {
+      const candidato = join(dir, arquivo);
+      if (existsSync(candidato)) {
+        return { caminho: candidato, diretorioOrigem: dir };
+      }
+    } catch {
+      // Ignora erros em caminhos inacessiveis
+    }
+  }
+  return null;
+}
+
+export function carregarCaderno(caderno: Caderno): CargaCaderno | null {
   const itens: ItemCaderno[] = [];
   const descartadas: DescarteLote[] = [];
   const ausentes: string[] = [];
   const arquivos: string[] = [];
   let bytes = 0;
+  let diretorioResolvido = "";
 
   for (const lote of caderno.lotes) {
-    const caminho = join(diretorio.caminho, lote.arquivo);
-    if (!existsSync(caminho)) {
+    const resolvido = encontrarCaminhoLote(lote.arquivo);
+    if (!resolvido) {
       ausentes.push(lote.origem);
       continue;
     }
-    const carga = carregarArquivo(caminho, lote);
+    const carga = carregarArquivo(resolvido.caminho, lote);
     arquivos.push(lote.arquivo);
+    diretorioResolvido = resolvido.diretorioOrigem;
     bytes += carga.bytes;
     descartadas.push(...carga.descartadas);
     for (const questao of carga.itens) itens.push({ questao, lote });
@@ -145,7 +175,7 @@ export function carregarCaderno(caderno: Caderno): CargaCaderno | null {
     itens,
     descartadas,
     ausentes,
-    origem: { caminho: diretorio.caminho, bytes, arquivos },
+    origem: { caminho: diretorioResolvido, bytes, arquivos },
   };
 }
 

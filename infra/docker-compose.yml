@@ -27,6 +27,9 @@ services:
       - ../.env.production
     restart: unless-stopped
     # O nginx do sistema (app.becotoy.com) já encaminha para 127.0.0.1:3001
+    volumes:
+      - ../dataset:/app/dataset:ro
+      - ../dataset:/app/data:ro
     ports:
       - "127.0.0.1:3001:3000"
     healthcheck:

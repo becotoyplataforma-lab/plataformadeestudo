@@ -16,6 +16,7 @@ import { LessonRepository } from "@/lib/study/repositories/lesson.repository";
 import { WeaknessAnalysisService } from "@/lib/study/services/weakness-analysis.service";
 import { contests, positions } from "@/db/schema/contest";
 import { firstName } from "@/lib/utils";
+import type { DashboardSummary, EvolutionPoint, SubjectPerformance } from "@/types";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -25,35 +26,78 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
+  const defaultSummary: DashboardSummary = {
+    total_questoes: 0,
+    acertos: 0,
+    taxa_acerto: 0,
+    streak_dias: 0,
+    meta_hoje_min: 120,
+    estudado_hoje_min: 0,
+    revisoes_pendentes: 0,
+    tarefas_hoje: 0,
+    tarefas_concluidas_hoje: 0,
+  };
+
   const [summary, bySubject, evolution, profile, lessons, weakness] = await Promise.all([
-    getDashboardSummary(session.user.id),
-    getPerformanceBySubject(session.user.id),
-    getEvolution(session.user.id, 30),
-    getProfile(session.user.id),
-    LessonRepository.listForStudent(session.user.id, 8),
-    WeaknessAnalysisService.analyze(session.user.id, { minAttempts: 1, maxAccuracy: 0.7 }),
+    getDashboardSummary(session.user.id).catch((err) => {
+      console.error("[Dashboard] Erro em getDashboardSummary:", err);
+      return defaultSummary;
+    }),
+    getPerformanceBySubject(session.user.id).catch((err) => {
+      console.error("[Dashboard] Erro em getPerformanceBySubject:", err);
+      return [] as SubjectPerformance[];
+    }),
+    getEvolution(session.user.id, 30).catch((err) => {
+      console.error("[Dashboard] Erro em getEvolution:", err);
+      return [] as EvolutionPoint[];
+    }),
+    getProfile(session.user.id).catch((err) => {
+      console.error("[Dashboard] Erro em getProfile:", err);
+      return null;
+    }),
+    LessonRepository.listForStudent(session.user.id, 8).catch((err) => {
+      console.error("[Dashboard] Erro em LessonRepository.listForStudent:", err);
+      return [];
+    }),
+    WeaknessAnalysisService.analyze(session.user.id, { minAttempts: 1, maxAccuracy: 0.7 }).catch((err) => {
+      console.error("[Dashboard] Erro em WeaknessAnalysisService.analyze:", err);
+      return [];
+    }),
   ]);
 
-  // Apostilas visiveis no dashboard: as proprias + as compartilhadas com o
-  // cargo ou o edital vigente do aluno. Mesmo filtro usado pela busca e pela
-  // tela de apostilas, resolvido a partir do perfil autenticado.
+  // Apostilas visíveis no dashboard com fallback seguro
   const courseScope = await resolveCourseScope(profile).catch(
-      (): CourseScope => ({})
-    );
+    (): CourseScope => ({})
+  );
   const docs = await DocumentRepository.listAccessible(
     accessScopeFromProfile(session.user.id, profile, {
       editalId: courseScope.editalId ?? null,
     }),
     10
-  );
+  ).catch((err) => {
+    console.error("[Dashboard] Erro em DocumentRepository.listAccessible:", err);
+    return [];
+  });
 
   // Concurso/cargo do aluno (quando configurado no perfil)
-  const [contestRow] = profile?.contest_id
-    ? await db.select().from(contests).where(eq(contests.id, profile.contest_id!)).limit(1)
-    : [null];
-  const [positionRow] = profile?.position_id
-    ? await db.select().from(positions).where(eq(positions.id, profile.position_id!)).limit(1)
-    : [null];
+  const contestRow = profile?.contest_id
+    ? await db
+        .select()
+        .from(contests)
+        .where(eq(contests.id, profile.contest_id!))
+        .limit(1)
+        .then(([row]) => row ?? null)
+        .catch(() => null)
+    : null;
+  const positionRow = profile?.position_id
+    ? await db
+        .select()
+        .from(positions)
+        .where(eq(positions.id, profile.position_id!))
+        .limit(1)
+        .then(([row]) => row ?? null)
+        .catch(() => null)
+    : null;
 
   // Heurística de aluno novo: sem tentativas de questão (sinal mais forte de inatividade).
   // Sem flashcards/mensagens de chat não há contagem direta no fetch atual; zero questões

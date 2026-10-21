@@ -183,215 +183,259 @@ export function BarraFiltros({
     <form
       method="get"
       action={acao}
-      className="space-y-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm sm:p-6"
+      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-4 sm:p-6 shadow-sm"
       aria-label="Filtros de questões"
     >
-      {/* 1. TOPO: BARRA DE STATUS / ABAS ESTILO QCONCURSOS */}
-      <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2" role="tablist">
-          {abas.map((aba) => {
-            const Icone = ICONES_DAS_ABAS[aba.valor];
-            const ativa = filtros.bloco === aba.valor;
-            return (
-              <Link
-                key={aba.valor}
-                href={hrefAba(aba.valor)}
-                role="tab"
-                aria-selected={ativa}
-                data-aba={aba.valor}
-                title={aba.descricao}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all shadow-sm ${
-                  ativa
-                    ? "bg-[#005953] text-white shadow-[#005953]/20"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                }`}
-              >
-                <Icone className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{aba.rotulo}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] tabular-nums ${
-                    ativa
-                      ? "bg-white/20 text-white"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-                  }`}
-                >
-                  {aba.total}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
+        {/* ================= COLUNA PRINCIPAL DE FILTROS (ESQUERDA: 8/12 ou 9/12) ================= */}
+        <div className="space-y-5 lg:col-span-8 xl:col-span-9">
+          {/* 1. BARRA DE STATUS / ABAS ESTILO QCONCURSOS */}
+          <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2" role="tablist">
+              {abas.map((aba) => {
+                const Icone = ICONES_DAS_ABAS[aba.valor];
+                const ativa = filtros.bloco === aba.valor;
+                return (
+                  <Link
+                    key={aba.valor}
+                    href={hrefAba(aba.valor)}
+                    role="tab"
+                    aria-selected={ativa}
+                    data-aba={aba.valor}
+                    title={aba.descricao}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all shadow-sm ${
+                      ativa
+                        ? "bg-[#005953] text-white shadow-[#005953]/20"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    <Icone className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>{aba.rotulo}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] tabular-nums ${
+                        ativa
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+                      }`}
+                    >
+                      {aba.total}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
 
-        {abaAtiva && (
-          <p className="text-xs text-slate-500 dark:text-slate-400" data-aba-descricao={abaAtiva.valor}>
-            {abaAtiva.descricao}
-          </p>
-        )}
-      </div>
-
-      {/* 2. CAMPO PRINCIPAL DE BUSCA POR TEXTO / COMANDO */}
-      <div className="relative">
-        <Search
-          className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-          aria-hidden="true"
-        />
-        <input
-          type="search"
-          name="palavra"
-          defaultValue={filtros.palavra ?? ""}
-          placeholder="Busque por palavra-chave no texto ou comando da questão (ex.: crase, concordância, FGV)..."
-          className="h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 pl-11 pr-4 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#005953] focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#005953]/20 transition-all shadow-inner"
-          data-faceta="palavra"
-        />
-      </div>
-
-      {/* 3. FILTROS MAIS USADOS (GRADE EM 2 LINHAS) */}
-      <div className="space-y-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/30 p-4">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-[#005953] dark:text-teal-400" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#005953] dark:text-teal-300">
-            Filtros mais usados
-          </h3>
-        </div>
-
-        {/* Linha 1: Disciplina, Assunto, Banca, Órgão, Ano */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {FACETAS_LINHA_1.map(campoLinha1)}
-        </div>
-
-        {/* Linha 2: Cargo, Modalidade (Tipo), Procedência (Origem) */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {FACETAS_LINHA_2.map(campoLinha2)}
-        </div>
-      </div>
-
-      {/* 4. FILTROS AVANÇADOS / EXCLUSÕES E REFINAMENTOS */}
-      <details className="group space-y-4 rounded-xl border border-slate-200 dark:border-slate-800 p-4 transition-all" open={avancadoAtivo} data-filtro-avancado>
-        <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-[#005953] dark:hover:text-teal-400 [&::-webkit-details-marker]:hidden">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-[#005953] dark:text-teal-400" />
-            <span>Filtros avançados e exclusões</span>
+            {abaAtiva && (
+              <p className="text-xs text-slate-500 dark:text-slate-400" data-aba-descricao={abaAtiva.valor}>
+                {abaAtiva.descricao}
+              </p>
+            )}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <span className="hidden group-open:inline-flex items-center gap-1">
-              <Minus className="h-3.5 w-3.5" /> Recolher
-            </span>
-            <span className="inline-flex group-open:hidden items-center gap-1">
-              <Plus className="h-3.5 w-3.5" /> Expandir
-            </span>
-            <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+
+          {/* 2. CAMPO PRINCIPAL DE BUSCA POR TEXTO / COMANDO */}
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              name="palavra"
+              defaultValue={filtros.palavra ?? ""}
+              placeholder="Busque por palavra-chave no texto ou comando da questão (ex.: crase, concordância, FGV)..."
+              className="h-12 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-11 pr-4 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-[#005953] focus:outline-none focus:ring-2 focus:ring-[#005953]/20 transition-all shadow-sm"
+              data-faceta="palavra"
+            />
           </div>
-        </summary>
 
-        <div className="pt-2 flex flex-wrap items-center gap-3">
-          <CaixaRefinamento
-            nome="gabarito"
-            rotulo="Incluir questões em revisão"
-            total={refinamentos.revisao}
-            ativo={filtros.gabarito === "todos"}
-          />
-          {refinamentos.anuladas > 0 && (
-            <CaixaRefinamento
-              nome="anuladas"
-              rotulo="Excluir anuladas"
-              total={refinamentos.anuladas}
-              ativo={filtros.anuladas === "excluir"}
-            />
-          )}
-          {refinamentos.ineditas > 0 && (
-            <CaixaRefinamento
-              nome="ineditas"
-              rotulo="Excluir inéditas"
-              total={refinamentos.ineditas}
-              ativo={filtros.ineditas === "excluir"}
-            />
-          )}
-        </div>
+          {/* 3. FILTROS MAIS USADOS (GRADE EM 2 LINHAS) */}
+          <div className="space-y-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-5 shadow-xs">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-[#005953] dark:text-teal-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#005953] dark:text-teal-300">
+                Filtros mais usados
+              </h3>
+            </div>
 
-        <details className="mt-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-800 p-3">
-          <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1.5">
-            <HelpCircle className="h-3.5 w-3.5" />
-            Ver filtros não indexados neste acervo
-          </summary>
-          <ul className="mt-2 space-y-1.5 text-xs text-slate-500 dark:text-slate-400 pl-5 list-disc">
-            {FILTROS_TRAVADOS.map((travado) => (
-              <li key={travado.rotulo}>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{travado.rotulo}</span>:{" "}
-                {travado.motivo}
-              </li>
-            ))}
-          </ul>
-        </details>
-      </details>
+            {/* Linha 1: Disciplina, Assunto, Banca, Órgão, Ano */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {FACETAS_LINHA_1.map(campoLinha1)}
+            </div>
 
-      {/* 5. FILTROS APLICADOS + BARRA DE AÇÕES (RODAPÉ) */}
-      <div className="flex flex-col gap-4 border-t border-slate-100 dark:border-slate-800/80 pt-4 lg:flex-row lg:items-center lg:justify-between">
-        {/* Chips de filtros aplicados */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-            Filtros aplicados:
-          </span>
-          {chips.length === 0 ? (
-            <span className="text-xs text-slate-400 italic">
-              Nenhum filtro adicional aplicado
-            </span>
-          ) : (
-            chips.map((chip) => (
-              <span
-                key={chip.chave}
-                data-chip={chip.chave}
-                className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 dark:border-teal-900 bg-teal-50 dark:bg-teal-950/60 px-3 py-1 text-xs text-teal-900 dark:text-teal-200 shadow-sm"
-              >
-                <span className="font-semibold text-teal-700 dark:text-teal-400">{chip.rotulo}:</span>
-                <span>{chip.valor}</span>
-                <Link
-                  href={hrefSem(chip.chave)}
-                  aria-label={`Remover filtro de ${chip.rotulo.toLowerCase()}`}
-                  className="ml-1 rounded-full p-0.5 hover:bg-teal-200/50 dark:hover:bg-teal-800 text-teal-700 dark:text-teal-300 transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </Link>
-              </span>
-            ))
-          )}
-        </div>
+            {/* Linha 2: Cargo, Modalidade (Tipo), Procedência (Origem) */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {FACETAS_LINHA_2.map(campoLinha2)}
+            </div>
+          </div>
 
-        {/* Controles de Paginação & Ações */}
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-            <span>Exibir</span>
-            <select
-              name="por"
-              defaultValue={porPagina === TAMANHO_DE_PAGINA ? "" : String(porPagina)}
-              className="h-9 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-[#005953] focus:ring-1 focus:ring-[#005953]"
-            >
-              {TAMANHOS_DE_PAGINA.map((n) => (
-                <option key={n} value={n === TAMANHO_DE_PAGINA ? "" : String(n)}>
-                  {n}
-                </option>
-              ))}
-            </select>
-            <span>por página</span>
-          </label>
-
-          {!filtroEhPadrao(filtros) && (
-            <Link
-              href={acao}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Limpar
-            </Link>
-          )}
-
-          <Button
-            type="submit"
-            className="bg-[#005953] hover:bg-[#004742] text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-all"
+          {/* 4. FILTROS AVANÇADOS / EXCLUSÕES E REFINAMENTOS */}
+          <details
+            className="group space-y-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all"
+            open={avancadoAtivo}
+            data-filtro-avancado
           >
-            <Search className="mr-1.5 h-3.5 w-3.5" />
-            Filtrar questões
-          </Button>
+            <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-[#005953] dark:hover:text-teal-400 [&::-webkit-details-marker]:hidden">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-[#005953] dark:text-teal-400" />
+                <span>Filtros avançados e exclusões</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                <span className="hidden group-open:inline-flex items-center gap-1">
+                  <Minus className="h-3.5 w-3.5" /> Recolher
+                </span>
+                <span className="inline-flex group-open:hidden items-center gap-1">
+                  <Plus className="h-3.5 w-3.5" /> Expandir
+                </span>
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </div>
+            </summary>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <CaixaRefinamento
+                nome="gabarito"
+                rotulo="Incluir questões em revisão"
+                total={refinamentos.revisao}
+                ativo={filtros.gabarito === "todos"}
+              />
+              {refinamentos.anuladas > 0 && (
+                <CaixaRefinamento
+                  nome="anuladas"
+                  rotulo="Excluir anuladas"
+                  total={refinamentos.anuladas}
+                  ativo={filtros.anuladas === "excluir"}
+                />
+              )}
+              {refinamentos.ineditas > 0 && (
+                <CaixaRefinamento
+                  nome="ineditas"
+                  rotulo="Excluir inéditas"
+                  total={refinamentos.ineditas}
+                  ativo={filtros.ineditas === "excluir"}
+                />
+              )}
+            </div>
+
+            <details className="mt-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-800 p-3">
+              <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1.5">
+                <HelpCircle className="h-3.5 w-3.5" />
+                Ver filtros não indexados neste acervo
+              </summary>
+              <ul className="mt-2 space-y-1.5 text-xs text-slate-500 dark:text-slate-400 pl-5 list-disc">
+                {FILTROS_TRAVADOS.map((travado) => (
+                  <li key={travado.rotulo}>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{travado.rotulo}</span>:{" "}
+                    {travado.motivo}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </details>
+
+          {/* AÇÕES NO MOBILE / INFERIOR */}
+          <div className="flex items-center justify-between gap-3 lg:hidden pt-2">
+            {!filtroEhPadrao(filtros) && (
+              <Link
+                href={acao}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Limpar
+              </Link>
+            )}
+            <Button
+              type="submit"
+              className="bg-[#005953] hover:bg-[#004742] text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm transition-all ml-auto"
+            >
+              <Search className="mr-1.5 h-3.5 w-3.5" />
+              Filtrar questões
+            </Button>
+          </div>
         </div>
+
+        {/* ================= CARD LATERAL: FILTROS APLICADOS (DIREITA: 4/12 ou 3/12) ================= */}
+        <aside className="lg:col-span-4 xl:col-span-3">
+          <div className="sticky top-6 space-y-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-5 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-[#005953] dark:text-teal-400" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  Filtros aplicados
+                </h4>
+              </div>
+              <span className="rounded-full bg-teal-50 dark:bg-teal-950 px-2 py-0.5 text-[11px] font-extrabold text-[#005953] dark:text-teal-300">
+                {chips.length}
+              </span>
+            </div>
+
+            {/* Lista de chips aplicados */}
+            <div className="min-h-[80px]">
+              {chips.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 italic">
+                  Nenhum filtro adicional aplicado
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {chips.map((chip) => (
+                    <span
+                      key={chip.chave}
+                      data-chip={chip.chave}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 dark:border-teal-900 bg-teal-50 dark:bg-teal-950/60 px-3 py-1 text-xs text-teal-900 dark:text-teal-200 shadow-xs"
+                    >
+                      <span className="font-semibold text-teal-700 dark:text-teal-400">{chip.rotulo}:</span>
+                      <span>{chip.valor}</span>
+                      <Link
+                        href={hrefSem(chip.chave)}
+                        aria-label={`Remover filtro de ${chip.rotulo.toLowerCase()}`}
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-teal-200/50 dark:hover:bg-teal-800 text-teal-700 dark:text-teal-300 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </Link>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Seletor de itens por página */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+              <label className="flex items-center justify-between text-xs font-medium text-slate-600 dark:text-slate-400">
+                <span>Exibir por página:</span>
+                <select
+                  name="por"
+                  defaultValue={porPagina === TAMANHO_DE_PAGINA ? "" : String(porPagina)}
+                  className="h-8 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:border-[#005953] focus:ring-1 focus:ring-[#005953]"
+                >
+                  {TAMANHOS_DE_PAGINA.map((n) => (
+                    <option key={n} value={n === TAMANHO_DE_PAGINA ? "" : String(n)}>
+                      {n} questões
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {/* Botão Primário Filtrar Questões (QConcursos style) */}
+            <div className="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <Button
+                type="submit"
+                className="w-full bg-[#005953] hover:bg-[#004742] text-white font-bold text-xs py-2.5 rounded-lg shadow-sm transition-all"
+              >
+                <Search className="mr-1.5 h-3.5 w-3.5" />
+                Filtrar questões
+              </Button>
+
+              {!filtroEhPadrao(filtros) && (
+                <Link
+                  href={acao}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Limpar todos os filtros
+                </Link>
+              )}
+            </div>
+          </div>
+        </aside>
       </div>
     </form>
   );

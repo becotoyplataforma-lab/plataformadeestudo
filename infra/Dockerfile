@@ -87,6 +87,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 # Prompts usados em runtime (professor-ia, flashcards, etl, analytics)
 COPY --from=builder /app/prompts ./prompts
+# Dataset de questoes e materiais locais
+COPY --from=builder /app/dataset ./dataset
 
 # Permissões para o usuário não-root ler os arquivos
 RUN chown -R nextjs:nodejs /app
