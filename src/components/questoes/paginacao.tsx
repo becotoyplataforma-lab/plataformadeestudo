@@ -28,16 +28,19 @@ export interface PaginacaoProps {
   slug: string;
   filtros: FiltrosCaderno;
   pagina: Pagina;
+  caminhoBase?: string;
 }
 
-export function Paginacao({ slug, filtros, pagina }: PaginacaoProps) {
+export function Paginacao({ slug, filtros, pagina, caminhoBase }: PaginacaoProps) {
   if (pagina.totalPaginas <= 1) return null;
 
-  const href = (p: number) =>
-    rotasQuestoes.cadernoComFiltros(
-      slug,
-      queryDePagina(filtros, { ...pagina, atual: p })
-    );
+  const href = (p: number) => {
+    const q = queryDePagina(filtros, { ...pagina, atual: p });
+    if (caminhoBase) {
+      return q.length === 0 ? caminhoBase : `${caminhoBase}?${q}`;
+    }
+    return rotasQuestoes.cadernoComFiltros(slug, q);
+  };
   const paginas = janelaDePaginas(pagina.atual, pagina.totalPaginas);
 
   return (

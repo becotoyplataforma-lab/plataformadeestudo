@@ -90,6 +90,30 @@ export const CADERNOS: readonly Caderno[] = [
   },
 ];
 
+/** Acervo unificado de todas as matérias para o Playground de Filtro (/questoes). */
+export const CADERNO_GERAL: Caderno = {
+  slug: "geral",
+  materia: "Todas as Matérias",
+  materiaPublicada: "Todas as Matérias",
+  titulo: "Banco Geral · Todas as Questões",
+  subtitulo:
+    "Acervo unificado de questões para concursos públicos com filtros completos e gabarito.",
+  lotes: [
+    {
+      origem: "aula-14",
+      arquivo: "questoes_aula_14.json",
+      descricao: "Língua Portuguesa · Aulas 01 a 13 / 14",
+      alvo: "CBM-PE / CBM-RJ",
+    },
+    {
+      origem: "curso-384822",
+      arquivo: "questoes_matematica.json",
+      descricao: "Matemática Completa · Aulas 00 a 19",
+      alvo: "CBM-PE / CBM-RJ",
+    },
+  ],
+};
+
 export function cadernoPorSlug(slug: string | null | undefined): Caderno | null {
   if (!slug) return null;
   return CADERNOS.find((c) => c.slug === slug) ?? null;
@@ -129,6 +153,7 @@ export type RefResolvido =
 export function resolverRef(ref: string): RefResolvido {
   if (ehUuid(ref)) return { tipo: "questao-banco", id: ref };
   if (ehIdLocalValido(ref)) return { tipo: "questao-lote", codigo: ref };
+  if (ref === "geral" || ref === "todos") return { tipo: "caderno", caderno: CADERNO_GERAL };
   const caderno = cadernoPorSlug(ref);
   return caderno ? { tipo: "caderno", caderno } : null;
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BookOpen, CheckCircle, Database, HelpCircle, Layers, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { HeaderQuestoes } from "@/components/questoes/header-questoes";
 import { BarraFiltros } from "@/components/questoes/barra-filtros";
 import { Paginacao } from "@/components/questoes/paginacao";
 import { QuestaoCard } from "@/components/questoes/questao-card";
@@ -27,63 +28,66 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
   const quarentena = acervo.itens.filter(({ questao }) => questao.quarantined).length;
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-      {/* CABEÇALHO COM IDENTIDADE VISUAL QCONCURSOS */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#004742] via-[#005953] to-[#007068] p-6 text-white shadow-lg sm:p-8">
-        <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-teal-300/10 blur-2xl" />
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-                <Layers className="h-3.5 w-3.5 text-teal-200" />
-                Playground de Questões
-              </span>
-              <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-none font-bold">
-                {confiaveis} questões disponíveis
-              </Badge>
-              {acervo.semGabaritoConfiavel > 0 && (
-                <span className="text-xs text-teal-100/80" data-pendencia>
-                  ({acervo.semGabaritoConfiavel} em revisão)
+    <div className="min-h-screen bg-slate-50/60 dark:bg-slate-950/60 pb-16">
+      <HeaderQuestoes abaAtiva="cadernos" totalDisponivel={confiaveis} />
+
+      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        {/* CABEÇALHO DA MATÉRIA */}
+        <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#004742] via-[#005953] to-[#007068] p-6 text-white shadow-md sm:p-8">
+          <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-teal-300/10 blur-2xl" />
+          <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+                  <Layers className="h-3.5 w-3.5 text-teal-200" />
+                  Caderno de Questões
                 </span>
-              )}
+                <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-none font-bold">
+                  {confiaveis} questões disponíveis
+                </Badge>
+                {acervo.semGabaritoConfiavel > 0 && (
+                  <span className="text-xs text-teal-100/80" data-pendencia>
+                    ({acervo.semGabaritoConfiavel} em revisão)
+                  </span>
+                )}
+              </div>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl lg:text-4xl">
+                {caderno.titulo}
+              </h1>
+              <p className="mt-1 max-w-3xl text-sm text-teal-100/90 leading-relaxed">
+                {caderno.subtitulo}
+              </p>
             </div>
-            <h1 className="text-2xl font-black tracking-tight sm:text-3xl lg:text-4xl">
-              {caderno.titulo}
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm text-teal-100/90 leading-relaxed">
-              {caderno.subtitulo}
-            </p>
+
+            <div className="flex flex-col gap-1.5 rounded-xl bg-white/10 p-4 backdrop-blur-xs sm:text-right border border-white/10">
+              <span className="text-xs uppercase tracking-wider text-teal-200 font-bold">Status do Acervo</span>
+              <span className="text-lg font-black text-white">{pagina.totalItens} Filtradas</span>
+              <span data-contagem className="text-xs text-teal-100 font-medium">
+                {pagina.totalItens === 0
+                  ? "Nenhuma questão encontrada"
+                  : `Exibindo ${pagina.inicio} a ${pagina.fim} de ${pagina.totalItens}`}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 rounded-xl bg-white/10 p-4 backdrop-blur-sm sm:text-right border border-white/10">
-            <span className="text-xs uppercase tracking-wider text-teal-200 font-bold">Status do Acervo</span>
-            <span className="text-lg font-black text-white">{pagina.totalItens} Filtradas</span>
-            <span data-contagem className="text-xs text-teal-100 font-medium">
-              {pagina.totalItens === 0
-                ? "Nenhuma questão encontrada"
-                : `Exibindo ${pagina.inicio} a ${pagina.fim} de ${pagina.totalItens}`}
-            </span>
+          <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-white/10 pt-3 text-xs text-teal-100/80">
+            <span>Origem: {alvoDeclarado || "Lote Oficial"}</span>
+            <span>·</span>
+            <span>Gabarito Oficial e Comentários Integrados</span>
           </div>
-        </div>
+        </header>
 
-        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-white/10 pt-3 text-xs text-teal-100/80">
-          <span>Origem: {alvoDeclarado || "Língua Portuguesa Completa"}</span>
-          <span>·</span>
-          <span>Gabarito Oficial e Comentários Integrados</span>
-        </div>
-      </header>
+        {/* BARRA DE FILTROS ESTILO QCONCURSOS */}
+        <BarraFiltros
+          acao={rotasQuestoes.caderno(caderno.slug)}
+          filtros={filtros}
+          opcoes={listagem.opcoes}
+          abas={listagem.abas}
+          refinamentos={listagem.refinamentos}
+          porPagina={pagina.porPagina}
+        />
 
-      {/* BARRA DE FILTROS ESTILO QCONCURSOS */}
-      <BarraFiltros
-        acao={rotasQuestoes.caderno(caderno.slug)}
-        filtros={filtros}
-        opcoes={listagem.opcoes}
-        abas={listagem.abas}
-        refinamentos={listagem.refinamentos}
-        porPagina={pagina.porPagina}
-      />
-
-      {/* SANFONA INFORMATIVA SOBRE O LOTE */}
+        {/* SANFONA INFORMATIVA SOBRE O LOTE */}
       <Sanfona rotulo="Detalhes técnicos deste acervo de questões" id="lote">
         <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
           <li>
@@ -135,6 +139,7 @@ export function CadernoMateria({ listagem, banco }: CadernoMateriaProps) {
         <Paginacao slug={caderno.slug} filtros={filtros} pagina={pagina} />
       </main>
     </div>
+  </div>
   );
 }
 
