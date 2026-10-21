@@ -2,8 +2,23 @@ import { NextResponse } from "next/server";
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { auth } from "@/lib/auth/auth";
+import { AdminGuardService } from "@/lib/administration/services/admin-guard.service";
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  }
+
+  const isAdmin = await AdminGuardService.isAdminOrSuperadmin(session.user.email);
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: "Acesso restrito a administradores." },
+      { status: 403 }
+    );
+  }
+
   const rootDir = process.cwd();
   const relatorio: Record<string, any> = {
     inicio: new Date().toISOString(),
