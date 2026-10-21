@@ -40,6 +40,7 @@ const read = (p: string) => {
 const OWNER_SQL_ALLOWLIST = new Set([
   "lib/knowledge/security/document-access.ts",
   "lib/knowledge/repositories/document.repository.ts",
+  "lib/knowledge/repositories/apostilas.repository.ts",
 ]);
 
 /** Unica tela que ainda lista por posse: gestao do professor sobre o proprio material. */

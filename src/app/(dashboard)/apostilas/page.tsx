@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import fs from "node:fs";
 import path from "node:path";
+// document-access
 import { auth } from "@/lib/auth/auth";
 import { ApostilasService } from "@/lib/knowledge/services/apostilas.service";
 import { ApostilasClient } from "@/components/apostilas/apostilas-client";
