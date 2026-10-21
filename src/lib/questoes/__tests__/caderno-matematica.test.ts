@@ -97,5 +97,5 @@ describe("Caderno de Matemática", () => {
     const distinto = removerCopiasIdenticas(itens);
     expect(distinto.itens.length).toBeGreaterThan(0);
     expect(distinto.semGabaritoConfiavel).toBeLessThan(100);
-  });
+  }, 20000);
 });

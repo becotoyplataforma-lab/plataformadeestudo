@@ -1,0 +1,162 @@
+[
+  {
+    "aula": "00",
+    "arquivo": "curso-384822-aula-00-0b26-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 00: Conjuntos Numéricos",
+    "capitulos": 5,
+    "html_bytes": 383777,
+    "pdf_paginas": 53
+  },
+  {
+    "aula": "01",
+    "arquivo": "curso-384822-aula-01-15f1-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 01: Operações Fundamentais & Situações Problemas & Expressões Numéricas",
+    "capitulos": 12,
+    "html_bytes": 608363,
+    "pdf_paginas": 111
+  },
+  {
+    "aula": "02",
+    "arquivo": "curso-384822-aula-02-c597-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 02: Unidades de comprimento, massa, capacidade, área e volume & Unidade de Tempo",
+    "capitulos": 6,
+    "html_bytes": 568168,
+    "pdf_paginas": 83
+  },
+  {
+    "aula": "03",
+    "arquivo": "curso-384822-aula-03-08e5-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 03: Frações & Razão e Proporção.",
+    "capitulos": 6,
+    "html_bytes": 520963,
+    "pdf_paginas": 119
+  },
+  {
+    "aula": "04",
+    "arquivo": "curso-384822-aula-04-cd39-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 04: Regra de Três Simples & Regra de Três Composta",
+    "capitulos": 6,
+    "html_bytes": 464814,
+    "pdf_paginas": 61
+  },
+  {
+    "aula": "05",
+    "arquivo": "curso-384822-aula-05-19a8-grifado.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 05: Porcentagem",
+    "capitulos": 7,
+    "html_bytes": 174548,
+    "pdf_paginas": 34
+  },
+  {
+    "aula": "06",
+    "arquivo": "curso-384822-aula-06-fc03-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 06: Elementos de uma Operação de Juros. & Regime de Capitalização e Aspectos Conceituais. & Capitalização Simples - Aspectos Matemáticos.",
+    "capitulos": 13,
+    "html_bytes": 670652,
+    "pdf_paginas": 113
+  },
+  {
+    "aula": "07",
+    "arquivo": "curso-384822-aula-07-06c6-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 07: Capitalização Composta - Aspectos Matemáticos. & Taxa Nominal e Efetiva. & Taxas Equivalentes.",
+    "capitulos": 15,
+    "html_bytes": 872925,
+    "pdf_paginas": 135
+  },
+  {
+    "aula": "08",
+    "arquivo": "curso-384822-aula-08-47df-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 08: Equações de Primeiro Grau & Equações do Segundo Grau & Inequações de Primeiro Grau",
+    "capitulos": 12,
+    "html_bytes": 659566,
+    "pdf_paginas": 126
+  },
+  {
+    "aula": "09",
+    "arquivo": "curso-384822-aula-09-2a3f-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 09: Introdução ao Estudo das Funções",
+    "capitulos": 3,
+    "html_bytes": 421544,
+    "pdf_paginas": 87
+  },
+  {
+    "aula": "10",
+    "arquivo": "curso-384822-aula-10-c014-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 10: Domínio e Imagem & Coeficientes & Estudo dos Sinais",
+    "capitulos": 11,
+    "html_bytes": 745707,
+    "pdf_paginas": 169
+  },
+  {
+    "aula": "11",
+    "arquivo": "curso-384822-aula-11-48f5-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 11: Forma Fatorada & Raízes por Soma e Produto & Vértice da Parábola",
+    "capitulos": 14,
+    "html_bytes": 697550,
+    "pdf_paginas": 172
+  },
+  {
+    "aula": "12",
+    "arquivo": "curso-384822-aula-12-44a0-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 12: Função Exponencial",
+    "capitulos": 3,
+    "html_bytes": 398162,
+    "pdf_paginas": 69
+  },
+  {
+    "aula": "13",
+    "arquivo": "curso-384822-aula-13-1f5c-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 13: Logaritmo & Função Logarítmica",
+    "capitulos": 6,
+    "html_bytes": 396846,
+    "pdf_paginas": 100
+  },
+  {
+    "aula": "14",
+    "arquivo": "curso-384822-aula-14-1c1a-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 14: Sequências numéricas & Progressão Aritmética & Progressão Geométrica",
+    "capitulos": 9,
+    "html_bytes": 523470,
+    "pdf_paginas": 88
+  },
+  {
+    "aula": "15",
+    "arquivo": "curso-384822-aula-15-c9c4-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 15: Noções Elementares. & Circunferência. & Triângulos.",
+    "capitulos": 18,
+    "html_bytes": 773531,
+    "pdf_paginas": 169
+  },
+  {
+    "aula": "16",
+    "arquivo": "curso-384822-aula-16-2f1f-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 16: Noções Introdutórias de Geometria Espacial & Prisma. & Pirâmide.",
+    "capitulos": 21,
+    "html_bytes": 711810,
+    "pdf_paginas": 137
+  },
+  {
+    "aula": "17",
+    "arquivo": "curso-384822-aula-17-8d2a-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 17: Trigonometria & Equações Trigonométricas & Inequações Trigonométricas",
+    "capitulos": 12,
+    "html_bytes": 768021,
+    "pdf_paginas": 237
+  },
+  {
+    "aula": "18",
+    "arquivo": "curso-384822-aula-18-somente-em-pdf-e866-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 18: Geometria Espacial (Prismas, Pirâmides, Cilindros, Cones e Esferas)",
+    "capitulos": 9,
+    "html_bytes": 1299361,
+    "pdf_paginas": 207
+  },
+  {
+    "aula": "19",
+    "arquivo": "curso-384822-aula-19-f337-completo.pdf",
+    "titulo": "CBM-RJ | Matemática — Aula 19: Introdução Análise Combinatória. & Princípios Fundamentais de Contagem. & Fatorial de um Número Natural.",
+    "capitulos": 20,
+    "html_bytes": 802908,
+    "pdf_paginas": 150
+  }
+]

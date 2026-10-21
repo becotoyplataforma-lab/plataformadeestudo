@@ -73,6 +73,7 @@ supabase/.temp
 
 # Arquivos brutos sincronizados do Drive (nao commitar no git)
 /public/apostilas/
+/public/apostilas-adaptadas/matematica-aula-*-adaptada.pdf
 /.apostilas-work/
 
 # IDE

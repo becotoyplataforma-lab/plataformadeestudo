@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const aulaParam = searchParams.get("aula");
   const idParam = searchParams.get("id");
+  const materiaParam = searchParams.get("materia");
   const fileParam = searchParams.get("file") || searchParams.get("arquivo");
   const urlParam = searchParams.get("url");
 
@@ -27,18 +28,28 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Normaliza número da aula (01 .. 13)
+  // Busca no catálogo por ID ou aula
+  const encontradoPorId = APOSTILAS_PDF_CATALOG.find(
+    (item) =>
+      item.id.toLowerCase() === ident.toLowerCase() ||
+      item.arquivo.toLowerCase() === ident.toLowerCase() ||
+      (materiaParam === "matematica" && item.materia === "Matemática" && item.aula === ident.padStart(2, "0"))
+  );
+
+  const isMatematica =
+    materiaParam?.toLowerCase() === "matematica" ||
+    urlParam?.includes("matematica") ||
+    fileParam?.includes("matematica") ||
+    ident.toLowerCase().startsWith("m0") ||
+    encontradoPorId?.materia === "Matemática";
+
   let numAula = "01";
-  const numInt = parseInt(ident.replace(/\D/g, ""), 10);
-  if (!isNaN(numInt) && numInt >= 1 && numInt <= 13) {
-    numAula = String(numInt).padStart(2, "0");
+  if (encontradoPorId) {
+    numAula = encontradoPorId.aula;
   } else {
-    // Tenta encontrar por ID no catálogo
-    const encontradoPorId = APOSTILAS_PDF_CATALOG.find(
-      (item) => item.id.toLowerCase() === ident.toLowerCase()
-    );
-    if (encontradoPorId) {
-      numAula = encontradoPorId.aula;
+    const numInt = parseInt(ident.replace(/\D/g, ""), 10);
+    if (!isNaN(numInt)) {
+      numAula = String(numInt).padStart(2, "0");
     }
   }
 
@@ -47,9 +58,13 @@ export async function GET(request: NextRequest) {
     fs.mkdirSync(dirAdaptadas, { recursive: true });
   }
 
-  const nomeArquivoDownload = `CBM-RJ_Portugues_Aula_${numAula}_Adaptada.pdf`;
+  const prefixo = isMatematica ? "CBM-RJ_Matematica" : "CBM-RJ_Portugues";
+  const nomeArquivoDownload = `${prefixo}_Aula_${numAula}_Adaptada.pdf`;
   const pdfPath = path.join(dirAdaptadas, nomeArquivoDownload);
-  const aliasPath = path.join(dirAdaptadas, `aula-${numAula}-adaptada.pdf`);
+  const aliasPath = path.join(
+    dirAdaptadas,
+    isMatematica ? `matematica-aula-${numAula}-adaptada.pdf` : `aula-${numAula}-adaptada.pdf`
+  );
 
   // 1. Se o PDF da apostila adaptada ainda não existe, converte a partir do HTML adaptado
   if (!fs.existsSync(pdfPath) && !fs.existsSync(aliasPath)) {

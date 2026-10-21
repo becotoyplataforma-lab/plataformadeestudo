@@ -1,0 +1,268 @@
+[
+  {
+    "aula": "00",
+    "arquivo": "curso-384822-aula-00-0b26-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 00: Conjuntos Numéricos",
+    "topicos": [
+      "Conjuntos Numéricos"
+    ],
+    "total_paginas": 53,
+    "bytes": 2212790
+  },
+  {
+    "aula": "01",
+    "arquivo": "curso-384822-aula-01-15f1-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 01: Operações Fundamentais & Situações Problemas & Expressões Numéricas",
+    "topicos": [
+      "Operações Fundamentais",
+      "Situações Problemas",
+      "Expressões Numéricas",
+      "Expressões Algébricas"
+    ],
+    "total_paginas": 111,
+    "bytes": 3953431
+  },
+  {
+    "aula": "02",
+    "arquivo": "curso-384822-aula-02-c597-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 02: Unidades de comprimento, massa, capacidade, área e volume & Unidade de Tempo",
+    "topicos": [
+      "Unidades de comprimento, massa, capacidade, área e volume",
+      "Unidade de Tempo"
+    ],
+    "total_paginas": 83,
+    "bytes": 3634942
+  },
+  {
+    "aula": "03",
+    "arquivo": "curso-384822-aula-03-08e5-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 03: Frações & Razão e Proporção.",
+    "topicos": [
+      "Frações",
+      "Razão e Proporção."
+    ],
+    "total_paginas": 119,
+    "bytes": 3341345
+  },
+  {
+    "aula": "04",
+    "arquivo": "curso-384822-aula-04-cd39-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 04: Regra de Três Simples & Regra de Três Composta",
+    "topicos": [
+      "Regra de Três Simples",
+      "Regra de Três Composta"
+    ],
+    "total_paginas": 61,
+    "bytes": 2084573
+  },
+  {
+    "aula": "05",
+    "arquivo": "curso-384822-aula-05-19a8-grifado.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 05: Porcentagem",
+    "topicos": [
+      "Porcentagem"
+    ],
+    "total_paginas": 34,
+    "bytes": 1119239
+  },
+  {
+    "aula": "06",
+    "arquivo": "curso-384822-aula-06-fc03-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 06: Elementos de uma Operação de Juros. & Regime de Capitalização e Aspectos Conceituais. & Capitalização Simples - Aspectos Matemáticos.",
+    "topicos": [
+      "Elementos de uma Operação de Juros.",
+      "Regime de Capitalização e Aspectos Conceituais.",
+      "Capitalização Simples - Aspectos Matemáticos.",
+      "Taxas Proporcionais.",
+      "Juros Comerciais e Juros Exatos."
+    ],
+    "total_paginas": 113,
+    "bytes": 4570184
+  },
+  {
+    "aula": "07",
+    "arquivo": "curso-384822-aula-07-06c6-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 07: Capitalização Composta - Aspectos Matemáticos. & Taxa Nominal e Efetiva. & Taxas Equivalentes.",
+    "topicos": [
+      "Capitalização Composta - Aspectos Matemáticos.",
+      "Taxa Nominal e Efetiva.",
+      "Taxas Equivalentes.",
+      "Convenção Exponencial x Convenção Linear.",
+      "Tabela Financeira - Fator de Acumulação de Capitais."
+    ],
+    "total_paginas": 135,
+    "bytes": 5917934
+  },
+  {
+    "aula": "08",
+    "arquivo": "curso-384822-aula-08-47df-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 08: Equações de Primeiro Grau & Equações do Segundo Grau & Inequações de Primeiro Grau",
+    "topicos": [
+      "Equações de Primeiro Grau",
+      "Equações do Segundo Grau",
+      "Inequações de Primeiro Grau",
+      "Inequações de Segundo Grau"
+    ],
+    "total_paginas": 126,
+    "bytes": 4178677
+  },
+  {
+    "aula": "09",
+    "arquivo": "curso-384822-aula-09-2a3f-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 09: Introdução ao Estudo das Funções",
+    "topicos": [
+      "Introdução ao Estudo das Funções"
+    ],
+    "total_paginas": 87,
+    "bytes": 2229913
+  },
+  {
+    "aula": "10",
+    "arquivo": "curso-384822-aula-10-c014-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 10: Domínio e Imagem & Coeficientes & Estudo dos Sinais",
+    "topicos": [
+      "Domínio e Imagem",
+      "Coeficientes",
+      "Estudo dos Sinais"
+    ],
+    "total_paginas": 169,
+    "bytes": 14477013
+  },
+  {
+    "aula": "11",
+    "arquivo": "curso-384822-aula-11-48f5-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 11: Forma Fatorada & Raízes por Soma e Produto & Vértice da Parábola",
+    "topicos": [
+      "Forma Fatorada",
+      "Raízes por Soma e Produto",
+      "Vértice da Parábola",
+      "Domínio e Imagem"
+    ],
+    "total_paginas": 172,
+    "bytes": 12237797
+  },
+  {
+    "aula": "12",
+    "arquivo": "curso-384822-aula-12-44a0-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 12: Função Exponencial",
+    "topicos": [
+      "Função Exponencial"
+    ],
+    "total_paginas": 69,
+    "bytes": 2904614
+  },
+  {
+    "aula": "13",
+    "arquivo": "curso-384822-aula-13-1f5c-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 13: Logaritmo & Função Logarítmica",
+    "topicos": [
+      "Logaritmo",
+      "Função Logarítmica"
+    ],
+    "total_paginas": 100,
+    "bytes": 3255234
+  },
+  {
+    "aula": "14",
+    "arquivo": "curso-384822-aula-14-1c1a-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 14: Sequências numéricas & Progressão Aritmética & Progressão Geométrica",
+    "topicos": [
+      "Sequências numéricas",
+      "Progressão Aritmética",
+      "Progressão Geométrica"
+    ],
+    "total_paginas": 88,
+    "bytes": 3111476
+  },
+  {
+    "aula": "15",
+    "arquivo": "curso-384822-aula-15-c9c4-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 15: Noções Elementares. & Circunferência. & Triângulos.",
+    "topicos": [
+      "Noções Elementares.",
+      "Circunferência.",
+      "Triângulos.",
+      "Quadriláteros.",
+      "Polígonos",
+      "Inscrição e Circunscrição."
+    ],
+    "total_paginas": 169,
+    "bytes": 6175601
+  },
+  {
+    "aula": "16",
+    "arquivo": "curso-384822-aula-16-2f1f-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 16: Noções Introdutórias de Geometria Espacial & Prisma. & Pirâmide.",
+    "topicos": [
+      "Noções Introdutórias de Geometria Espacial",
+      "Prisma.",
+      "Pirâmide.",
+      "Cilindro.",
+      "Cone.",
+      "Esfera.",
+      "Inscrição e Circunscrição de Sólidos"
+    ],
+    "total_paginas": 137,
+    "bytes": 5561564
+  },
+  {
+    "aula": "17",
+    "arquivo": "curso-384822-aula-17-8d2a-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 17: Trigonometria & Equações Trigonométricas & Inequações Trigonométricas",
+    "topicos": [
+      "Trigonometria",
+      "Equações Trigonométricas",
+      "Inequações Trigonométricas",
+      "Funções Trigonométricas"
+    ],
+    "total_paginas": 237,
+    "bytes": 9828833
+  },
+  {
+    "aula": "18",
+    "arquivo": "curso-384822-aula-18-somente-em-pdf-e866-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 18: Geometria Espacial (Prismas, Pirâmides, Cilindros, Cones e Esferas)",
+    "topicos": [
+      "Geometria Espacial (Prismas, Pirâmides, Cilindros, Cones e Esferas)"
+    ],
+    "total_paginas": 207,
+    "bytes": 3194350
+  },
+  {
+    "aula": "19",
+    "arquivo": "curso-384822-aula-19-f337-completo.pdf",
+    "materia": "Matemática",
+    "titulo": "CBM-RJ | Matemática — Aula 19: Introdução Análise Combinatória. & Princípios Fundamentais de Contagem. & Fatorial de um Número Natural.",
+    "topicos": [
+      "Introdução Análise Combinatória.",
+      "Princípios Fundamentais de Contagem.",
+      "Fatorial de um Número Natural.",
+      "Permutação.",
+      "Outros Tipos de Permutação.",
+      "Arranjo e Combinação.",
+      "Partições.",
+      "Lemas de Kaplansky."
+    ],
+    "total_paginas": 150,
+    "bytes": 7070596
+  }
+]

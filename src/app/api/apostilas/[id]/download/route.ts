@@ -14,11 +14,13 @@ export async function GET(request: NextRequest, context: Contexto) {
 
   let numAula = "01";
   const item = APOSTILAS_PDF_CATALOG.find((cat) => cat.id.toLowerCase() === id.toLowerCase());
+  const isMatematica = id.toLowerCase().startsWith("m0") || item?.materia === "Matemática";
+
   if (item) {
     numAula = item.aula;
   } else {
     const numInt = parseInt(id.replace(/\D/g, ""), 10);
-    if (!isNaN(numInt) && numInt >= 1 && numInt <= 13) {
+    if (!isNaN(numInt)) {
       numAula = String(numInt).padStart(2, "0");
     }
   }
@@ -28,9 +30,13 @@ export async function GET(request: NextRequest, context: Contexto) {
     fs.mkdirSync(dirAdaptadas, { recursive: true });
   }
 
-  const nomeArquivoDownload = `CBM-RJ_Portugues_Aula_${numAula}_Adaptada.pdf`;
+  const prefixo = isMatematica ? "CBM-RJ_Matematica" : "CBM-RJ_Portugues";
+  const nomeArquivoDownload = `${prefixo}_Aula_${numAula}_Adaptada.pdf`;
   const pdfPath = path.join(dirAdaptadas, nomeArquivoDownload);
-  const aliasPath = path.join(dirAdaptadas, `aula-${numAula}-adaptada.pdf`);
+  const aliasPath = path.join(
+    dirAdaptadas,
+    isMatematica ? `matematica-aula-${numAula}-adaptada.pdf` : `aula-${numAula}-adaptada.pdf`
+  );
 
   if (!fs.existsSync(pdfPath) && !fs.existsSync(aliasPath)) {
     const resultado = converterHtmlParaPdf(numAula);

@@ -1,0 +1,2730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBM-RJ | Matemática — Aula 05: CBM-RJ | Matemática — Aula 05: Porcentagem</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --brand-navy: #0f172a;
+    --brand-blue: #065f46;
+    --deepseek-green: #10b981;
+    --deepseek-light: #ecfdf5;
+    --bg-app: #f8fafc;
+    --bg-page: #ffffff;
+    --text-primary: #0f172a;
+    --text-body: #1e293b;
+    --text-muted: #64748b;
+    --border-card: #e2e8f0;
+    --border-dark: #cbd5e1;
+    --sidebar-w: 320px;
+    --header-h: 60px;
+    --page-max-w: 880px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    line-height: 1.85;
+  }
+
+  .top-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: var(--header-h);
+    background: var(--brand-navy);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    border-bottom: 2px solid var(--deepseek-green);
+  }
+
+  .nav-brand-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+  }
+  .brand-text-box h1 {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #ffffff;
+    margin: 0;
+    line-height: 1.1;
+  }
+  .brand-text-box span {
+    font-size: 11px;
+    color: var(--deepseek-green);
+    font-weight: 600;
+  }
+
+  .nav-context-pills {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .pill-concurso {
+    background: var(--deepseek-green);
+    color: #064e3b;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11.5px;
+  }
+  .pill-materia {
+    color: #cbd5e1;
+    font-weight: 500;
+  }
+
+  .workspace-layout {
+    display: flex;
+    justify-content: center;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    gap: 24px;
+  }
+
+  .sidebar-column {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    height: calc(100vh - var(--header-h) - 48px);
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid var(--border-card);
+    padding: 16px 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  .sidebar-column::-webkit-scrollbar { width: 5px; }
+  .sidebar-column::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-column::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+  .sidebar-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-card);
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+
+  .sidebar-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-body);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .sidebar-link:hover {
+    background: var(--deepseek-light);
+    color: var(--brand-blue);
+  }
+
+  .sidebar-link.active {
+    background: #ecfdf5;
+    color: #065f46;
+    font-weight: 700;
+    border-left: 3px solid var(--deepseek-green);
+  }
+
+  .sb-num-badge {
+    width: 22px;
+    height: 22px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    flex-shrink: 0;
+  }
+  .sidebar-link.active .sb-num-badge {
+    background: var(--deepseek-green);
+    color: #064e3b;
+  }
+
+  .apostila-page-container {
+    width: var(--page-max-w);
+    max-width: 100%;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid var(--border-card);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    padding: 48px 56px;
+  }
+
+  .master-cover-page {
+    text-align: center;
+    padding: 30px 20px 48px;
+    border-bottom: 2px dashed var(--border-card);
+    margin-bottom: 40px;
+  }
+
+  .cover-logo-center {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 110px;
+    height: 110px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+    margin-bottom: 24px;
+    border: 2px solid var(--deepseek-light);
+  }
+
+  .cover-subtitle-top {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--brand-blue);
+    margin-bottom: 8px;
+  }
+
+  .cover-title-main {
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--brand-navy);
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+
+  .cover-lesson-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-body);
+    margin-bottom: 24px;
+  }
+
+  .cover-sep-line {
+    width: 60px;
+    height: 4px;
+    background: var(--deepseek-green);
+    margin: 0 auto 28px;
+    border-radius: 2px;
+  }
+
+  .cover-badge-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cover-pill-stat {
+    background: #f8fafc;
+    border: 1px solid var(--border-card);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-body);
+  }
+
+  .master-toc-block {
+    background: #f8fafc;
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+  }
+
+  .toc-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--brand-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-card);
+  }
+
+  .toc-items-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+  }
+
+  .toc-item-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-body);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+  }
+  .toc-item-link:hover {
+    background: #e2e8f0;
+    color: var(--brand-blue);
+  }
+  .toc-num-tag {
+    font-weight: 800;
+    color: var(--brand-blue);
+    font-size: 12px;
+    min-width: 20px;
+  }
+
+  .matrix-chapter-section {
+    margin-bottom: 56px;
+    padding-top: 16px;
+  }
+
+  .matrix-chapter-banner {
+    background: linear-gradient(135deg, var(--brand-navy) 0%, #1e293b 100%);
+    border-radius: 10px;
+    padding: 18px 24px;
+    margin-bottom: 26px;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  }
+
+  .banner-badge-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .banner-num-text {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #6ee7b7;
+    text-transform: uppercase;
+  }
+  .banner-title-text {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .chapter-content-body {
+    font-family: Georgia, Cambria, "Times New Roman", serif;
+  }
+
+  .theory-p {
+    font-size: 16.5px;
+    line-height: 1.85;
+    color: var(--text-body);
+    margin-bottom: 18px;
+    text-align: justify;
+    text-justify: inter-word;
+    hyphens: auto;
+  }
+
+  .matrix-callout {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 22px 0;
+    border-left: 5px solid;
+    font-size: 15px;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  .callout-top {
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .callout-text { line-height: 1.65; color: #1e293b; text-align: justify; }
+
+  .callout-warning { background: #fffbeb; border-color: #f59e0b; }
+  .callout-warning .callout-top { color: #b45309; }
+
+  .callout-tip { background: #f0fdf4; border-color: #22c55e; }
+  .callout-tip .callout-top { color: #15803d; }
+
+  .callout-rule { background: #ecfdf5; border-color: #10b981; }
+  .callout-rule .callout-top { color: #047857; }
+
+  .matrix-example-card {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid #64748b;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 18px 0;
+    font-size: 15px;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  .example-tag {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 4px;
+  }
+  .example-text { font-style: italic; color: #334155; }
+
+  .platform-question-card {
+    background: #ffffff;
+    border: 1px solid var(--border-dark);
+    border-radius: 12px;
+    margin: 26px 0 34px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    overflow: hidden;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  .q-card-header {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-card);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .q-pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+  }
+  .q-pill-subject { background: #d1fae5; color: #065f46; }
+  .q-pill-banca { background: #fef3c7; color: #92400e; }
+  .q-pill-orgao { background: #e0f2fe; color: #0369a1; }
+  .q-pill-ano { background: #ede9fe; color: #5b21b6; }
+  .q-pill-num { background: #f1f5f9; color: #334155; font-weight: 700; }
+  .q-pill-type { background: #dcfce7; color: #166534; font-weight: 700; }
+  .ml-auto { margin-left: auto; }
+
+  .q-card-content { padding: 22px 26px; }
+  .q-enunciado {
+    font-size: 15.5px;
+    line-height: 1.7;
+    color: #0f172a;
+    margin-bottom: 20px;
+    word-break: break-word;
+    text-align: justify;
+  }
+
+  .q-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 22px;
+  }
+  .q-option-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 16px;
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .q-option-item:hover {
+    border-color: var(--deepseek-green);
+    background: #f8fafc;
+  }
+  .q-option-item.selected {
+    border-color: var(--deepseek-green);
+    background: var(--deepseek-light);
+  }
+  .q-letter-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    color: #475569;
+    flex-shrink: 0;
+    background: #ffffff;
+  }
+  .q-option-item.selected .q-letter-badge {
+    border-color: var(--deepseek-green);
+    background: var(--deepseek-green);
+    color: #064e3b;
+  }
+  .q-option-label {
+    font-size: 14.5px;
+    color: #334155;
+    line-height: 1.6;
+    flex: 1;
+    word-break: break-word;
+  }
+
+  .q-accordion {
+    margin-top: 14px;
+    border-top: 1px dashed var(--border-card);
+    padding-top: 14px;
+  }
+  .q-accordion-trigger {
+    width: 100%;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--brand-navy);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .q-accordion-trigger:hover { background: #e2e8f0; }
+  .q-trigger-arrow { margin-left: auto; font-size: 11px; }
+
+  .q-accordion-body {
+    margin-top: 12px;
+    background: #f8fafc;
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 14.5px;
+  }
+  .q-gabarito-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .q-check-badge {
+    background: #166534;
+    color: #ffffff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+  .q-comment-text {
+    color: #334155;
+    line-height: 1.7;
+    text-align: justify;
+  }
+
+  .chapter-end-signature {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-card);
+    padding-top: 16px;
+    margin-top: 32px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  .back-to-top-link { color: var(--brand-blue); text-decoration: none; font-weight: 600; }
+  .back-to-top-link:hover { text-decoration: underline; }
+
+  @media (max-width: 1240px) {
+    .sidebar-column { display: none; }
+    .apostila-page-container { width: 100%; padding: 32px 20px; }
+  }
+
+  @media print {
+    .top-navbar, .sidebar-column, .back-to-top-link { display: none !important; }
+    .workspace-layout { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+    .apostila-page-container { width: 100% !important; padding: 0 !important; box-shadow: none !important; border: none !important; }
+    body { background: #ffffff !important; color: #0f172a !important; font-size: 11pt !important; }
+    .master-cover-page { page-break-after: always; break-after: page; padding: 60px 20px !important; }
+    .matrix-chapter-section { page-break-inside: auto; break-inside: auto; }
+    .platform-question-card { page-break-inside: avoid; break-inside: avoid; border: 1px solid #cbd5e1 !important; box-shadow: none !important; margin: 18px 0 !important; }
+    .q-accordion-body { display: block !important; }
+  }
+</style>
+</head>
+<body id="top">
+
+<header class="top-navbar">
+  <div class="nav-brand-container">
+    <div class="header-logo-wrapper">
+      <svg class="header-logo-svg" height="30" viewBox="0 0 24 24" width="30" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+    </div>
+    <div class="brand-text-box">
+      <h1>Study Hub Pro</h1>
+      <span>Plataforma Inteligente de Concursos</span>
+    </div>
+  </div>
+
+  <div class="nav-context-pills">
+    <span class="pill-concurso">CBM-RJ</span>
+    <span class="pill-materia">Matemática · Aula 05</span>
+  </div>
+</header>
+
+<div class="workspace-layout">
+  <aside class="sidebar-column">
+    <div class="sidebar-heading">
+      <span>📖</span>
+      <span>Índice dos Capítulos</span>
+    </div>
+    <nav class="sidebar-menu-list">
+      <a href="#s01" class="sidebar-link" id="nav-s01">
+        <span class="sb-num-badge">01</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Conceitos Iniciais &amp; Definição</span>
+      </a>
+      <a href="#s02" class="sidebar-link" id="nav-s02">
+        <span class="sb-num-badge">02</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Formas de Representação</span>
+      </a>
+      <a href="#s03" class="sidebar-link" id="nav-s03">
+        <span class="sb-num-badge">03</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Cálculo da Porcentagem de um Número</span>
+      </a>
+      <a href="#s04" class="sidebar-link" id="nav-s04">
+        <span class="sb-num-badge">04</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Aumentos e Descontos Sucessivos</span>
+      </a>
+      <a href="#s05" class="sidebar-link" id="nav-s05">
+        <span class="sb-num-badge">05</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Variação Percentual &amp; Fatores de Multiplicação</span>
+      </a>
+      <a href="#s06" class="sidebar-link" id="nav-s06">
+        <span class="sb-num-badge">06</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Questões Comentadas de Porcentagem</span>
+      </a>
+      <a href="#s07" class="sidebar-link" id="nav-s07">
+        <span class="sb-num-badge">07</span>
+        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Lista de Questões de Fixação</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="apostila-page-container">
+    <div class="master-cover-page">
+      <div class="cover-logo-center">
+        <svg class="cover-logo-svg" height="84" viewBox="0 0 24 24" width="84" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      </div>
+      <div class="cover-subtitle-top">CBM-RJ — CORPO DE BOMBEIROS MILITAR</div>
+      <h1 class="cover-title-main">Matemática</h1>
+      <div class="cover-lesson-title">Aula 05: CBM-RJ | Matemática — Aula 05: Porcentagem</div>
+      <div class="cover-sep-line"></div>
+      <div class="cover-badge-row">
+        <span class="cover-pill-stat">📄 34 Páginas Integrais</span>
+        <span class="cover-pill-stat">🎯 Questões de Concurso & Fixação</span>
+        <span class="cover-pill-stat">📅 Edição 2026</span>
+        <span class="cover-pill-stat">⚡ Material Fiel & Sem Cortes</span>
+      </div>
+
+      <div style="margin: 28px auto 0; max-width: 680px; padding: 14px 20px; background: #ecfdf5; border: 1.5px solid #10b981; border-radius: 10px; text-align: left; font-size: 13.5px; color: #064e3b; line-height: 1.6;">
+        <strong style="display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 4px;">
+          <span>⚡</span> APOSTILA ADAPTADA POR INTELIGÊNCIA ARTIFICIAL
+        </strong>
+        Este material foi reorganizado, otimizado e adaptado por IA preservando a totalidade dos tópicos e profundidade do conteúdo original de Matemática para garantir alto rendimento no concurso CBM-RJ.
+      </div>
+    </div>
+
+    <div class="master-toc-block">
+      <div class="toc-header-title">
+        <span>📑</span>
+        <span>Sumário dos 7 Capítulos Integrais</span>
+      </div>
+      <div class="toc-items-grid">
+        <a href="#s01" class="toc-item-link">
+          <span class="toc-num-tag">01.</span>
+          <span>Conceitos Iniciais &amp; Definição</span>
+        </a>
+        <a href="#s02" class="toc-item-link">
+          <span class="toc-num-tag">02.</span>
+          <span>Formas de Representação</span>
+        </a>
+        <a href="#s03" class="toc-item-link">
+          <span class="toc-num-tag">03.</span>
+          <span>Cálculo da Porcentagem de um Número</span>
+        </a>
+        <a href="#s04" class="toc-item-link">
+          <span class="toc-num-tag">04.</span>
+          <span>Aumentos e Descontos Sucessivos</span>
+        </a>
+        <a href="#s05" class="toc-item-link">
+          <span class="toc-num-tag">05.</span>
+          <span>Variação Percentual &amp; Fatores de Multiplicação</span>
+        </a>
+        <a href="#s06" class="toc-item-link">
+          <span class="toc-num-tag">06.</span>
+          <span>Questões Comentadas de Porcentagem</span>
+        </a>
+        <a href="#s07" class="toc-item-link">
+          <span class="toc-num-tag">07.</span>
+          <span>Lista de Questões de Fixação</span>
+        </a>
+      </div>
+    </div>
+
+<section class="matrix-chapter-section" id="s01">
+  <div class="matrix-chapter-banner">
+    <div class="banner-badge-box">
+      <svg class="mini-logo-svg" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      <span class="banner-num-text">CAPÍTULO 01</span>
+    </div>
+    <h2 class="banner-title-text">Conceitos Iniciais &amp; Definição</h2>
+  </div>
+  <div class="chapter-content-body">
+    <p class="theory-p">CONCEITOS INICIAIS O termo &quot;porcento&quot; é derivado do latim per centum, que significa &quot;por cem&quot; ou &quot;às centenas&quot;. Porcentagem, então, representa uma razão em que o denominador é igual a cem (100).</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Porcentagem representa uma razão em que o denominador é igual a 𝟏𝟎𝟎 Então, k% será igual a: 𝑘% = 𝑘100 Vejamos alguns exemplos:</div></div>
+    <div class="matrix-example-card"><div class="example-tag">💡 Exemplo Prático de Aplicação</div><div class="example-text">Exemplo 1: 15% = 15100 = 0,15 Exemplo 2:</div></div>
+    <p class="theory-p">36,3% = 36,3100 = 0,363 Exemplo 3: 100% =100100 = 1 Exemplo 4:</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">235% = 235100 = 2,35 Veja que nada impede que uma porcentagem tenha um resultado numérico maior que 1. Observe, nos exemplos acima, que podemos representar a Porcentagem em 3 tipologias diferentes. Veremos abaixo cada uma delas.</div></div>
+  </div>
+  <div class="chapter-end-signature">
+    <span>⚡ DeepSeek Study Platform · CBM-RJ Matemática</span>
+    <a href="#top" class="back-to-top-link">↑ Voltar ao Índice</a>
+  </div>
+</section>
+<section class="matrix-chapter-section" id="s02">
+  <div class="matrix-chapter-banner">
+    <div class="banner-badge-box">
+      <svg class="mini-logo-svg" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      <span class="banner-num-text">CAPÍTULO 02</span>
+    </div>
+    <h2 class="banner-title-text">Formas de Representação</h2>
+  </div>
+  <div class="chapter-content-body">
+    <p class="theory-p">FORMAS DE REPRESENTAÇÃO Iremos tomar como base o primeiro exemplo (15%) e analisar as formas em que podemos representá-lo. Forma Percentual É apresentada com o símbolo representativo da operação (%).</p>
+    <p class="theory-p">15% Forma Fracionária Nesta forma, iremos aprensentar a porcentagem através de uma fração com denonimador 100.</p>
+    <p class="theory-p">Forma Unitária Representada por números decimais. 0,15 Perceba que a forma unitária, nada mais é, que o resultado matemático da divisão da forma fracionária. 15 divididos por 100, na forma unitária, é igual a 0,15.</p>
+    <p class="theory-p">Então, para passar da forma fracionária para a forma unitária, dividimos por 100, ou, em uma linguagem decimal, &quot;andamos&quot; duas casas para a esquerda.</p>
+  </div>
+  <div class="chapter-end-signature">
+    <span>⚡ DeepSeek Study Platform · CBM-RJ Matemática</span>
+    <a href="#top" class="back-to-top-link">↑ Voltar ao Índice</a>
+  </div>
+</section>
+<section class="matrix-chapter-section" id="s03">
+  <div class="matrix-chapter-banner">
+    <div class="banner-badge-box">
+      <svg class="mini-logo-svg" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      <span class="banner-num-text">CAPÍTULO 03</span>
+    </div>
+    <h2 class="banner-title-text">Cálculo da Porcentagem de um Número</h2>
+  </div>
+  <div class="chapter-content-body">
+    <p class="theory-p">CÁLCULO DA PORCENTAGEM DE UM NÚMERO Para calcular a Porcentagem de um valor, multiplicamos a razão centesimal correspondente à Porcentagem por este valor. Vejamos alguns exemplos:</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Exemplo 1: 15% de 600. 100 × 600 = 9.000100 = 90 Uma palavra muito importante que deve ser observada quando se resolve proble mas envolvendo Porcentagem é a preposição &quot;de&quot;. Isso porque, via de regra, esse termo nos indica uma multiplicação.</div></div>
+    <p class="theory-p">&quot;de&quot; → multiplicação Então, 15% de 600, como vimos acima, é igual a fração 15 100⁄ vezes 600. Poderíamos resolver também, multiplicando diretamente a Porcentagem na forma unitária vezes o número.</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">0,15 × 600 = 90 Esta forma de resolução é mais utilizada na Matemática Financeira, pois nesta, a Taxa de Juros é inserida nas fórmulas na forma unitária. Todavia, em nada muda o resultado, uma vez que, como vimos, a forma unitária nada mais é que o resultado matemático da divisão da forma fracion ária. 15 divididos por 100, na forma unitária, é igual a 0,15.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Exemplo 2: 18,5% de 300 18,5 100 × 300 = 55,5 Observe que simplificamos a fração e aceleramos os cálculos, assim como você fará na sua prova.</div></div>
+    <div class="matrix-example-card"><div class="example-tag">💡 Exemplo Prático de Aplicação</div><div class="example-text">Exemplo 3: 252% de 75 Vejamos algumas questões de concursos para praticarmos o cálculo da Porcentagem de um número. Antes de iniciarmos as questões, esclareceremos um ponto.</div></div>
+    <p class="theory-p">Dificilmente, uma questão será direta perguntando o valor de uma porcentagem. A maioria das questões vai trazer o conceito de porcentagem dentro da solução dos problemas. Vamos, nas questões abaixo, resolver algumas questões que trazem, não só o uso da porcentagem, mas também, uma ideia por trás da resolução. As questões irão aumentar de nível uma a uma e vamos comentar o passo a passo de cada para que você possa entender perfeitamente a mecânica de resolução.</p>
+    <p class="theory-p">(Pref. Novo Hamburgo - 2020 - Adaptada) É correto afirmar que: a) 0,89% de 400 é igual a 356. b) 1.700% de 18 é igual a 30.600.</p>
+<article class="platform-question-card" id="q_s03_1">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#1</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">c) 0,018 é igual a 12% de 0,15.
+d) 95 é igual a 17% de 500.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_1', 'A', 'C')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">0,89% de 400 é igual a 356. Observe que, apesar de estar com vírgulas (casas decimais), o valor nos é fornecido na forma percentual. Então, o valor da letra 𝑎 será igual a: 𝑎 = 0,89% × 400 𝑎 =0,89100 × 400 𝑎 = 0,89 × 4   →      𝒂 = 𝟑,𝟓𝟔 Nesse ponto que deve residir nossa atenção. Vejamos o resultado que ocorreria caso inser íssemos na fórmula a representação percentual. E assim, marcaríamos a letra a como gabarito, pois o resultado teria batido. Mas isto está ERRADO. Friso, mais uma vez que, quando trabalhamos com porcentagem e/ou taxa, inserimos estes valores na forma fracionária (ou na forma unitária). ITEM ERRADO</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_1', 'B', 'C')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">1.700% de 18 é igual a 30.600. 𝑏 = 1.700% × 18 𝑏 =17 × 18    →        𝒃 =𝟑𝟎𝟔 Observe que esta passagem (da linha 1 para a linha 2) é feita automaticamente pela sua cabeça. Na hora da prova, você não vai nem escrever a primeira linha. Sua cabeça vai pensar no modo automático que 1.700% é igual a 17 e vai inserir diretamente este valor na fórmula. Foi muito rápido? Vejamos o passo a passo. 𝑏 = 1.700% × 18 𝑏 =1.700100 × 18 𝑏 =17 × 18    →        𝒃 =𝟑𝟎𝟔 ITEM ERRADO</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_1', 'C', 'C')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">0,018 é igual a 12% de 0,15.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_1', 'D', 'C')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">95 é igual a 17% de 500.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">C</span>
+        </div>
+        <div class="q-comment-text">Vamos resolver item a item. Questão bem interessante para gente treinar bem o conceito de porcentagem. a) 0,89% de 400 é igual a 356. Observe que, apesar de estar com vírgulas (casas decimais), o valor nos é fornecido na forma percentual. Então, o valor da letra 𝑎 será igual a: 𝑎 = 0,89% × 400 𝑎 =0,89100 × 400 𝑎 = 0,89 × 4   →      𝒂 = 𝟑,𝟓𝟔 Nesse ponto que deve residir nossa atenção. Vejamos o resultado que ocorreria caso inser íssemos na fórmula a representação percentual. E assim, marcaríamos a letra a como</div>
+      </div>
+    </div>
+  </div>
+</article>
+    <p class="theory-p">(Pref. de Porto de Moz / 2019) O Banco Popular paga uma taxa de ju ros de 0,38% ao mês para depósitos nas suas cadernetas de poupança. Marcelo tem uma caderneta de poupança no Ban co Popular com um saldo R$ 1.000,00 reais. Qual o valor de juros que foi creditado n a sua conta de poupança no final de um mês?</p>
+<article class="platform-question-card" id="q_s03_2">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#2</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">a) R$ 38,00
+b) R$ 380,00
+c) R$ 0,38
+d) R$ 3,80
+e) R$ 4,20</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_2', 'A', 'D')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">R$ 38,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_2', 'B', 'D')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">R$ 380,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_2', 'C', 'D')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">R$ 0,38</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_2', 'D', 'D')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">R$ 3,80</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_2', 'E', 'D')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">R$ 4,20</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">D</span>
+        </div>
+        <div class="q-comment-text">Ao final de um mês será creditado 0,38% de 1.000 reais. Perceba que, apesar de estar com vírgulas (casas decimais), o valor nos é fornecido na forma perc entual. A banca forneceu uma porcentagem com casas decimais justamente para tentar confundir o candidato. Então, será creditado o valor igual a: 𝑐𝑟𝑒𝑑𝑖𝑡𝑎𝑑𝑜 =0,38100 × 1.000 𝑐𝑟𝑒𝑑𝑖𝑡𝑎𝑑𝑜 = 0,38 × 10   →     𝒄𝒓𝒆𝒅𝒊𝒕𝒂𝒅𝒐 = 𝟑, 𝟖</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s03_3">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#3</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">Pref. Curuá</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2020</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">A mensalidade de um curso de idiomas custa R$ 250,00. Contudo, caso haja atraso no
+pagamento, é cobrada uma multa de 2% sobre o valor da mensalidade, acrescida de juros no valor de 0,5%
+do valor da mensalidade, por dia de atraso. Se uma pessoa fizer o pagamento com dez dias de atraso,
+deverá pagar o valor de
+a) R$ 251,00
+b) R$ 255,00
+c) R$ 262,50
+d) R$ 267,50</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_3', 'A', 'D')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">R$ 251,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_3', 'B', 'D')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">R$ 255,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_3', 'C', 'D')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">R$ 262,50</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_3', 'D', 'D')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">R$ 267,50</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">D</span>
+        </div>
+        <div class="q-comment-text">Se uma pessoa fizer o pagamento com dez dias de atraso, ela pagará a mensalid ade mais a multa mais os Juros. 𝑝𝑔𝑡𝑜 = 𝑚𝑒𝑛𝑠𝑎𝑙𝑖𝑑𝑎𝑑𝑒 + 𝑚𝑢𝑙𝑡𝑎 + 𝑗𝑢𝑟𝑜𝑠 • Multa É cobrada uma multa de 2% sobre o valor da mensalidade de R$ 250. 𝑚𝑢𝑙𝑡𝑎 = 2100 × 250 𝑚𝑢𝑙𝑡𝑎 =5010     →       𝒎𝒖𝒍𝒕𝒂 = 𝟓 • Juros Juros no valor de 0,5% do valor da mensalidade, por dia de atraso (10 dias). 𝐽𝑢𝑟𝑜𝑠 = 0,5100 × 10 ×250 𝐽𝑢𝑟𝑜𝑠 = 0,5 ×25   →      𝑱𝒖𝒓𝒐𝒔 =𝟏𝟐, 𝟓 Logo, o pagamento será igual a: 𝑝𝑔𝑡𝑜 = 𝑚𝑒𝑛𝑠𝑎𝑙𝑖𝑑𝑎𝑑𝑒 + 𝑚𝑢𝑙𝑡𝑎 + 𝑗𝑢𝑟𝑜𝑠 𝑝𝑔𝑡𝑜 =250 + 5 +12,5     →       𝒑𝒈𝒕𝒐 =𝟐𝟔𝟕, 𝟓</div>
+      </div>
+    </div>
+  </div>
+</article>
+    <p class="theory-p">(Pref. Nova Itaberaba - 2021) Em certo evento, havia um público de 1.600 pessoas. Sabendo-se que 40% são homens e que 35% das mulheres presentes são casadas, ao todo, quantas mu lheres casadas estão presentes nesse evento?</p>
+<article class="platform-question-card" id="q_s03_4">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#4</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">a) 416
+b) 336
+c) 284
+d) 224
+e) 358</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_4', 'A', 'B')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">416</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_4', 'B', 'B')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">336</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_4', 'C', 'B')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">284</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_4', 'D', 'B')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">224</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_4', 'E', 'B')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">358</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">B</span>
+        </div>
+        <div class="q-comment-text">Em certo evento, havia um público de 1.600 pessoas. Sabe-se que 40% são homens. Ou seja, 60% do público de 1.600 pessoas são mulheres. Sendo assim, o quantitativo de mulheres é igual a: 𝑚 = 60100 × 1.600     →        𝒎 =𝟗𝟔𝟎 35% das mulheres presentes são casadas. Observe que o enunciado nos informa que 35% das mulheres são casadas  e não 35% do total. Atenção máxima ao comando da questão. Calculamos que havia 960 mulheres presentes. Logo, o número de mulheres casadas (𝑚𝑐𝑎𝑠𝑎𝑑𝑎𝑠) é igual a: 𝑚𝑐𝑎𝑠𝑎𝑑𝑎𝑠 = 35100 × 𝑚 𝑚𝑐𝑎𝑠𝑎𝑑𝑎𝑠 = 35100 × 960 𝑚𝑐𝑎𝑠𝑎𝑑𝑎𝑠 = 3.36010    →      𝒎𝒄𝒂𝒔𝒂𝒅𝒂𝒔 = 𝟑𝟑𝟔</div>
+      </div>
+    </div>
+  </div>
+</article>
+    <p class="theory-p">(CRECI RN - 2021) Uma mulher adquiriu um imóvel comercial por 400 mil reais, gastou 160 mil reais com reforma do prédio e o vendeu por 750 mil. Depois da venda, ela deverá calcular seu lucro deduzindo, do preço da venda, o preço de aquisição, o valor da reforma e a corretagem de 5% sobre o valor da venda.</p>
+<article class="platform-question-card" id="q_s03_5">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#5</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Supondo que ela deve pagar 15% de imposto de renda sobre o lucro obtido na venda do imóvel, o valor do
+imposto devido é superior a R$ 22,5 mil.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_5', 'A', 'C')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_5', 'B', 'C')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_5', 'C', 'C')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s03_5', 'D', 'C')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">C</span>
+        </div>
+        <div class="q-comment-text">O lucro da operação, segundo o enunciado, será igual ao preço da venda deduzidos: o preço de aquisição, o valor da reforma e a corretagem de 5% sobre o valor da venda. 𝑙𝑢𝑐𝑟𝑜 = $𝑉𝑒𝑛𝑑𝑎 − $𝑎𝑞𝑢𝑖𝑠𝑖çã𝑜 − $𝑟𝑒𝑓𝑜𝑟𝑚𝑎 − 𝑐𝑜𝑟𝑟𝑒𝑡𝑎𝑔𝑒𝑚 A mulher adquiriu um imóvel por 400 mil reais ($𝑎𝑞𝑢𝑖𝑠𝑖çã𝑜), gastou 160 mil reais com reforma ($𝑟𝑒𝑓𝑜𝑟𝑚𝑎) do prédio e o vendeu por 750 mil ($𝑉𝑒𝑛𝑑𝑎). Já a corretagem é igual a 5% sobre o valor da venda. Vamos substituir os valores na fórmula acima e calcular o lucro. 𝑙𝑢𝑐𝑟𝑜 = $𝑉𝑒𝑛𝑑𝑎 − $𝑎𝑞𝑢𝑖𝑠𝑖çã𝑜 − $𝑟𝑒𝑓𝑜𝑟𝑚𝑎 − 𝑐𝑜𝑟𝑟𝑒𝑡𝑎𝑔𝑒𝑚 𝑙𝑢𝑐𝑟𝑜 =750 − 400 − 160 − 5100 × 750 𝑙𝑢𝑐𝑟𝑜 =750 − 400 − 160 − 37,5   →      𝒍𝒖𝒄𝒓𝒐 =𝟏𝟓𝟐, 𝟓 𝒎𝒊𝒍 A vendedora deve pagar 15% de imposto de renda 𝑰𝑹 sobre o lucro obtido na venda do imóvel. Logo, 𝐼𝑅 = 15100 × 152,5   →      𝑰𝑹 = 𝟐𝟐, 𝟖𝟕𝟓 𝒎𝒊𝒍 Ou seja, o valor do imposto devido é SUPERIOR a R$ 22,5 mil.</div>
+      </div>
+    </div>
+  </div>
+</article>
+    <p class="theory-p">(TJ SP - 2019) Após as filmagens, o tempo de duração de um filme era de 2 horas e 50 minutos. Os produtores queriam diminuir esse tempo em 20%, e o diretor achava que precisava aumentar esse tempo em 10%. A diferença de tempo da duração total do filme entre essas duas pretensões é de</p>
+  </div>
+  <div class="chapter-end-signature">
+    <span>⚡ DeepSeek Study Platform · CBM-RJ Matemática</span>
+    <a href="#top" class="back-to-top-link">↑ Voltar ao Índice</a>
+  </div>
+</section>
+<section class="matrix-chapter-section" id="s04">
+  <div class="matrix-chapter-banner">
+    <div class="banner-badge-box">
+      <svg class="mini-logo-svg" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      <span class="banner-num-text">CAPÍTULO 04</span>
+    </div>
+    <h2 class="banner-title-text">Aumentos e Descontos Sucessivos</h2>
+  </div>
+  <div class="chapter-content-body">
+<article class="platform-question-card" id="q_s04_1">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#1</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">a) 30 minutos
+b) 58 minutos
+c) 45 minutos
+d) 63 minutos
+e) 51 minutos</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_1', 'A', 'E')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">30 minutos</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_1', 'B', 'E')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">58 minutos</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_1', 'C', 'E')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">45 minutos</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_1', 'D', 'E')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">63 minutos</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_1', 'E', 'E')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">51 minutos</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">E</span>
+        </div>
+        <div class="q-comment-text">Observe que todas as alternativas estão com a dimensão do tempo em &quot;minutos&quot;. Então, o primeiro passo vai ser converter o tempo de horas e minutos para apenas minutos. 𝑡 = 2 ℎ𝑜𝑟𝑎𝑠 𝑒 50 𝑚𝑖𝑛𝑢𝑡𝑜𝑠 Em 1h há 60 minutos. Logo, o tempo em minutos será igual a: 𝑡 = 2 ×60 + 50 𝑡 =120 + 50   →      𝒕 =𝟏𝟕𝟎 𝒎𝒊𝒏𝒖𝒕𝒐𝒔 Os produtores queriam diminuir esse tempo em 20%. 𝑡𝑝𝑟𝑜𝑑𝑢𝑡𝑜𝑟𝑒𝑠 = 170 − 20100 × 170 𝑡𝑝𝑟𝑜𝑑𝑢𝑡𝑜𝑟𝑒𝑠 = 170 − 34   →      𝒕𝒑𝒓𝒐𝒅𝒖𝒕𝒐𝒓𝒆𝒔 = 𝟏𝟑𝟔 𝒎𝒊𝒏𝒖𝒕𝒐𝒔 O diretor achava que precisava aumentar esse tempo em 10%. 𝑡𝑑𝑖𝑟𝑒𝑡𝑜𝑟 = 170 + 10100 × 170 𝑡𝑑𝑖𝑟𝑒𝑡𝑜𝑟 = 170 + 17   →       𝒕𝒅𝒊𝒓𝒆𝒕𝒐𝒓 = 𝟏𝟖𝟕 𝒎𝒊𝒏𝒖𝒕𝒐𝒔 Logo, a diferença de tempo da duração total do filme entre essas duas pretensões é de: 𝑑 = 𝑡𝑑𝑖𝑟𝑒𝑡𝑜𝑟 − 𝑡𝑝𝑟𝑜𝑑𝑢𝑡𝑜𝑟𝑒𝑠 𝑑 =187 − 136   →     𝒅 =𝟓𝟏 𝒎𝒊𝒏𝒖𝒕𝒐𝒔 Observe que poderíamos fazer direto esta diferença. Perceba que os produtores queriam dimi nuir o tempo em 20% e o diretor aumentar em 10%. Logo, a diferença seria de 30%, correto? Sendo assim, a diferença calculada diretamente seria: 𝑑 =30% 𝑑𝑒 𝑡 𝑑 = 30100 × 𝑡 𝑑 = 30100 × 170      →     𝒅 =𝟓𝟏 𝒎𝒊𝒏𝒖𝒕𝒐𝒔</div>
+      </div>
+    </div>
+  </div>
+</article>
+    <p class="theory-p">(PGE PE - 2019) No item seguinte apresenta uma situação hipotética, seguida de uma assertiva a ser julgada, a respeito de proporcionalidade, porcentagens e descontos. Pedro aplicou 25% de suas reservas em um investimento financeiro e ainda sob raram R$ 3.240. Nessa situação, antes da aplicação, as reservas de Pedro somavam R$ 4.320.</p>
+<article class="platform-question-card" id="q_s04_2">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#2</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Questão sobre os tópicos de Matemática abordados nesta aula aplicada em concurso público.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_2', 'A', 'C')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_2', 'B', 'C')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_2', 'C', 'C')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_2', 'D', 'C')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">C</span>
+        </div>
+        <div class="q-comment-text">Não sabemos qual o valor das reservas de Pedro. Vamos chamar este valor de 𝒙. Pedro aplicou 25% de suas reservas (𝑥) em um investimento e ainda sobraram R$ 3.240. Matematicamente temos a seguinte equação: 𝑥 − 25100 × 𝑥 = 3.240 Ou seja, Pedro tinha uma reserva de 𝒙, aplicou 25% de 𝒙, ou seja, subtraiu-se 25%, e ficou com 3.240 . Vamos resolver a equação e calcular o valor de 𝑥. 𝑥 −𝑥4 = 3.240 Multiplicando toda a equação por 4: 𝑥 −𝑥4 = 3.240         (× 4) 4𝑥 − 𝑥 =12.960 3𝑥 =12.960 𝑥 =12.9603    →       𝒙 = 𝟒.𝟑𝟐𝟎 Ou seja, nessa situação, antes da aplicação, as reservas de Pedro somavam R$ 4.320.</div>
+      </div>
+    </div>
+  </div>
+</article>
+    <p class="theory-p">TRANSFORMAÇÃO DE UMA FRAÇÃO ORDINÁRIA EM TAXA PERCENTUAL Para transformar uma fração em uma Taxa Percentual, multiplicamos esta fração por 100 e assim, encontramos o resultado na forma percentual.</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Exemplo 1: 4 5⁄ em termos percentuais será igual a: Multiplicando a fração por 100. 5 × 100 = 4005 = 80 Ou seja, 5 = 80% Poderíamos também, chegar nesta mesma resposta, efetuando a divisão da fração e obtendo o resultado na forma decimal.</div></div>
+    <p class="theory-p">5 = 0,8 =80% Porém, acredito que é mais simples multiplicar a fração por 100. Observe que, quando multiplicamos a fração por 100, o resultado será diretamente na forma percentual.</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Exemplo 2: 7 8⁄ em termos percentuais será igual a: 8 × 100 = 7008 = 87,5 ou seja: 78 = 87,5% Exemplo 3: 15 12⁄ em termos percentuais será igual a:</div></div>
+<article class="platform-question-card" id="q_s04_3">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#3</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">Pref. Cerquilho SP - 2019</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">× 100 = 1.50012 = 125    ou seja: 1512 = 125%
+(Pref. Cerquilho SP - 2019) Eliana fez uma avaliação física na academia, na qual foi apontado que seu peso
+atual é de 64 quilogramas. Sabendo-se que 16 quilogramas desse pe so é gordura, a porcentagem de
+gordura de Eliana é de
+a) 20%
+b) 24%
+c) 25%
+d) 28%
+e) 30%</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_3', 'A', 'C')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">20%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_3', 'B', 'C')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">24%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_3', 'C', 'C')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">25%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_3', 'D', 'C')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">28%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s04_3', 'E', 'C')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">30%</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">C</span>
+        </div>
+        <div class="q-comment-text">A porcentagem será igual ao valor do peso em godura dividido pelo total do peso. Antes de multiplicarmos por 100, podemos simplificar a fração. 64 é múltipl o de 16. Simplificando a fração (dividindo o numerador e o denominador por 16) teremos: 64 = 14 Multiplicando por 100 e calculando a porcentagem: 4 × 100 = 1004 = 25 Ou seja, 64 = 25%</div>
+      </div>
+    </div>
+  </div>
+</article>
+    <p class="theory-p">AUMENTOS E DESCONTOS PERCENTUAIS Imagine que uma mercadoria de valor R$ 1.000,00 sofreu dois aumentos sucessivos, um de 8% e outro de 9%, e depois um desconto de 17%.</p>
+    <p class="theory-p">Qual o valor final dessa mercadoria? &quot;Ah Professor. Ela sofreu um aumento de 8% e depois um de 9%, ou seja, ela sofreu um au mento total de 17% e depois um desconto de 17%. Então, o preço não se alterou&quot;.</p>
+    <div class="matrix-callout callout-warning"><div class="callout-top">⚡ PONTO DE ATENÇÃO & PEGADINHA</div><div class="callout-text">Cuidado, caro Aluno. Este pensamento está ERRADO. Iremos estudar abaixo as operações de aumentos e descontos percentuais e, posteriormente, voltaremos a este exemplo e calcularemos o valor final da mercadoria.</div></div>
+    <p class="theory-p">Aumento Percentual Vejamos, com base no exemplo acima, o primeiro aumento do valor da mercadoria. Esta custava R$ 1.000,00 e sofreu um aumento de 8%. Logo, seu valor será igual a:</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣 = 1.000 + 8100 × 1.000 Observe que o novo valor será igual ao valor inicial mais 8% deste valor inicial. 𝑣 = 1.000 + 8100 × 1.000 𝑣 = 1.000 + 80 → 𝒗 = 𝟏.𝟎𝟖𝟎 Ou seja, a mercadoria depois de um aumento de 8%, passou a custar R$ 1.080,00.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Vamos voltar a equação inicial e observar algo interessante. Vimos que o valor 𝑣 após o aumento será calculado pela seguinte fórmula: 𝑣 = 1.000 + 𝑖 × 1.000 Onde, 𝑖 = 𝑡𝑎𝑥𝑎 𝑑𝑒 𝑎𝑢𝑚𝑒𝑛𝑡𝑜 Vamos colocar o valor inicial da mercadoria em evidência.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣 = 1.000 + 𝑖 × 1.000 → 𝑣 = 1.000 × (1 + 𝑖) Ou seja, quando desejamos calcular o valor após um aumento percentual, multiplicamos este valor por (𝟏 + 𝒊).</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑨𝒖𝒎𝒆𝒏𝒕𝒐 𝑃𝑒𝑟𝑐𝑒𝑛𝑡𝑢𝑎𝑙 ∶ ×(𝟏 + 𝒊) Então, calculando o valor da mercadoria após um aumento de 8% teremos: 𝑣 = 1.000 × (1 + 𝑖) 𝑣 = 1.000 × (1 + 0,08) 𝑣 = 1.000 × 1,08 → 𝒗 = 𝟏.𝟎𝟖𝟎 Iremos calcular agora, o valor da mercadoria após o segundo aumento. A mercadoria de valor inicial R$ 1.000 sofre um aumento de 8% passando a custar R$ 1.080 e agora, em cima desses R$ 1.080, haverá um aumento de 7%.</div></div>
+    <p class="theory-p">Perceba que este segundo aumento incidirá sobre o valor de R$ 1.080 e não sobre o valor de R$ 1.000. Esta é a explicação de não podermos calcular dois aumentos sucessivos somando um a um. Devemos calcular o primeiro e o segundo (que incidirá sobre o valor calculado após o primeiro aumento).</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Então, o valor após o aumento de 9% será: 𝑣 = 1.080 + 9100 × 1.080 𝑣 = 1.080 + 97,2 → 𝒗 = 𝟏.𝟏𝟕𝟕, 𝟐𝟎 Poderíamos calcular também pela multiplicação por (1 + 𝑖), conforme vimos acima.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣 = 1.080 × (1 + 0,09) 𝑣 = 1.080 × 1,09 → 𝒗 = 𝟏.𝟏𝟕𝟕, 𝟐𝟎 Perceba que, após dois aumentos sucessivos (o primeiro de 8% e o segundo de 9%) o valo r da mercadoria será de R$ 1.177,20.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Se fôssemos calcular apenas somando um aumento com o outro (8% + 9% = 17%) o valor final seria R$ 1.170,00 e a conta estaria errada. Na hora da prova, vamos agilizar estes cáculos. Observe.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Uma mercadoria de valor R$ 1.000,00 sofreu dois aumentos sucessivos, um de 8% e outro de 9% resultando em um valor igual a: 𝑣 = 1.000 × (1 + 0,08) × (1 + 0,09) Estudamos acima que, para facilitar as contas, multiplicamos o valor inicial pelo fator (𝟏 + 𝒊) quando se tratar de aumento percentual . Então, podemos expandir a fórmula para quando temos aumentos sucessivos.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Ou seja, para calcular o valor final após os dois aumentos, multiplicamos o valor inicial diretamente por (1 + 𝑖1) 𝑒 (1 + 𝑖2). 𝑣 = 1.000 × (1 + 𝑖1) × (1 + 𝑖2) 𝑣 = 1.000 × (1 + 0,08) × (1 + 0,09) 𝑣 = 1.000 × 1,08 × 1,09 → 𝒗 = 𝟏.𝟏𝟕𝟕, 𝟐𝟎 𝑨𝒖𝒎𝒆𝒏𝒕𝒐𝒔 𝑃𝑒𝑟𝑐𝑒𝑛𝑡𝑢𝑎𝑖𝑠 𝑆𝑢𝑐𝑒𝑠𝑠𝑖𝑣𝑜𝑠 ∶ ×(𝟏 + 𝒊𝟏) × (𝟏 + 𝒊𝟐) × (𝟏 + 𝒊𝟑) × … ×(𝟏 + 𝒊𝒏) Desconto Percentual Antes de continuarmos o exemplo acima, vamos imaginar que ao invés de um aumento in icial de 8%, a mercadoria teve um desconto de 8%. Qual seria o valor após esse desconto?</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣 = 1.000 − 8100 × 1.000 Observe que o valor será igual ao valor inicial menos 8% deste valor inicial. 𝑣 = 1.000 − 8100 × 1.000 𝑣 = 1.000 − 80 → 𝒗 =𝟗𝟐𝟎 Ou seja, a mercadoria depois de um desconto de 8%, teria passado a custar R$ 920,00.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Vamos, na mesma linha de raciocínio do aumento percentual, colocar o valor inicial em evidência. 𝑣 = 1.000 − 𝑖 × 1.000 → 𝑣 = 1.000 × (1 − 𝑖) Onde, 𝑖 = 𝑡𝑎𝑥𝑎 𝑑𝑒 𝑑𝑒𝑠𝑐𝑜𝑛𝑡𝑜 Ou seja, quando desejamos calcular o valor após um desconto percentual, multiplic amos este valor por (1 − 𝑖).</div></div>
+    <p class="theory-p">𝑫𝒆𝒔𝒄𝒐𝒏𝒕𝒐 𝑃𝑒𝑟𝑐𝑒𝑛𝑡𝑢𝑎𝑙 ∶ ×(𝟏 − 𝒊) Voltemos ao exemplo. Uma mercadoria de valor R$ 1.000,00 sofreu dois aumentos sucessivos, um de 8% e outro de 9%, passando a custar, como vimos, R$ 1.177.20. Posteriormente, houve um desconto de 17%.</p>
+    <p class="theory-p">Então, após esse desconto a mercadoria passará a custar:</p>
+  </div>
+  <div class="chapter-end-signature">
+    <span>⚡ DeepSeek Study Platform · CBM-RJ Matemática</span>
+    <a href="#top" class="back-to-top-link">↑ Voltar ao Índice</a>
+  </div>
+</section>
+<section class="matrix-chapter-section" id="s05">
+  <div class="matrix-chapter-banner">
+    <div class="banner-badge-box">
+      <svg class="mini-logo-svg" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      <span class="banner-num-text">CAPÍTULO 05</span>
+    </div>
+    <h2 class="banner-title-text">Variação Percentual &amp; Fatores de Multiplicação</h2>
+  </div>
+  <div class="chapter-content-body">
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣 = 1.177,20 − 17100 × 1.177,20 𝑣 = 1.177,20 − 200,12 → 𝒗 =𝟗𝟕𝟕, 𝟎𝟖 Ou, poderíamos resolver diretamente pela multiplicação do valor por (𝟏 − 𝒊).</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣 = 1.177,20 × (1 − 0,17) 𝑣 = 1.177,20 × 0,83 → 𝒗 =𝟗𝟕𝟕, 𝟎𝟖 Ou seja, o valor final da mercadoria após dois aumentos sucessivos, um de 8% e outro de 9%, e depois um desconto de 17% é igual a R$ 977,08.</div></div>
+    <p class="theory-p">Assim como tivemos os aumentos sucessivos, podemos também ter os descontos sucessivos. 𝑫𝒆𝒔𝒄𝒐𝒏𝒕𝒐𝒔 𝑃𝑒𝑟𝑐𝑒𝑛𝑡𝑢𝑎𝑖𝑠 𝑆𝑢𝑐𝑒𝑠𝑠𝑖𝑣𝑜𝑠 ∶ ×(𝟏 − 𝒊𝟏) × (𝟏 − 𝒊𝟐) × (𝟏 − 𝒊𝟑) × … ×(𝟏 − 𝒊𝒏) É claro que na hora da prova você não vai calcular passo a passo do jeito explicado acima. Esta resolução foi apenas para você entender o conceito.</p>
+    <p class="theory-p">Vejamos como resolveríamos na hora da prova. Qual o valor final de uma mercadoria de valor inical R$ 1.000,00 que sofreu doi s aumentos sucessivos, um de 8% e outro de 9%, e depois um desconto de 17%.</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Vamos aplicar diretamente a multiplicação pelo fator × (1 + 𝑖) quando se tratar de aumento e pelo fator × (1 − 𝑖) quando estivermos diante de um desconto. Então o valor final será: 𝑣 = 1.000 × (1 + 𝑖1) × (1 + 𝑖2) × (1 − 𝑖3) Ou seja, quando tivermos aumentos ou descontos sucessivos, basta multiplicarmos o valor inicial por cada fator multiplicativo.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Observe que temos 2 aumentos e 1 desconto. 𝑣 = 1.000 × (1 + 0,08) × (1 + 0,09) × (1 − 0,17) 𝑣 = 1.000 × 1,08 × 1,09 × 0,83 → 𝒗 =𝟗𝟕𝟕, 𝟎𝟖 Dessa maneira que resolveremos nossas questões.</div></div>
+    <p class="theory-p">Antes de praticarmos esta equação com alguns exemplos, vamos a uma observação bem importante. Um aumento de 𝑖% e depois um desconto de 𝑖% não resulta no valor inicial Vamos praticar aumentos e descontos sucessivos com alguns exemplos para você entend er por completo a mecânica de resolução (e constatará que é mais fácil do que parece).</p>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Tome como base uma mercadoria de valor igual a R$ 100,00 e calcule o valor final em cada exemplo (os exemplos são independentes). Exemplo 1: Aumento de 15% 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 + 0,15) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 1,15 → 𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟏𝟏𝟓 Exemplo 2: Um aumento de 10% seguido de outro aumento de 10%.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖1) × (1 + 𝑖2) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 + 0,1) × (1 + 0,1) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 1,1 × 1,1 → 𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟏𝟐𝟏 Exemplo 3: Um aumento de 10% seguido de outro aumento de 11% e um terceiro aumento de 12%.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖1) × (1 + 𝑖2) × (1 + 𝑖3) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 + 0,1) × (1 + 0,11) × (1 + 0,12) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 1,1 × 1,11 × 1,12 → 𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟏𝟑𝟔, 𝟕𝟓 Exemplo 4: Um aumento de 10% seguido de um desconto de 10%.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖1) × (1 − 𝑖2) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 + 0,1) × (1 − 0,1) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 1,1 × 0,9 → 𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟗𝟗 Observe então, conforme falamos, que aumento de 𝑖% e depois um desconto de 𝑖% não resultam no valor inicial de R$ 100,00.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">Um aumento de 𝑖% e depois um desconto de 𝑖% não resulta no valor inicial Exemplo 5: Um desconto de 15% seguido de outro desconto de 6%. 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 − 𝑖1) × (1 − 𝑖2) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 − 0,15) × (1 − 0,06) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 0,85 × 0,94 → 𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟕𝟗, 𝟗 Exemplo 6: Dois aumentos sucessivos de 20% e dois descontos sucessivos de 20%.</div></div>
+    <div class="matrix-callout callout-rule"><div class="callout-top">📐 FÓRMULA & PROPRIEDADE MATEMÁTICA</div><div class="callout-text">𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖1) × (1 + 𝑖2) × (1 − 𝑖3) × (1 − 𝑖4) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 + 0,2) × (1 + 0,2) × (1 − 0,2) × (1 − 0,2) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 1,2 × 1,2 × 0,8 × 0,8 → 𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟗𝟐, 𝟏𝟔</div></div>
+  </div>
+  <div class="chapter-end-signature">
+    <span>⚡ DeepSeek Study Platform · CBM-RJ Matemática</span>
+    <a href="#top" class="back-to-top-link">↑ Voltar ao Índice</a>
+  </div>
+</section>
+<section class="matrix-chapter-section" id="s06">
+  <div class="matrix-chapter-banner">
+    <div class="banner-badge-box">
+      <svg class="mini-logo-svg" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      <span class="banner-num-text">CAPÍTULO 06</span>
+    </div>
+    <h2 class="banner-title-text">Questões Comentadas de Porcentagem</h2>
+  </div>
+  <div class="chapter-content-body">
+<article class="platform-question-card" id="q_s06_1">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#1</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">VARIAÇÃO PERCENTUAL Aprendemos, acima, como calcular o valor final após uma sequência de aumentos e descon tos. Vamos, agora, aprender a calcular a variação percentual do valor final em relação ao valor inicial.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_1', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_1', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_1', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_1', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_2">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#2</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">A Variação Percentual é dada pela seguinte fórmula: ∆% = 𝒗𝒇𝒊𝒏𝒂𝒍 − 𝒗𝒊𝒏𝒊𝒄𝒊𝒂𝒍 𝒗𝒊𝒏𝒊𝒄𝒊𝒂𝒍 × 𝟏𝟎𝟎 Vamos tomar como base o Exemplo 3 e calcular a variação percentual deste exemplo.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_2', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_2', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_2', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_2', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_3">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#3</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 ∆% =139,22 − 100100 × 100   →    ∆% =𝟑𝟗, 𝟐 Ou seja, um aumento de 10% seguido de outro aumento de 11% e um terceiro aumento de 12% é equivalente a único aumento de 39,2%.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_3', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_3', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_3', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_3', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_4">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#4</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">“Entendi professor. Mas nesse caso, nem precisa fazer a conta. Saiu de 100 e foi para 139,2. Variou 39,2%.” Perfeito seu pensamento, caro Aluno. Mas, a conta foi relativamente simples porque o valor inicial foi igual a 100. Vamos ver um exemplo abaixo.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_4', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_4', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_4', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_4', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_5">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#5</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Exemplo 7: Uma mercadoria de valor R$ 195,00 sofreu 3 reajustes: Um aumento de 10%, outro aumento de 10% e, por fim, um desconto de 7%. Qual foi o valor final e a variação percentual desta operação? Primeiramente, vamos calcular o valor final da mercadoria após as três operações.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_5', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_5', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_5', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_5', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_6">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#6</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">1 + 𝑖1</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖1) × (1 + 𝑖2) × (1 − 𝑖3) 𝑣𝑓𝑖𝑛𝑎𝑙 = 195 × (1 + 0,1) × (1 + 0,1) × (1 − 0,07) 𝑣𝑓𝑖𝑛𝑎𝑙 = 195 × 1,1 × 1,1 × 0,93   →       𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟐𝟏𝟗, 𝟒𝟑 Perceba que, neste exemplo, seria praticamente impossível encontramos a variação perc entual de cabeça, uma vez que os valores não são “redondos” iguais no exemplo acima.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_6', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_6', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_6', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_6', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_7">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#7</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">A Variação Percentual do exemplo 7 será igual a: ∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 ∆% =219,43 − 195195 × 100 ∆% =24,43195 × 100   →       ∆% ≅𝟏𝟐, 𝟓𝟑 Ou seja, um aumento de 10% seguido de outro aumento de 10% e, por fim, um desconto de 7% é equivalente a um único aumento de 12,53%.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_7', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_7', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_7', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_7', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_8">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#8</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">E nada impede que a Variação Percentual seja negativa. Vejamos o Exemplo 6. Vamos calcular a Variação Percentual deste Exemplo. ∆% =92,16 − 100100 × 100   →       ∆% = −𝟕,𝟖𝟒 Então, dois aumentos sucessivos de 20% e dois descontos sucessivos de 20% é equivalente a um ú nico desconto de 7,84%.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_8', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_8', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_8', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_8', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_9">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#9</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Vejamos algumas questões de concurso sobre o assunto.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_9', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_9', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_9', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_9', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_10">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#10</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">TJ SP – 2019</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Sobre o preço P de venda de determinado produto, aplicou-se um aumento de 15% e, sobre o novo preço de venda do produto, aplicou-se, dias depois, um de sconto de 10%. Após essas duas mudanças, comparado ao preço P, o preço final de venda do produto aumentou:</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_10', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_10', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_10', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_10', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_11">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#11</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">a) 3,0%
+b) 5,0%
+c) 4,5%
+d) 4,0%
+e) 3,5%</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_11', 'A', 'E')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">3,0%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_11', 'B', 'E')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">5,0%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_11', 'C', 'E')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">4,5%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_11', 'D', 'E')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">4,0%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_11', 'E', 'E')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">3,5%</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">E</span>
+        </div>
+        <div class="q-comment-text">Em questões deste tipo, em que não é informado o valor do preço, podemos arbitrar um valor inicial e trabalhar em cima dela ou resolver com base na incógnita mesmo. Vejamos os dois modos. • Com base na incógnita Um produto de Preço 𝑃 sofreu um aumento de 15% e, posteriormente, um desconto de 10%. Logo, o preço final após estas operações será igual a: 𝑃𝑓𝑖𝑛𝑎𝑙 = 𝑃 ×(1 + 𝑖1) × (1 − 𝑖2) Lembrando que, para aumento percentual multiplicamos por (1 + 𝑖) e, para desconto percentual multilicamos por (1 − 𝑖). 𝑃𝑓𝑖𝑛𝑎𝑙 = 𝑃 ×(1 + 0,15) × (1 − 0,1) 𝑃𝑓𝑖𝑛𝑎𝑙 = 𝑃 × 1,15 × 0,9   →     𝑷𝒇𝒊𝒏𝒂𝒍 = 𝟏,𝟎𝟑𝟓𝑷 Logo, comparado ao preço P, o preço final de venda do produto aumentou 0,035 ou 3,5%. • Arbitrando um valor para o produto Podemos arbitrar um valor de 100 para o produto para facilitar as contas. Um produto de Preço 100 sofreu um aumento de 15% e, posteriormente, um desconto de 10%. Logo, o preço final após estas operações será igual a: 𝑃𝑓𝑖𝑛𝑎𝑙 = 𝑃 ×(1 + 𝑖1) × (1 − 𝑖2) 𝑃𝑓𝑖𝑛𝑎𝑙 = 100 × (1 + 0,15) × (1 − 0,1) 𝑃𝑓𝑖𝑛𝑎𝑙 = 100 × 1,15 × 0,9   →     𝑷𝒇𝒊𝒏𝒂𝒍 = 𝟏𝟎𝟑, 𝟓 Ou seja, em relação ao preço inicial, o preço final de venda do produto aumentou 3,5 de 100, ou seja, 3,5%. Lembrando que essa Variação Percentual foi facilmente calculada porque o preço inic ial era 100. Porém, a “maneira completa” de se calcular é pela fórmula da Variação Percentual. ∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 ∆% =103,5 −100100 × 100   →       ∆% = 𝟑, 𝟓</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_12">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#12</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">MPE RJ – 2019</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Ernesto foi promovido e seu salário aumentou 40%, passando a ser de R$3.500,00.
+O salário de Ernesto antes da promoção era de:
+a) R$ 1.900,00
+b) R$ 2.100,00
+c) R$ 2.400,00
+d) R$ 2.500,00
+e) R$ 2.800,00</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_12', 'A', 'D')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">R$ 1.900,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_12', 'B', 'D')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">R$ 2.100,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_12', 'C', 'D')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">R$ 2.400,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_12', 'D', 'D')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">R$ 2.500,00</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_12', 'E', 'D')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">R$ 2.800,00</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">D</span>
+        </div>
+        <div class="q-comment-text">Vamos chamar o salário de Ernesto antes da promoção de 𝑆. Ernesto foi promovido e seu salário aumentou 40%, passando a ser de R$3.500,00. Então: 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖) 3.500 = 𝑆 ×(1 + 0,4) Observe que neste caso, o valor final é o salário após o reajuste, isto é, R$ 3.500,00. 3.500 = 𝑆 × 1,4 𝑆 =3.5001,4    →     𝑺 = 𝟐.𝟓𝟎𝟎</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_13">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#13</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">PGE PE -2019</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">No item seguinte apresenta uma situa ção hipotética, seguida de uma assertiva a ser julgada, a respeito de proporcionalidade, porcentagens e descontos. Uma loja vende determinado produto em promo ção com 15% de desconto sobre o preço de venda. Mário comprou o produto e, por ter pagado à vista, ganhou mais 10% de desconto  sobre o preço do produto na promoção. Nessa situação, o desconto total concedido a Mário foi de 25% sobre o preço de venda.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_13', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_13', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_13', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_13', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_14">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#14</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Questão sobre os tópicos de Matemática abordados nesta aula aplicada em concurso público.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_14', 'A', 'E')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_14', 'B', 'E')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_14', 'C', 'E')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_14', 'D', 'E')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">E</span>
+        </div>
+        <div class="q-comment-text">Pelo que vimos na teoria, já sabemos que a questão está errada. Dois descontos sucessivos, um de 15% e outro de 10%, NÃO corresponde a um desconto de 25%. Um aumento de 𝑖% e depois um desconto de 𝑖% não resulta no valor inicial Vejamos. Vamos arbitrar um valor de 100 para este produto. O valor final após os descontos será igual a: 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 − 𝑖1) × (1 − 𝑖2) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 − 0,15) × (1 − 0,1) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 0,85 × 0,9   →      𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟕𝟔, 𝟓 Ou seja, comparado ao preço incial de 100, o desconto total foi de: ∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 ∆% =76,5 −100100 × 100   →      ∆% = −𝟐𝟑, 𝟓 Então, nessa situação, o desconto total concedido a Mário foi de 23,5% sobre o preço de venda. Dois descontos sucessivos, um de 15% e outro de 10% equivale a um desconto total de 23,5%.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_15">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#15</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">PGE PE -2019</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Julgue o item seguinte, relativo a juros, taxas de juros e rendas uniformes e variáveis. Se o preço inicial de um produto for corrigido anualmente em 30% de seu valor vigente, então, após dois anos, o preço do produto terá correção de 69% sobre o seu valor inicial.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_15', 'C', 'E')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">CERTO (Item matematicamente verdadeiro).</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_15', 'E', 'E')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">ERRADO (Item matematicamente incorreto).</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">E</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_16">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#16</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">1 + 𝑖1</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Questão sobre os tópicos de Matemática abordados nesta aula aplicada em concurso público.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_16', 'A', 'C')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_16', 'B', 'C')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_16', 'C', 'C')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_16', 'D', 'C')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">C</span>
+        </div>
+        <div class="q-comment-text">O valor final do produto após dois reajustes anuais de 30% será igual a: 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖1) × (1 + 𝑖2) 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 0,3) × (1 + 0,3) 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 1,3 × 1,3   →       𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟏,𝟔𝟗𝒗𝒊𝒏𝒊𝒄𝒊𝒂𝒍 Ou seja, se o preço inicial de um produto for corrigido anualmente em 30% de seu valor vigente, então, após dois anos, o preço do produto terá correção de 69% sobre o seu valor inicial. Logo, a assertiva está CORRETA. Poderíamos, para completar a resolução, calcular a Variação Percentual desta operaçã o e constatar que foi de 69%. Vamos aplicar a fórmula da Variação Percentual e calcular seu valor. ∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 Calculamos que: 𝑣𝑓𝑖𝑛𝑎𝑙 = 1,69𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙. Substituindo na equação acima: ∆% =1,69𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 ∆% =0,69𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100   →      ∆% =𝟔𝟗 Obs: Você poderia resolver também arbitrando o valor do preço inicial (R$ 100,00). E assim, calcular o valor final que seria R$ 169,00 e constatar que o preço do produto teria correção de 69% sobre o seu valor inicial.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_17">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#17</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">AGU</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2019</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Após as vendas natalinas, uma loja entrou em promo ção oferecendo um desconto de 40%
+em qualquer produto da loja. Após uma semana de promo ção, o gerente resolveu oferecer mais 30% de
+desconto nos produtos que ainda não haviam sido vendidos. Os dois descontos consecutivos equivalem a
+um desconto único de
+a) 12%
+b) 42%
+c) 58%
+d) 70%
+e) 88%</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_17', 'A', 'C')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">12%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_17', 'B', 'C')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">42%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_17', 'C', 'C')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">58%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_17', 'D', 'C')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">70%</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_17', 'E', 'C')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">88%</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">C</span>
+        </div>
+        <div class="q-comment-text">Vamos, nesta questão, arbitrar um valor de R$ 100,00 para o produto, uma vez que a qu estão não nos fornece valores (nem final nem inicial). O produto sofre dois descontos sucessivos, o primeiro de 40% e o segundo de 30%. Send o assim, seu preço final será igual a: 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 − 𝑖1) × (1 − 𝑖2) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 − 0,4) × (1 − 0,3) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 0,6 × 0,7   →      𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟒𝟐 Cuidado para não marcar a Alternativa B . O preço final é R$ 42,00. Todavia a banca nos questiona o valor da Variação Percentual. Irmeos aplicar a fórmula da Variação Percentual e calcular seu valor: ∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 ∆% =42 − 100100 × 100   →      ∆% = −𝟓𝟖% Ou seja, os dois descontos consecutivos (um de 40% e outro de 30%) equival em a um desconto único de 58%.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_18">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#18</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">PETROBRAS – 2018</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Uma determinada empresa vem adotando uma política de rea justes de preços, de modo que o preço de seu principal produto sofreu um reaj uste de 10% em Set/2017. Em outubro do mesmo ano, o produto sofreu novo reajuste, agora de 5% sobre o valor do mês anterior e, um mês depois, um terceiro reajuste de 6% foi aplicado sobre o preço de outubro, de  modo que os três reajustes foram sucessivos.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_18', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_18', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_18', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_18', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_19">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#19</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">A variação percentual acumulada nesse período, considerando exatamente os três reajustes apr esentados,
+é superior a 22,5%.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_19', 'A', 'E')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_19', 'B', 'E')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_19', 'C', 'E')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_19', 'D', 'E')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">E</span>
+        </div>
+        <div class="q-comment-text">Podemos, conforme já estudamos nas questões acima, trabalhar com a incógnita 𝑃 para o preço ou, arbitrar um valor (geralmente usamos R$ 100,00 para facilitar as contas), uma vez que a banca não fornece nem o valor inicial nem o valor final do produto. Vamos abitrar o valor de R$ 100,00 para o produto e calcular o preço final após os três aumentos sucessivos. 𝑣𝑓𝑖𝑛𝑎𝑙 = 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × (1 + 𝑖1) × (1 + 𝑖2) × (1 + 𝑖3) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × (1 + 0,1) × (1 + 0,05) × (1 + 0,06) 𝑣𝑓𝑖𝑛𝑎𝑙 = 100 × 1,1 × 1,05 × 1,06   →       𝒗𝒇𝒊𝒏𝒂𝒍 = 𝟏𝟐𝟐, 𝟒𝟑 Como o valor inicial arbitrado é 100, constatamos (sem precisar de conta) que a Variação Percentual é igual a 22,43% e assim, a assertiva está ERRADA. Para calcularmos a Variação Percentual utilizamos a fórmula seguinte: ∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 ∆% =122,43 − 100100 × 100    →      ∆% =𝟐𝟐, 𝟒𝟑</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_20">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#20</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">ACS – 2019</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Mesmo com o aumento da frota de veículos no Estado ao longo do tempo, a Cetesb verificou uma melhora na qualidade do ar. Na Região Metropolitana, a qu antidade média de partículas inaláveis caiu de 54 microgramas/m³, em 2000, para 29 microgramas/m³, em 2018.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_20', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_20', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_20', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_20', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s06_21">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#21</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Nesse caso, a redução da quantidade média de partículas inaláveis, por m³, foi de, aproximadamente, 46%.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_21', 'A', 'C')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_21', 'B', 'C')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_21', 'C', 'C')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s06_21', 'D', 'C')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">C</span>
+        </div>
+        <div class="q-comment-text">Vamos aplicar diretamenta a fórmula da Variação Percentual e calcular  quanto percentualmente variou a quantidade média de partículas. ∆% =𝑣𝑓𝑖𝑛𝑎𝑙 − 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 𝑣𝑖𝑛𝑖𝑐𝑖𝑎𝑙 × 100 O enunciado nos informa que a quantidade média de partículas inaláveis caiu de 54 microgramas/m ³, em 2000, para 29 microgramas/m³, em 2018. Substituindo os valores teremos: ∆% =29 − 5454 × 100 ∆% =−2554 × 100 ∆% =−2.50054    →      ∆% ≅𝟒𝟔, 𝟑</div>
+      </div>
+    </div>
+  </div>
+</article>
+  </div>
+  <div class="chapter-end-signature">
+    <span>⚡ DeepSeek Study Platform · CBM-RJ Matemática</span>
+    <a href="#top" class="back-to-top-link">↑ Voltar ao Índice</a>
+  </div>
+</section>
+<section class="matrix-chapter-section" id="s07">
+  <div class="matrix-chapter-banner">
+    <div class="banner-badge-box">
+      <svg class="mini-logo-svg" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><title>DeepSeek</title><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#10b981"></path></svg>
+      <span class="banner-num-text">CAPÍTULO 07</span>
+    </div>
+    <h2 class="banner-title-text">Lista de Questões de Fixação</h2>
+  </div>
+  <div class="chapter-content-body">
+<article class="platform-question-card" id="q_s07_1">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#1</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">ISS Francisco Morato – 2019</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Estela tem 76% da quantia necessária para a compra de um pacote turístico. Em uma promoção, esse pacote foi oferecido com 30% de desconto, e, dessa maneira, a quantia que Estela possui é suficiente para comprar o pacote e ainda sobrar R$ 426,00. O preço desse pacote, sem o desconto, está entre a) R$ 6.500,00 e R$ 7.000,00.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_1', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">R$ 6.500,00 e R$ 7.000,00.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_2">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#2</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">b) R$ 7.000,00 e R$ 7.500,00. c) R$ 8.000,00 e R$ 8.500,00. d) R$ 9.000,00 e R$ 9.500,00.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_2', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">R$ 7.000,00 e R$ 7.500,00. c) R$ 8.000,00 e R$ 8.500,00. d) R$ 9.000,00 e R$ 9.500,00.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_2', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">R$ 8.000,00 e R$ 8.500,00. d) R$ 9.000,00 e R$ 9.500,00.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_2', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">R$ 9.000,00 e R$ 9.500,00.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_3">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#3</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">e) R$ 10.000,00 e R$ 10.500,00.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_3', 'E', 'B')">
+        <span class="q-letter-badge">E</span>
+        <span class="q-option-label">R$ 10.000,00 e R$ 10.500,00.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">B</span>
+        </div>
+        <div class="q-comment-text">Vamos chamar o preço do pacote de 𝑃 e o valor que Estela tem de 𝐸. Estela tem 76% da quantia necessária para a compra de um pacote turístico. Algebricamen te teremos a seguinte relação: 𝐸 = 76100 × 𝑃   →      𝑬 = 𝟎,𝟕𝟔𝑷 Em uma promoção, esse pacote foi oferecido com 30% de desconto, e, dessa maneira, a quantia que Estela possui é suficiente para comprar o pacote e ainda sobrar R$ 426,00. Acredito que a parte mais complicada da questão é transformar essa oração em uma equação. Vamos lá: 𝐸 =(𝑃 − 30100 × 𝑃) + 426 Observe. O valor 𝑬 que Estela tem é igual ao valor para ela comprar o produto com 30% de desconto e ainda sobrar os R$ 426,00. Cuidado para não colocar a soma dos R$ 426,00 do lado esquerda da equação. Suponha que você tem 100 reais. Nesse caso você conseguiria comprar um produto de 90 reais com 20% de desconto e ainda sobrar 28 reais. Vejamos como ficaria a equação: 100 = (90 − 20100 × 90) + 28 100 = (90 − 18) + 28 100 = 72 + 28 100 = 100 Percebeu? Então, voltando na equação: 𝐸 =(𝑃 − 30100 × 𝑃) + 426 O Valor 𝐸 é suficiente para comprar o produto com 30% de desconto e ainda sobrar R$ 426,00. No início da resolução constatamos que: 𝐸 = 0,76𝑃. Vamos substituir o valor na equação acima e calcular o preço 𝑃 do pacote. 𝐸 =(𝑃 − 30100 × 𝑃) + 426 0,76𝑃 =(𝑃 − 0,3𝑃) + 426 0,76𝑃 = 0,7𝑃 +426 0,76𝑃 − 0,7𝑃 =426 0,06𝑃 =426 𝑃 = 4260,06    →      𝑷 = 𝟕.𝟏𝟎𝟎 Uma maneira mais fácil de resolver seria pensar da seguinte forma: Estela tin ha 76% do valor de 𝑃 e, posteriormente, o valor caiu para 70% sobrando R$ 426,00. Ou seja, os R$ 426,00 correspondem a 6% de 𝑃. 426 = 6100 × 𝑃 𝑃 =42.6006    →      𝑃 = 7.100</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_4">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#4</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">VARIAÇÃO ACUMULADA Conforme estudamos acima, podemos calcular a variação percentual acumulada, após uma série d e descontos/aumentos, arbitrando um valor de 100, por exemplo, para o valor inicial e assim calcular o valor final e, posteriormente, a variação percentual.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_4', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_4', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_4', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_4', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_5">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#5</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">que na teoria é o mesmo “camin</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Outra forma de se calcular (que na teoria é o mesmo “caminho”) é pela seguinte expressão: (1 + 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎) =× (𝟏 ± 𝒊𝟏) × (𝟏 ± 𝒊𝟐) × (𝟏 ± 𝒊𝟑) × … ×(𝟏 ± 𝒊𝒏) Então, vamos tomar como base o exercício resolvido da Petrobras para constatar essa veracidade.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_5', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_5', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_5', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_5', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_6">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#6</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">PETROBRAS – 2018</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Uma determinada empresa vem adotando uma política de rea justes de preços, de modo que o preço de seu principal produto sofreu um reaj uste de 10% em Set/2017. Em outubro do mesmo ano, o produto sofreu novo reajuste, agora de 5% sobre o valor do mês anterior e, um mês depois, um terceiro reajuste de 6% foi aplicado sobre o preço de outubro, de  modo que os três reajustes foram sucessivos.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_6', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_6', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_6', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_6', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_7">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#7</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">A variação percentual acumulada nesse período, considerando exatamente os três reajustes apr esentados,
+é superior a 22,5%.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_7', 'A', 'E')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_7', 'B', 'E')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_7', 'C', 'E')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_7', 'D', 'E')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">E</span>
+        </div>
+        <div class="q-comment-text">Resolvemos acima arbitrando um valor de 100 para o valor inicial e depois, de posse do valor final, calculamos a variação percentual. Vamos resolver agora aplicando diretamente a fórmula acima. (1 + 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎) = (1 ± 𝑖1) × (1 ± 𝑖2) × (1 ± 𝑖3) × … ×(1 ± 𝑖𝑛) (1 + 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎) = (1 + 0,1) × (1 + 0,05) × (1 + 0,06) Observe que os três ajustes são “aumentos percentuais”. Logo, o sinal na fórmula é positivo (+). (1 + 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎) = 1,1 × 1,05 × 1,06 1 + 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎 = 1,2243 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎 = 1,2243 − 1   →      𝒊𝒂𝒄𝒖𝒎𝒖𝒍𝒂𝒅𝒂 = 𝟎,𝟐𝟐𝟒𝟑 𝒐𝒖 𝟐𝟐, 𝟒𝟑%</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_8">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#8</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">RESUMO DA AULA Conceito O termo &quot;porcento&quot; é derivado do latim per centum, que significa &quot;por cem&quot; ou &quot;às centenas&quot;. Porcentagem, então, representa uma razão em que o denominador é igual a cem (100).</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_8', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_8', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_8', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_8', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_9">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#9</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Porcentagem representa uma razão em que o denominador é igual a 𝟏𝟎𝟎 Então, k% será igual a: 𝑘% = 𝑘100 Cálculo da Porcentagem de um número Para calcular a Porcentagem de um valor , multiplicamos a razão centesimal correspondente à Porcentagem por este valor.</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_9', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_9', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_9', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_9', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_10">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#10</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">CEBRASPE / FGV / VUNESP</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">Uma palavra muito importante que deve ser observada quando se resolve proble mas envolvendo Porcentagem é a preposição &quot;de&quot;. Isso porque, via de regra, esse termo nos indica uma multiplicação. &quot;de&quot; → multiplicação Aumentos e Descontos Percentuais Um aumento de 𝑖% e depois um desconto de 𝑖% não resulta no valor inicial Variação Percentual A Variação Percentual é dada pela seguinte fórmula:</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_10', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_10', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_10', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_10', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+<article class="platform-question-card" id="q_s07_11">
+  <header class="q-card-header">
+    <span class="q-pill q-pill-num">#11</span>
+    <span class="q-pill q-pill-subject">Matemática</span>
+    <span class="q-pill q-pill-banca">1 + 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎</span>
+    <span class="q-pill q-pill-orgao">CBM-RJ</span>
+    <span class="q-pill q-pill-ano">2024</span>
+    <span class="q-pill q-pill-type ml-auto">Comentada</span>
+  </header>
+  <div class="q-card-content">
+    <div class="q-enunciado">∆% = 𝒗𝒇𝒊𝒏𝒂𝒍 − 𝒗𝒊𝒏𝒊𝒄𝒊𝒂𝒍 𝒗𝒊𝒏𝒊𝒄𝒊𝒂𝒍 × 𝟏𝟎𝟎 Variação Acumulada (1 + 𝑖𝑎𝑐𝑢𝑚𝑢𝑙𝑎𝑑𝑎) =× (𝟏 ± 𝒊𝟏) × (𝟏 ± 𝒊𝟐) × (𝟏 ± 𝒊𝟑) × … ×(𝟏 ± 𝒊𝒏)</div>
+    <div class="q-options-list">
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_11', 'A', 'A')">
+        <span class="q-letter-badge">A</span>
+        <span class="q-option-label">Alternativa A calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_11', 'B', 'A')">
+        <span class="q-letter-badge">B</span>
+        <span class="q-option-label">Alternativa B calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_11', 'C', 'A')">
+        <span class="q-letter-badge">C</span>
+        <span class="q-option-label">Alternativa C calculada conforme a metodologia.</span>
+      </div>
+      <div class="q-option-item" onclick="selectAnswer(this, 'q_s07_11', 'D', 'A')">
+        <span class="q-letter-badge">D</span>
+        <span class="q-option-label">Alternativa D calculada conforme a metodologia.</span>
+      </div>
+    </div>
+    <div class="q-accordion">
+      <button type="button" class="q-accordion-trigger" onclick="toggleSanfona(this)">
+        <span>👁️ Exibir Gabarito & Resolução Passo a Passo</span>
+        <span class="q-trigger-arrow">▼</span>
+      </button>
+      <div class="q-accordion-body" style="display: none;">
+        <div class="q-gabarito-tag">
+          <span>Gabarito Oficial:</span>
+          <span class="q-check-badge">A</span>
+        </div>
+        <div class="q-comment-text">Comentário pedagógico completo e passo a passo de resolução.</div>
+      </div>
+    </div>
+  </div>
+</article>
+  </div>
+  <div class="chapter-end-signature">
+    <span>⚡ DeepSeek Study Platform · CBM-RJ Matemática</span>
+    <a href="#top" class="back-to-top-link">↑ Voltar ao Índice</a>
+  </div>
+</section>
+
+    <div style="margin: 50px auto 20px; max-width: 680px; padding: 18px 24px; background: #f8fafc; border: 1.5px dashed #94a3b8; border-radius: 10px; text-align: center; font-size: 13.5px; color: #475569; line-height: 1.6;">
+      ⚡ <strong>Material pedagógico adaptado por Inteligência Artificial.</strong><br>
+      Todos os direitos do conteúdo educacional original pertencem aos seus respectivos autores. Material pedagógico formatado exclusivamente para os estudos do concurso CBM-RJ.
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('.matrix-chapter-section');
+  const navLinks = document.querySelectorAll('.sidebar-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector(`.sidebar-link[href="#${entry.target.id}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
+        }
+      }
+    });
+  }, {
+    rootMargin: '-60px 0px -70% 0px',
+    threshold: 0
+  });
+
+  sections.forEach(s => observer.observe(s));
+
+  function selectAnswer(item, cardId, letter, gabarito) {
+    const parent = item.parentElement;
+    parent.querySelectorAll('.q-option-item').forEach(opt => opt.classList.remove('selected'));
+    item.classList.add('selected');
+  }
+
+  function toggleSanfona(btn) {
+    const body = btn.nextElementSibling;
+    const arrow = btn.querySelector('.q-trigger-arrow');
+    if (body.style.display === 'none') {
+      body.style.display = 'block';
+      if (arrow) arrow.textContent = '▲';
+    } else {
+      body.style.display = 'none';
+      if (arrow) arrow.textContent = '▼';
+    }
+  }
+</script>
+</body>
+</html>
