@@ -21,10 +21,13 @@ export async function GET(request: NextRequest, context: Contexto) {
 
   if (item) {
     numAula = item.aula;
+  } else if (/^[abm]0000000-0000-4000-8000-0000000000(\d{2})$/i.test(id)) {
+    const match = id.match(/^[abm]0000000-0000-4000-8000-0000000000(\d{2})$/i);
+    if (match) numAula = match[1];
   } else {
-    const numInt = parseInt(id.replace(/\D/g, ""), 10);
-    if (!isNaN(numInt)) {
-      numAula = String(numInt).padStart(2, "0");
+    const lastDigits = id.replace(/^[^-]+-[^-]+-[^-]+-[^-]+-/, "").replace(/\D/g, "");
+    if (lastDigits.length > 0) {
+      numAula = lastDigits.slice(-2).padStart(2, "0");
     }
   }
 

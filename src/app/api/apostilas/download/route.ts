@@ -47,10 +47,13 @@ export async function GET(request: NextRequest) {
   let numAula = "01";
   if (encontradoPorId) {
     numAula = encontradoPorId.aula;
+  } else if (/^[abm]0000000-0000-4000-8000-0000000000(\d{2})$/i.test(ident)) {
+    const match = ident.match(/^[abm]0000000-0000-4000-8000-0000000000(\d{2})$/i);
+    if (match) numAula = match[1];
   } else {
-    const numInt = parseInt(ident.replace(/\D/g, ""), 10);
-    if (!isNaN(numInt)) {
-      numAula = String(numInt).padStart(2, "0");
+    const lastDigits = ident.replace(/^[^-]+-[^-]+-[^-]+-[^-]+-/, "").replace(/\D/g, "");
+    if (lastDigits.length > 0) {
+      numAula = lastDigits.slice(-2).padStart(2, "0");
     }
   }
 
