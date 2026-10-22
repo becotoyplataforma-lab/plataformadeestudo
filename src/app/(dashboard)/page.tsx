@@ -9,6 +9,7 @@ import { getProfile } from "@/lib/db/repositories/perfil";
 import { DashboardStats, QuickActions } from "@/components/dashboard/dashboard-stats";
 import { EvolutionChart } from "@/components/dashboard/evolution-chart";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
+import { RaioXDesempenho } from "@/components/dashboard/raio-x-desempenho";
 import { DocumentRepository } from "@/lib/knowledge/repositories/document.repository";
 import { accessScopeFromProfile } from "@/lib/knowledge/security/document-access";
 import { resolveCourseScope, type CourseScope } from "@/lib/knowledge/security/course-scope";
@@ -282,7 +283,10 @@ export default async function DashboardPage() {
         </>
       )}
 
-      {/* ============ 5. CARDS INFORMATIVOS (APOSTILAS RECENTES) ============ */}
+      {/* ============ 5. RAIO-X DE DESEMPENHO POR TÓPICO ============ */}
+      <RaioXDesempenho initialWeakness={weakness} />
+
+      {/* ============ 6. CARDS INFORMATIVOS (APOSTILAS RECENTES) ============ */}
       <section className="grid gap-4 sm:grid-cols-3">
         <Link href="/apostilas" className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-transform hover:-translate-y-0.5">
           <p className="text-xs text-slate-400">Apostilas</p>

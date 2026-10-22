@@ -22,6 +22,7 @@ const PUBLIC_EXACT = new Set([
 const PUBLIC_PREFIXES = [
   "/questoes",
   "/simulados",
+  "/api/questoes",
   "/api/simulados",
   "/api/auth",
   "/api/apostilas",

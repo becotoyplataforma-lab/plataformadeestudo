@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { NotaDoAluno } from "@/components/questoes/nota-do-aluno";
 import { Sanfona } from "@/components/questoes/sanfona";
 import { ModalSalvarCaderno } from "@/components/questoes/modal-salvar-caderno";
+import { ProfessorIaDialog } from "@/components/questoes/professor-ia-dialog";
+import { SugestaoFlashcardErro } from "@/components/questoes/sugestao-flashcard-erro";
 import {
   obterTentativa,
   questaoEstaEmQuaisCadernos,
@@ -84,6 +86,7 @@ export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCa
   const [selecionada, setSelecionada] = React.useState<string | null>(null);
   const [respondida, setRespondida] = React.useState(false);
   const [modalCadernoAberto, setModalCadernoAberto] = React.useState(false);
+  const [modalIaAberto, setModalIaAberto] = React.useState(false);
   const [cadernosDestaQuestao, setCadernosDestaQuestao] = React.useState<string[]>([]);
 
   const confiavel = gabaritoConfiavel(questao);
@@ -267,6 +270,19 @@ export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCa
               ? `Salva (${cadernosDestaQuestao.length})`
               : "Caderno"}
           </Button>
+
+          <Button
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => setModalIaAberto(true)}
+            className="border-cyan-500/40 bg-cyan-950/20 hover:bg-cyan-900/40 text-cyan-300 text-xs gap-1.5 font-bold transition-all shadow-xs"
+            title="Explicar questão e distratores com Professor IA"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+            <span>{respondida && acerto === false ? "Explicar meu erro com IA" : "Professor IA"}</span>
+          </Button>
+
           {hrefDetalhe && (
             <Link
               href={hrefDetalhe}
@@ -281,6 +297,14 @@ export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCa
             </span>
           )}
         </div>
+
+        {respondida && acerto === false && (
+          <SugestaoFlashcardErro
+            questao={questao}
+            letraMarcada={selecionada}
+            onAbrirProfessorIa={() => setModalIaAberto(true)}
+          />
+        )}
       </div>
 
       <footer>
@@ -385,6 +409,13 @@ export function QuestaoCard({ questao, lote, hrefDetalhe, className }: QuestaoCa
       aberto={modalCadernoAberto}
       onOpenChange={setModalCadernoAberto}
       enunciadoResumido={questao.enunciado.slice(0, 140)}
+    />
+
+    <ProfessorIaDialog
+      questao={questao}
+      letraMarcada={selecionada}
+      aberto={modalIaAberto}
+      onOpenChange={setModalIaAberto}
     />
   </>
   );

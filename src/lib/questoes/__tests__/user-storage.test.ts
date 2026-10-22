@@ -29,15 +29,19 @@ import {
   excluirCadernoPersonalizado,
   limparCadernoDeErros,
   obterCadernosPersonalizados,
+  obterFlashcardsLocais,
   obterHistoricoSimulados,
   obterIdsAcertados,
   obterIdsComErro,
   obterIdsResolvidos,
   obterTentativa,
   questaoEstaEmQuaisCadernos,
+  questaoTemFlashcard,
   registrarHistoricoSimulado,
   registrarTentativaLocal,
+  salvarFlashcardLocal,
   salvarHistoricoSimulado,
+  calcularRaioXDesempenho,
 } from "../user-storage";
 import { PRESETS_SIMULADOS } from "../../simulados/tipos";
 
@@ -151,5 +155,73 @@ describe("user-storage & tipos: Simulados", () => {
     expect(historico).toHaveLength(1);
     expect(historico[0]?.acertos).toBe(8);
     expect(historico[0]?.totalQuestoes).toBe(10);
+  });
+});
+
+describe("user-storage: Flashcards de Erros (1 Clique)", () => {
+  beforeEach(() => {
+    store.clear();
+  });
+
+  it("salva e recupera flashcard gerado a partir de erro", () => {
+    expect(obterFlashcardsLocais()).toEqual([]);
+    expect(questaoTemFlashcard("q-001")).toBe(false);
+
+    salvarFlashcardLocal({
+      questaoId: "q-001",
+      frente: "Como aplicar crase antes de pronome relativo?",
+      verso: "Somente ocorre crase antes de 'a qual / as quais'.",
+      disciplina: "Língua Portuguesa",
+      assunto: "Crase",
+    });
+
+    const flashcards = obterFlashcardsLocais();
+    expect(flashcards).toHaveLength(1);
+    expect(flashcards[0]?.frente).toContain("crase");
+    expect(questaoTemFlashcard("q-001")).toBe(true);
+    expect(questaoTemFlashcard("q-999")).toBe(false);
+  });
+});
+
+describe("user-storage: Raio-X de Desempenho", () => {
+  beforeEach(() => {
+    store.clear();
+  });
+
+  it("calcula pontos fortes, em evolução e vulnerabilidades", () => {
+    // Aluno acerta 9 de 10 em Ortografia (90% -> Forte)
+    for (let i = 1; i <= 9; i++) registrarTentativaLocal(`q-ort-${i}`, "A", true);
+    registrarTentativaLocal("q-ort-10", "B", false);
+
+    // Aluno acerta 6 de 10 em Sintaxe (60% -> Em evolução)
+    for (let i = 1; i <= 6; i++) registrarTentativaLocal(`q-sin-${i}`, "C", true);
+    for (let i = 7; i <= 10; i++) registrarTentativaLocal(`q-sin-${i}`, "A", false);
+
+    // Aluno acerta 2 de 10 em Geometria Espacial (20% -> Vulnerabilidade Crítica)
+    for (let i = 1; i <= 2; i++) registrarTentativaLocal(`q-geo-${i}`, "D", true);
+    for (let i = 3; i <= 10; i++) registrarTentativaLocal(`q-geo-${i}`, "B", false);
+
+    const metadados: Record<string, { disciplina: string; assunto: string }> = {};
+    for (let i = 1; i <= 10; i++) {
+      metadados[`q-ort-${i}`] = { disciplina: "Língua Portuguesa", assunto: "Ortografia" };
+      metadados[`q-sin-${i}`] = { disciplina: "Língua Portuguesa", assunto: "Sintaxe" };
+      metadados[`q-geo-${i}`] = { disciplina: "Matemática", assunto: "Geometria Espacial" };
+    }
+
+    const diag = calcularRaioXDesempenho(metadados);
+    expect(diag.totalQuestoes).toBe(30);
+    expect(diag.totalAcertos).toBe(17);
+
+    // Pontos fortes
+    expect(diag.pontosFortes.some((t) => t.topico === "Ortografia" && t.taxa === 90)).toBe(true);
+
+    // Em evolução
+    expect(diag.emEvolucao.some((t) => t.topico === "Sintaxe" && t.taxa === 60)).toBe(true);
+
+    // Vulnerabilidades
+    expect(diag.vulnerabilidades.some((t) => t.topico === "Geometria Espacial" && t.taxa === 20)).toBe(true);
+
+    // Foco recomendado deve ser o tópico mais vulnerável
+    expect(diag.focoRecomendado?.topico).toBe("Geometria Espacial");
   });
 });

@@ -262,3 +262,165 @@ export function registrarHistoricoSimulado(
 }
 
 export const salvarHistoricoSimulado = registrarHistoricoSimulado;
+
+// ============================================================
+// 4. FLASHCARDS GERADOS A PARTIR DE ERROS (1 CLIQUE)
+// ============================================================
+
+export interface FlashcardLocal {
+  id: string;
+  questaoId: string;
+  frente: string;
+  verso: string;
+  disciplina?: string;
+  assunto?: string;
+  criadoEm: number;
+}
+
+const CHAVE_FLASHCARDS = "concursoai_flashcards_locais_v1";
+
+export function obterFlashcardsLocais(): FlashcardLocal[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CHAVE_FLASHCARDS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function salvarFlashcardLocal(
+  flashcard: Omit<FlashcardLocal, "id" | "criadoEm">
+): FlashcardLocal {
+  const lista = obterFlashcardsLocais();
+  const novo: FlashcardLocal = {
+    ...flashcard,
+    id: "fc-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6),
+    criadoEm: Date.now(),
+  };
+  lista.unshift(novo);
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(CHAVE_FLASHCARDS, JSON.stringify(lista));
+      window.dispatchEvent(new Event("concursoai_flashcards_atualizado"));
+    } catch (err) {
+      console.error("[user-storage] Erro ao salvar flashcard:", err);
+    }
+  }
+  return novo;
+}
+
+export function questaoTemFlashcard(questaoId: string): boolean {
+  const lista = obterFlashcardsLocais();
+  return lista.some((f) => f.questaoId === questaoId);
+}
+
+// ============================================================
+// 5. RAIO-X DE DESEMPENHO POR TÓPICO
+// ============================================================
+
+export interface TopicoRaioX {
+  disciplina: string;
+  topico: string;
+  total: number;
+  acertos: number;
+  erros: number;
+  taxa: number; // 0..100
+  status: "forte" | "evolucao" | "critico";
+}
+
+export interface DiagnosticoRaioX {
+  totalQuestoes: number;
+  totalAcertos: number;
+  taxaGeral: number;
+  pontosFortes: TopicoRaioX[];
+  emEvolucao: TopicoRaioX[];
+  vulnerabilidades: TopicoRaioX[];
+  focoRecomendado: TopicoRaioX | null;
+}
+
+export function calcularRaioXDesempenho(
+  metadadosQuestoes?: Record<string, { disciplina?: string; assunto?: string }>
+): DiagnosticoRaioX {
+  const tentativas = obterTodasTentativas();
+  const listaTentativas = Object.values(tentativas);
+
+  if (listaTentativas.length === 0) {
+    return {
+      totalQuestoes: 0,
+      totalAcertos: 0,
+      taxaGeral: 0,
+      pontosFortes: [],
+      emEvolucao: [],
+      vulnerabilidades: [],
+      focoRecomendado: null,
+    };
+  }
+
+  const mapaTopicos: Record<
+    string,
+    { disciplina: string; topico: string; total: number; acertos: number; erros: number }
+  > = {};
+
+  let totalGeral = 0;
+  let acertosGeral = 0;
+
+  for (const t of listaTentativas) {
+    totalGeral++;
+    if (t.acertou) acertosGeral++;
+
+    const meta = metadadosQuestoes?.[t.questaoId];
+    const disciplina = meta?.disciplina || (t.questaoId.includes("mat") ? "Matemática" : "Língua Portuguesa");
+    const topico = meta?.assunto || "Geral e Fundamentos";
+    const chave = `${disciplina}:::${topico}`;
+
+    if (!mapaTopicos[chave]) {
+      mapaTopicos[chave] = { disciplina, topico, total: 0, acertos: 0, erros: 0 };
+    }
+    mapaTopicos[chave].total++;
+    if (t.acertou) {
+      mapaTopicos[chave].acertos++;
+    } else {
+      mapaTopicos[chave].erros++;
+    }
+  }
+
+  const taxaGeral = totalGeral > 0 ? Math.round((acertosGeral / totalGeral) * 100) : 0;
+
+  const todosTopicos: TopicoRaioX[] = Object.values(mapaTopicos).map((item) => {
+    const taxa = item.total > 0 ? Math.round((item.acertos / item.total) * 100) : 0;
+    const status: "forte" | "evolucao" | "critico" =
+      taxa >= 75 ? "forte" : taxa >= 50 ? "evolucao" : "critico";
+    return {
+      ...item,
+      taxa,
+      status,
+    };
+  });
+
+  const pontosFortes = todosTopicos
+    .filter((t) => t.status === "forte")
+    .sort((a, b) => b.taxa - a.taxa || b.total - a.total);
+
+  const emEvolucao = todosTopicos
+    .filter((t) => t.status === "evolucao")
+    .sort((a, b) => a.taxa - b.taxa);
+
+  const vulnerabilidades = todosTopicos
+    .filter((t) => t.status === "critico")
+    .sort((a, b) => a.taxa - b.taxa || b.erros - a.erros);
+
+  // Foco recomendado: a vulnerabilidade com maior número de erros ou menor taxa
+  const focoRecomendado = vulnerabilidades[0] ?? emEvolucao[0] ?? null;
+
+  return {
+    totalQuestoes: totalGeral,
+    totalAcertos: acertosGeral,
+    taxaGeral,
+    pontosFortes,
+    emEvolucao,
+    vulnerabilidades,
+    focoRecomendado,
+  };
+}
+

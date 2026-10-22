@@ -15,6 +15,7 @@ import {
   Clock,
   Flag,
   HelpCircle,
+  Layers,
   Play,
   RotateCcw,
   Sparkles,
@@ -23,6 +24,11 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  ProfessorIaDialog,
+  type QuestaoParaExplicacao,
+} from "@/components/questoes/professor-ia-dialog";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -44,6 +50,7 @@ import {
 import {
   obterHistoricoSimulados,
   registrarTentativaLocal,
+  salvarFlashcardLocal,
   salvarHistoricoSimulado,
   type HistoricoSimulado,
 } from "@/lib/questoes/user-storage";
@@ -84,6 +91,9 @@ export function SimuladoRunner() {
   // Relatório pós-prova
   const [relatorio, setRelatorio] = React.useState<RelatorioSimulado | null>(null);
   const [errosSalvosNoCaderno, setErrosSalvosNoCaderno] = React.useState(false);
+  const [modalIaAberto, setModalIaAberto] = React.useState(false);
+  const [questaoIaSelecionada, setQuestaoIaSelecionada] = React.useState<QuestaoParaExplicacao | null>(null);
+  const [letraIaMarcada, setLetraIaMarcada] = React.useState<string | null>(null);
 
   // Carrega histórico ao montar
   React.useEffect(() => {
@@ -1114,6 +1124,56 @@ export function SimuladoRunner() {
                       );
                     })}
                   </div>
+
+                  {/* AÇÕES DA IA & FLASHCARD NO ITEM REVISADO */}
+                  <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setQuestaoIaSelecionada({
+                          id_local: q.id,
+                          disciplina: q.disciplina,
+                          assunto: q.assunto ?? null,
+                          banca: q.banca ?? null,
+                          ano: q.ano ?? null,
+                          enunciado: q.enunciado,
+                          alternativas: Object.fromEntries(q.alternativas.map((a) => [a.letra, a.texto])),
+                          gabarito: q.gabarito,
+                        });
+                        setLetraIaMarcada(r?.letraMarcada ?? null);
+                        setModalIaAberto(true);
+                      }}
+                      className="border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/40 text-cyan-300 text-xs gap-1.5 font-bold"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                      <span>{r?.letraMarcada && !acertou ? "Explicar meu erro com IA" : "Explicar com Professor IA"}</span>
+                    </Button>
+
+                    {!acertou && (
+                      <Button
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const altGabarito = q.alternativas.find((a) => a.letra === q.gabarito)?.texto || q.gabarito;
+                          salvarFlashcardLocal({
+                            questaoId: q.id,
+                            frente: `[${q.disciplina}${q.assunto ? " · " + q.assunto : ""}] Como resolver:\n\n${q.enunciado.slice(0, 160)}...`,
+                            verso: `Gabarito Oficial: (${q.gabarito}) - ${altGabarito}\n\nConceito: ${q.assunto || q.disciplina || "Regra do edital"}.`,
+                            disciplina: q.disciplina,
+                            assunto: q.assunto,
+                          });
+                          toast.success("Flashcard salvo na sua repetição espaçada! 🎯");
+                        }}
+                        className="border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs gap-1.5 font-bold"
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                        <span>Criar Flashcard</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -1140,6 +1200,16 @@ export function SimuladoRunner() {
             <span>&rarr;</span>
           </Link>
         </div>
+
+        {/* MODAL DO PROFESSOR IA PARA QUESTÕES DO SIMULADO */}
+        {questaoIaSelecionada && (
+          <ProfessorIaDialog
+            questao={questaoIaSelecionada}
+            letraMarcada={letraIaMarcada}
+            aberto={modalIaAberto}
+            onOpenChange={setModalIaAberto}
+          />
+        )}
       </div>
     );
   }
