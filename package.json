@@ -23,7 +23,8 @@
     "drizzle:migrate": "tsx --conditions=react-server scripts/db-guard.ts -- drizzle-kit migrate",
     "apostila:ingest": "tsx --conditions=react-server scripts/ingest-local-apostila.ts",
     "apostila:sync": "tsx --conditions=react-server scripts/ingest-local-apostila.ts --do-manifesto",
-    "ingest:apostilas": "tsx --conditions=react-server scripts/ingest-apostilas.ts"
+    "ingest:apostilas": "tsx --conditions=react-server scripts/ingest-apostilas.ts",
+    "deploy:vps": "node scripts/deploy-vps.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

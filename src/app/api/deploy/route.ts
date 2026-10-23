@@ -5,6 +5,31 @@ import path from "node:path";
 import { auth } from "@/lib/auth/auth";
 import { AdminGuardService } from "@/lib/administration/services/admin-guard.service";
 
+function getSshKeyPath(): string {
+  const candidates: string[] = [
+    process.env.VPS_SSH_KEY_PATH || "",
+    "C:\\Users\\dev\\Downloads\\chave\\ssh-key-2026-05-27.key",
+    "H:\\Meu Drive\\plataforma de estudo\\chave\\ssh-key-2026-05-27.key",
+    path.join(process.env.USERPROFILE || "", "Downloads", "chave", "ssh-key-2026-05-27.key"),
+    path.join(process.env.USERPROFILE || "", ".ssh", "ssh-key-2026-05-27.key"),
+    path.join(process.env.USERPROFILE || "", "Meu Drive", "plataforma de estudo", "chave", "ssh-key-2026-05-27.key"),
+  ];
+
+  // Checar todas as letras de unidade montadas pelo Google Drive (D: até Z:)
+  const driveLetters = ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
+  for (const letter of driveLetters) {
+    candidates.push(`${letter}:\\Meu Drive\\plataforma de estudo\\chave\\ssh-key-2026-05-27.key`);
+  }
+
+  for (const candidate of candidates) {
+    if (candidate && fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return "C:\\Users\\dev\\Downloads\\chave\\ssh-key-2026-05-27.key";
+}
+
 export async function GET() {
   const session = await auth();
   if (!session?.user?.email) {
@@ -71,7 +96,7 @@ export async function GET() {
 
   // 4. Se o push deu certo, executa na VPS
   if (relatorio.gitPushSucesso) {
-    const keyToUse = "C:\\Users\\dev\\Downloads\\chave\\ssh-key-2026-05-27.key";
+    const keyToUse = getSshKeyPath();
     try {
       console.log("[deploy] Conectando na VPS para deploy...");
       const cmdVps = [
